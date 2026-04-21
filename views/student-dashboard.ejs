@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Dashboard - IELTS Master</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            margin: 0;
+            padding: 20px;
+            color: #333;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        /* Header Styles */
+        header {
+            background: #fff;
+            padding: 20px 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .user-info h1 {
+            margin: 0;
+            font-size: 24px;
+            color: #2c3e50;
+        }
+
+        .group-badge {
+            background: #8e44ad;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 50px;
+            font-size: 14px;
+            font-weight: bold;
+            margin-top: 5px;
+            display: inline-block;
+        }
+
+        .logout-btn {
+            text-decoration: none;
+            color: #e74c3c;
+            font-weight: bold;
+            border: 2px solid #e74c3c;
+            padding: 8px 20px;
+            border-radius: 12px;
+            transition: all 0.3s;
+        }
+
+        .logout-btn:hover {
+            background: #e74c3c;
+            color: white;
+        }
+
+        /* Test Grid Styles */
+        .section-title {
+            font-size: 20px;
+            margin-bottom: 20px;
+            color: #34495e;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .test-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+        }
+
+        .test-card {
+            background: white;
+            padding: 25px;
+            border-radius: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+            transition: transform 0.3s, box-shadow 0.3s;
+            border-top: 5px solid #3498db;
+        }
+
+        .test-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 30px rgba(0,0,0,0.1);
+        }
+
+        .test-card.listening { border-top-color: #f1c40f; }
+        .test-card.reading { border-top-color: #2ecc71; }
+        .test-card.writing { border-top-color: #e67e22; }
+
+        .test-type {
+            text-transform: uppercase;
+            font-size: 12px;
+            font-weight: bold;
+            color: #95a5a6;
+            margin-bottom: 10px;
+            display: block;
+        }
+
+        .test-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 20px;
+            min-height: 50px;
+        }
+
+        .start-btn {
+            display: block;
+            text-align: center;
+            background: #3498db;
+            color: white;
+            text-decoration: none;
+            padding: 12px;
+            border-radius: 12px;
+            font-weight: bold;
+            transition: background 0.3s;
+        }
+
+        .test-card.listening .start-btn { background: #f1c40f; }
+        .test-card.reading .start-btn { background: #2ecc71; }
+        .test-card.writing .start-btn { background: #e67e22; }
+
+        .start-btn:hover {
+            filter: brightness(1.1);
+        }
+
+        .no-tests {
+            background: rgba(255,255,255,0.6);
+            padding: 40px;
+            text-align: center;
+            border-radius: 20px;
+            border: 2px dashed #bdc3c7;
+            color: #7f8c8d;
+            grid-column: 1 / -1;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <div class="user-info">
+                <h1>Welcome back, <%= student.username %>! 👋</h1>
+                <div class="group-badge">Group: <%= groupName %></div>
+            </div>
+            <a href="/logout" class="logout-btn">Logout</a>
+        </header>
+
+        <h2 class="section-title">📝 Your Assigned Tests</h2>
+
+        <div class="test-grid">
+            <% if (tests.length > 0) { %>
+                <% tests.forEach(test => { %>
+                    <div class="test-card <%= test.type %>">
+                        <span class="test-type"><%= test.type %> Test</span>
+                        <div class="test-title"><%= test.title %></div>
+                        <a href="/view-test/<%= test._id %>" class="start-btn">Start Test</a>
+                    </div>
+                <% }) %>
+            <% } else { %>
+                <div class="no-tests">
+                    <h3>No tests assigned yet.</h3>
+                    <p>When your teacher assigns a test to your group, it will appear here!</p>
+                </div>
+            <% } %>
+        </div>
+    </div>
+
+</body>
+</html>

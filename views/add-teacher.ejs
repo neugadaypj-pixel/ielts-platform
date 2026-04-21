@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Add Teacher | Admin</title>
+    <style>
+        body { font-family: sans-serif; max-width: 400px; margin: 100px auto; padding: 20px; background: #f4f4f4; }
+        .box { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        input { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
+        button { width: 100%; padding: 10px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <div class="box">
+        <h2>Register New Teacher</h2>
+        <form action="/admin/add-teacher" method="POST">
+            <input type="text" name="username" placeholder="Teacher Username" required>
+            <input type="password" name="password" placeholder="Set Temporary Password" required>
+            <button type="submit">Create Teacher Account</button>
+        </form>
+        <br>
+        <a href="/admin">Back to Dashboard</a>
+    </div>
+</body>
+</html>

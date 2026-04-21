@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Admin Dashboard</title>
+    <style>
+        body { font-family: sans-serif; padding: 30px; background: #f0f2f5; }
+        .section { background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { text-align: left; padding: 12px; border-bottom: 1px solid #ddd; }
+        .btn { padding: 8px 15px; background: #007bff; color: white; border-radius: 4px; text-decoration: none; border: none; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>Admin Control Center</h1>
+    
+    <div class="section">
+        <h3>Quick Actions</h3>
+        <a href="/create-test" class="btn">Create New Test</a>
+        <a href="/admin/add-teacher" class="btn" style="background: #28a745;">Add New Teacher</a>
+        <a href="/logout" style="color: red; margin-left: 20px;">Logout</a>
+    </div>
+
+    <div class="section">
+        <h3>Assign Tests to Teachers</h3>
+        <form action="/admin/assign-test" method="POST">
+            <select name="testId" required>
+                <option value="">Select a Test</option>
+                <% tests.forEach(test => { %>
+                    <option value="<%= test._id %>"><%= test.title %></option>
+                <% }) %>
+            </select>
+
+            <select name="teacherId" required>
+                <option value="">Select a Teacher</option>
+                <% teachers.forEach(teacher => { %>
+                    <option value="<%= teacher._id %>"><%= teacher.username %></option>
+                <% }) %>
+            </select>
+
+            <button type="submit" class="btn">Grant Access</button>
+        </form>
+    </div>
+
+    <div class="section">
+        <h3>Existing Tests</h3>
+        <table>
+            <tr><th>Title</th><th>Teacher Count</th></tr>
+            <% tests.forEach(test => { %>
+                <tr>
+                    <td><%= test.title %></td>
+                    <td>Added to Database</td>
+                </tr>
+            <% }) %>
+        </table>
+    </div>
+</body>
+</html>

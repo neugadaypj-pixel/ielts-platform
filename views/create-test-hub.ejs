@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Creator Hub</title>
+    <style>
+        body { font-family: sans-serif; text-align: center; padding: 50px; background: #f0f2f5; }
+        .card-container { display: flex; justify-content: center; gap: 20px; margin-top: 30px; }
+        .card { background: white; padding: 30px; border-radius: 12px; width: 200px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); text-decoration: none; color: #333; transition: transform 0.2s; }
+        .card:hover { transform: translateY(-5px); box-shadow: 0 8px 16px rgba(0,0,0,0.15); }
+        .card h2 { margin: 0 0 10px 0; }
+    </style>
+</head>
+<body>
+    <h1>What type of test do you want to build?</h1>
+    <div class="card-container">
+        <a href="/create-test/reading" class="card" style="border-top: 5px solid #3498db;">
+            <h2>📖 Reading</h2><p>Advanced passage & question builder</p>
+        </a>
+        <a href="/create-test/listening" class="card" style="border-top: 5px solid #e67e22;">
+            <h2>🎧 Listening</h2><p>Audio upload & question builder</p>
+        </a>
+        <a href="/create-test/writing" class="card" style="border-top: 5px solid #9b59b6;">
+            <h2>✍️ Writing</h2><p>Task 1 & 2 prompt creator</p>
+        </a>
+    </div>
+    <br><br><a href="/admin">Back to Dashboard</a>
+</body>
+</html>

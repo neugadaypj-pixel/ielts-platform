@@ -1131,8 +1131,8 @@ const template = `<!DOCTYPE html>
         document.querySelectorAll('.tf-question, .multi-choice-question, .short-answer-question, .pick-n-question, .matching-group-block, .diagram-container').forEach(el => {
             if(el.querySelector('.flag-btn')) return;
             const btn = document.createElement('button');
-            btn.className = 'flag-btn'; btn.innerHTML = '⚑'; 
-            btn.dataset.tooltip = 'Flag for Review';
+            btn.className = 'flag-btn'; btn.textContent = '⚑'; 
+            btn.title = 'Flag for Review';
             btn.onclick = function() { toggleBlockFlag(this); };
             el.appendChild(btn);
         });
@@ -1141,8 +1141,8 @@ const template = `<!DOCTYPE html>
             if(!inp.nextElementSibling || !inp.nextElementSibling.classList.contains('inline-flag')) {
                 const flag = document.createElement('span');
                 flag.className = 'q-flag inline-flag';
-                flag.innerHTML = '⚑';
-                flag.dataset.tooltip = 'Flag for Review';
+                flag.textContent = '⚑';
+                flag.title = 'Flag for Review';
                 flag.onclick = function() { toggleInlineFlag(this, inp.id.replace('q', '')); };
                 inp.parentNode.insertBefore(flag, inp.nextSibling);
             }

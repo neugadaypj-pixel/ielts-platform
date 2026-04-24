@@ -509,7 +509,7 @@
     </div>
 
     <div style="display:none;">
-        <audio id="testAudio" preload="auto"></audio>
+        <audio id="testAudio" preload="auto" crossOrigin="anonymous"></audio>
     </div>
 
     <div class="main-container" id="questionsPanel">
@@ -577,7 +577,7 @@
     const SESSION_KEY = 'ielts_listening_<%= test._id || Date.now() %>'; 
     const AUDIO_KEY = SESSION_KEY + '_audio_state'; 
 
-// AUDIO PLAYLIST LOGIC
+// AUDIO PLAYLIST LOGIC - R2 DIRECT URLS
     const rawAudioDataList = <%- JSON.stringify(test.audioParts || testData.audioParts || [null, null, null, null]) %>;
     const rawFullAudioData = <%- JSON.stringify(test.fullAudio || testData.fullAudio || null) %>;
     const usePause = <%- (test.includePause || testData.includePause) ? "true" : "false" %>;
@@ -586,19 +586,29 @@
     let currentAudioIndex = 0;
     let isFullAudio = rawFullAudioData !== null;
 
-    function createBlobUrl(base64Str) {
-        if (!base64Str) return null;
-        try {
-            const parts = base64Str.split(',');
-            const mime = parts[0].match(/:(.*?);/)[1];
-            const bstr = atob(parts[1]);
-            let n = bstr.length;
-            const u8arr = new Uint8Array(n);
-            while (n--) { u8arr[n] = bstr.charCodeAt(n); }
-            return URL.createObjectURL(new Blob([u8arr], { type: mime }));
-        } catch(e) { 
-            return base64Str; // Fallback
+    // Direct URL passthrough for Cloudflare R2 storage (no base64 conversion needed)
+    function createBlobUrl(url) {
+        if (!url) return null;
+        // If it's already a URL (starts with http/https or /), return it directly
+        // Otherwise treat as fallback
+        if (typeof url === 'string' && (url.startsWith('http') || url.startsWith('/'))) {
+            return url;
         }
+        // Legacy support: if it's a base64 data URL, still support it
+        if (typeof url === 'string' && url.startsWith('data:')) {
+            try {
+                const parts = url.split(',');
+                const mime = parts[0].match(/:(.*?);/)[1];
+                const bstr = atob(parts[1]);
+                let n = bstr.length;
+                const u8arr = new Uint8Array(n);
+                while (n--) { u8arr[n] = bstr.charCodeAt(n); }
+                return URL.createObjectURL(new Blob([u8arr], { type: mime }));
+            } catch(e) { 
+                return null;
+            }
+        }
+        return null;
     }
 
     const audioDataList = rawAudioDataList ? rawAudioDataList.map(createBlobUrl) : [null, null, null, null];

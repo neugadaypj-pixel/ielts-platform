@@ -144,18 +144,19 @@ app.post('/create-test/listening', isAdmin, upload.any(), async (req, res) => {
     try {
         let audioUrls = {};
         
-        // Перебираем все загруженные файлы и сохраняем их ссылки
+        // Collect all uploaded files and save their R2 URLs
         if (req.files) {
             req.files.forEach(file => {
-                // file.fieldname будет 'audioFile' или 'part1', 'part2' и т.д.
+                // file.fieldname will be 'audioFile' or 'part1', 'part2', etc.
                 audioUrls[file.fieldname] = file.location;
             });
         }
         
+        // Map R2 URLs to the format expected by the template
         const contentObj = {
-            // Если есть целое аудио — берем его, если нет — берем по частям
-            audioUrl: audioUrls['audioFile'] || null,
-            partUrls: [
+            // If there's a full audio file, use it; otherwise use individual parts
+            fullAudio: audioUrls['audioFile'] || null,
+            audioParts: [
                 audioUrls['part1'] || null,
                 audioUrls['part2'] || null,
                 audioUrls['part3'] || null,
@@ -163,7 +164,7 @@ app.post('/create-test/listening', isAdmin, upload.any(), async (req, res) => {
             ],
             parts: JSON.parse(req.body.parts || '[]'),
             answerKey: JSON.parse(req.body.answerKey || '{}'),
-            usePause: req.body.usePause === 'true'
+            includePause: req.body.usePause === 'true'
         };
 
         const newTest = new Test({
@@ -175,7 +176,7 @@ app.post('/create-test/listening', isAdmin, upload.any(), async (req, res) => {
         });
 
         await newTest.save();
-        res.json({ success: true, message: "Test with multiple audios saved!" });
+        res.json({ success: true, message: "Test with Cloudflare R2 audio URLs saved successfully!" });
     } catch (err) {
         console.error("Upload error:", err);
         res.status(500).json({ success: false, error: err.message });

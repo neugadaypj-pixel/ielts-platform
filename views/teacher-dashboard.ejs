@@ -16,6 +16,9 @@
         .btn:hover { background: #2980b9; transform: translateY(-2px); }
         .btn-green { background: #27ae60; }
         .btn-green:hover { background: #219653; }
+        .btn-danger { background: #e74c3c; padding: 6px 12px; font-size: 12px; }
+        .btn-danger:hover { background: #c0392b; }
+        .btn-small { padding: 5px 10px; font-size: 12px; }
         
         /* Forms */
         .form-group { margin-bottom: 15px; display: flex; gap: 10px; align-items: center; }
@@ -28,12 +31,64 @@
 
         /* Group Grid */
         .group-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
-        .group-card { border: 1px solid #e1e4e8; border-radius: 12px; padding: 15px; background: #fdfdfd; }
+        .group-card { border: 1px solid #e1e4e8; border-radius: 12px; padding: 15px; background: #fdfdfd; position: relative; }
         .group-name { font-size: 18px; font-weight: bold; color: #2c3e50; margin-bottom: 10px; display: block; }
         .badge { font-size: 11px; padding: 3px 8px; border-radius: 4px; background: #eee; margin-left: 5px; }
+        .delete-btn-group { position: absolute; top: 10px; right: 10px; }
         
         .logout { color: #e74c3c; text-decoration: none; display: block; margin-top: 20px; font-weight: bold; border-top: 1px solid #34495e; padding-top: 20px; }
+        .action-cell { display: flex; gap: 5px; }
     </style>
+    <script>
+        function deleteItem(type, id, name, groupId = null) {
+            if (!confirm(`Are you sure you want to delete ${type} "${name}"?`)) {
+                return;
+            }
+            
+            let endpoint = `/delete-${type}/${id}`;
+            if (type === 'group') {
+                endpoint = `/delete-${type}/${id}`;
+            }
+            
+            fetch(endpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ redirect: '/teacher-dashboard' })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    alert(data.message);
+                    window.location.href = '/teacher-dashboard';
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            })
+            .catch(err => alert('Error: ' + err.message));
+        }
+
+        function removeStudentFromGroup(groupId, studentId, studentName) {
+            if (!confirm(`Remove ${studentName} from this group?`)) {
+                return;
+            }
+            
+            fetch(`/remove-student-from-group/${groupId}/${studentId}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ redirect: '/teacher-dashboard' })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    alert(data.message);
+                    window.location.href = '/teacher-dashboard';
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            })
+            .catch(err => alert('Error: ' + err.message));
+        }
+    </script>
 </head>
 <body>
 
@@ -101,20 +156,32 @@
                 <div class="group-grid">
                     <% groups.forEach(group => { %>
                         <div class="group-card">
-                            <span class="group-name">Group: <%= group.name %></span>
-                            <p style="font-size: 13px; color: #7f8c8d;">
+                            <div class="delete-btn-group">
+                                <button class="btn btn-danger btn-small" onclick="deleteItem('group', '<%= group._id %>', '<%= group.name %>')">Delete</button>
+                            </div>
+                            <span class="group-name">📌 <%= group.name %></span>
+                            <p style="font-size: 13px; color: #7f8c8d; margin: 10px 0;">
                                 👥 Students: <%= group.students.length %><br>
                                 📝 Tests: <%= group.assignedTests.length %>
                             </p>
                             <hr style="border: 0.5px solid #eee;">
-                            <div style="font-size: 12px;">
-                                <strong>Assigned Tests:</strong>
-                                <ul style="padding-left: 20px;">
-                                    <% group.assignedTests.forEach(t => { %>
-                                        <li><%= t.title %></li>
-                                    <% }) %>
-                                </ul>
-                            </div>
+                            
+                            <strong style="font-size: 12px;">Assigned Tests:</strong>
+                            <ul style="padding-left: 20px; font-size: 12px; margin: 8px 0;">
+                                <% group.assignedTests.forEach(t => { %>
+                                    <li><%= t.title %></li>
+                                <% }) %>
+                            </ul>
+                            
+                            <strong style="font-size: 12px;">Students in Group:</strong>
+                            <ul style="padding-left: 20px; font-size: 12px; margin: 8px 0; list-style: none;">
+                                <% group.students.forEach(student => { %>
+                                    <li style="margin-bottom: 5px; display: flex; justify-content: space-between; align-items: center;">
+                                        <span><%= student.username %></span>
+                                        <button class="btn btn-danger btn-small" onclick="removeStudentFromGroup('<%= group._id %>', '<%= student._id %>', '<%= student.username %>')">Remove</button>
+                                    </li>
+                                <% }) %>
+                            </ul>
                         </div>
                     <% }) %>
                 </div>
@@ -131,7 +198,7 @@
                     <tr>
                         <th>Username</th>
                         <th>Current Group</th>
-                        <th>Action</th>
+                        <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -145,7 +212,10 @@
                                     <span class="badge">No Group</span>
                                 <% } %>
                             </td>
-                            <td><a href="#" style="color: #3498db; font-weight: bold; text-decoration: none;">📊 View Progress</a></td>
+                            <td class="action-cell">
+                                <a href="#" style="color: #3498db; font-weight: bold; text-decoration: none;">📊 View</a>
+                                <button class="btn btn-danger btn-small" onclick="deleteItem('student', '<%= student._id %>', '<%= student.username %>')">Delete</button>
+                            </td>
                         </tr>
                     <% }) %>
                 </tbody>

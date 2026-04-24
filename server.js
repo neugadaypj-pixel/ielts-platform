@@ -488,6 +488,31 @@ app.post('/delete-teacher/:id', async (req, res) => {
     }
 });
 
+// Remove a student from a group (keep account, just remove from group)
+app.post('/remove-student-from-group/:groupId/:studentId', async (req, res) => {
+    if(!req.session.userId) return res.redirect('/login');
+    try {
+        const group = await Group.findById(req.params.groupId);
+        if (!group) return res.status(404).json({ success: false, message: "Group not found" });
+        
+        const user = await User.findById(req.session.userId);
+        
+        // Check authorization: only teacher who owns the group can remove students
+        if (user.role !== 'admin' && (user.role !== 'teacher' || group.teacherId.toString() !== req.session.userId)) {
+            return res.status(403).json({ success: false, message: "Not authorized to remove students from this group" });
+        }
+        
+        // Remove student from group
+        await Group.findByIdAndUpdate(req.params.groupId, { $pull: { students: req.params.studentId } });
+        await User.findByIdAndUpdate(req.params.studentId, { $unset: { groupId: 1 } });
+        
+        res.json({ success: true, message: "Student removed from group successfully", redirect: req.body.redirect || '/teacher-dashboard' });
+    } catch (err) {
+        console.error('Remove student from group error:', err);
+        res.status(500).json({ success: false, message: "Error removing student: " + err.message });
+    }
+});
+
 // Delete a group (admin only)
 app.post('/delete-group/:id', async (req, res) => {
     if(!req.session.userId) return res.redirect('/login');

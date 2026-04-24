@@ -7,8 +7,37 @@
         .section { background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         table { width: 100%; border-collapse: collapse; margin-top: 10px; }
         th, td { text-align: left; padding: 12px; border-bottom: 1px solid #ddd; }
-        .btn { padding: 8px 15px; background: #007bff; color: white; border-radius: 4px; text-decoration: none; border: none; cursor: pointer; }
+        .btn { padding: 8px 15px; background: #007bff; color: white; border-radius: 4px; text-decoration: none; border: none; cursor: pointer; margin-right: 5px; }
+        .btn:hover { background: #0056b3; }
+        .btn-danger { background: #dc3545; }
+        .btn-danger:hover { background: #c82333; }
+        .btn-success { background: #28a745; }
+        .btn-success:hover { background: #218838; }
+        .action-cell { display: flex; gap: 5px; }
     </style>
+    <script>
+        function deleteItem(type, id, name) {
+            if (!confirm(`Are you sure you want to delete ${type} "${name}"? This action cannot be undone.`)) {
+                return;
+            }
+            
+            fetch(`/delete-${type}/${id}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ redirect: '/admin' })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    alert(data.message);
+                    window.location.href = '/admin';
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            })
+            .catch(err => alert('Error: ' + err.message));
+        }
+    </script>
 </head>
 <body>
     <h1>Admin Control Center</h1>
@@ -16,7 +45,7 @@
     <div class="section">
         <h3>Quick Actions</h3>
         <a href="/create-test" class="btn">Create New Test</a>
-        <a href="/admin/add-teacher" class="btn" style="background: #28a745;">Add New Teacher</a>
+        <a href="/admin/add-teacher" class="btn btn-success">Add New Teacher</a>
         <a href="/logout" style="color: red; margin-left: 20px;">Logout</a>
     </div>
 
@@ -44,11 +73,31 @@
     <div class="section">
         <h3>Existing Tests</h3>
         <table>
-            <tr><th>Title</th><th>Teacher Count</th></tr>
+            <tr><th>Title</th><th>Type</th><th>Created By</th><th>Actions</th></tr>
             <% tests.forEach(test => { %>
                 <tr>
                     <td><%= test.title %></td>
-                    <td>Added to Database</td>
+                    <td><%= test.type %></td>
+                    <td><%= test.teacherName %></td>
+                    <td class="action-cell">
+                        <button class="btn btn-danger" onclick="deleteItem('test', '<%= test._id %>', '<%= test.title %>')">Delete</button>
+                    </td>
+                </tr>
+            <% }) %>
+        </table>
+    </div>
+
+    <div class="section">
+        <h3>Teachers</h3>
+        <table>
+            <tr><th>Username</th><th>Tests Assigned</th><th>Actions</th></tr>
+            <% teachers.forEach(teacher => { %>
+                <tr>
+                    <td><%= teacher.username %></td>
+                    <td><%= teacher.assignedTests ? teacher.assignedTests.length : 0 %></td>
+                    <td class="action-cell">
+                        <button class="btn btn-danger" onclick="deleteItem('teacher', '<%= teacher._id %>', '<%= teacher.username %>')">Delete</button>
+                    </td>
                 </tr>
             <% }) %>
         </table>

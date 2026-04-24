@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IELTS Writing Test</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <style>
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { font-family:'Segoe UI',Arial,sans-serif; background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); line-height:1.6; font-size:16px; color:#333; height: 100vh; overflow: hidden; }
+        
+        /* Animations */
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes popIn { 0% { transform: scale(0.9); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+        @keyframes shake { 10%, 90% { transform: translate3d(-1px, 0, 0); } 20%, 80% { transform: translate3d(2px, 0, 0); } 30%, 50%, 70% { transform: translate3d(-4px, 0, 0); } 40%, 60% { transform: translate3d(4px, 0, 0); } }
+        @keyframes popDown { from { top: -50px; opacity: 0; } to { top: 20px; opacity: 1; } }
+        
+        /* HEADER */
+        .header { background:#fff; height:70px; padding:0 30px; border-bottom:1px solid #e1e4e8; display:flex; justify-content:space-between; align-items:center; position:fixed; top:0; width:100%; z-index:1000; box-shadow:0 2px 10px rgba(0,0,0,0.05); }
+        .logo { font-weight:800; font-size:20px; color:#2c3e50; display:flex; align-items:center; gap:15px; }
+        
+        .name-input { 
+            padding: 8px 15px; border: 2px solid #ddd; border-radius: 20px; font-size: 14px; 
+            width: 160px; transition: border 0.3s, box-shadow 0.3s; text-align: center; 
+        }
+        .name-input:focus { border-color: #8e44ad; outline: none; }
+        .name-input::placeholder { color: #aaa; }
+        .shake-active { animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both; border-color: #e74c3c !important; box-shadow: 0 0 8px rgba(231,76,60,0.4); }
+
+        .timer { font-family:monospace; font-size:18px; font-weight:bold; color:#e74c3c; background:#fff0f0; padding:5px 15px; border-radius:20px; margin-right: 15px; }
+        .header-right { display: flex; align-items: center; }
+
+        /* Custom Alert */
+        .custom-alert { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #e74c3c; color: white; padding: 15px 30px; border-radius: 30px; z-index: 10001; box-shadow: 0 10px 20px rgba(0,0,0,0.2); font-weight: bold; display: none; animation: popDown 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+
+        /* MAIN LAYOUT */
+        .main-container { margin-top:70px; display:flex; height:calc(100vh - 140px); overflow:hidden; animation: slideUp 0.8s ease-out; }
+        
+        .prompt-panel { flex: 1; padding: 40px; overflow-y: auto; background: #fff; border-right: 5px solid #e1e4e8; min-width: 300px; }
+        .instructions { font-size: 1.1em; color: #2c3e50; white-space: pre-wrap; line-height: 1.8; }
+        
+        .writing-panel { flex: 1; padding: 30px; background: #eaeff2; min-width: 300px; display: flex; flex-direction: column; }
+        .resizer { width:8px; cursor:col-resize; background:#e1e4e8; flex-shrink:0; }
+
+        /* CONTENT STYLES */
+        .task-card { background: #fff; border: 1px solid #ddd; padding: 25px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); transition: transform 0.3s; margin-bottom: 20px; }
+        .task-card h2 { color: #2c3e50; margin-bottom: 15px; }
+        .task-card:hover { transform: translateY(-2px); }
+        .task-img { max-width: 100%; height: auto; display: block; margin: 0 auto 20px auto; border: 1px solid #eee; border-radius: 5px; }
+        
+        /* DESIGN: Real IELTS Textarea */
+        textarea.student-input { 
+            width: 100%; height: 400px; padding: 20px; 
+            font-family: Arial, sans-serif; font-size: 1.1em; line-height: 1.6; 
+            border: 1px solid #ccc; border-radius: 15px; 
+            resize: none; outline: none; box-shadow: inset 0 2px 5px rgba(0,0,0,0.03);
+            background: #fff; margin-bottom: 10px; transition: border 0.3s, box-shadow 0.3s;
+        }
+        textarea.student-input:focus { border-color: #8e44ad; box-shadow: 0 0 0 4px rgba(142,68,173,0.1); }
+        
+        /* DARK MODE */
+        body.dark-mode { background: #1a1a1a; color: #e0e0e0; }
+        .dark-mode .header, .dark-mode .footer { background: #252525; border-color: #333; color: #e0e0e0; }
+        .dark-mode .prompt-panel { background: #2d2d2d; border-color: #444; }
+        .dark-mode .writing-panel { background: #1e1e1e !important; }
+        .dark-mode .task-card { background: #333; border-color: #444; color: #e0e0e0; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
+        .dark-mode textarea.student-input { background: #252525; color: #eee; border-color: #444; box-shadow: inset 0 2px 5px rgba(0,0,0,0.2); }
+        .dark-mode .instructions { color: #ddd; }
+        .dark-mode .logo { color: #fff; }
+        .dark-mode h2 { color: #fff; }
+        .dark-mode hr { border-top-color: #555 !important; }
+        .dark-mode .word-count-box { color: #aaa; }
+        .dark-mode .resizer { background: #444; }
+        .dark-mode .name-input { background: #333; color: #fff; border-color: #555; }
+        .dark-mode .timer { background: #333; color: #ff6b6b; border: 1px solid #555; }
+        
+        /* DARK MODE FIXES FOR MODAL & AI SECTION */
+        .dark-mode .modal-content { background-color: #252525; color: #e0e0e0; box-shadow: 0 25px 50px rgba(0,0,0,0.6); }
+        .dark-mode .modal-body { background: #1e1e1e; border-color: #444; }
+        .dark-mode .ai-result { background: #172a26; border-left: 5px solid #1abc9c; color: #e0e0e0; }
+        .dark-mode #printable-content h3, .dark-mode #printable-content h4 { color: #fff; border-bottom-color: #444; }
+        .dark-mode .model-answer-block { border-bottom-color: #444; }
+        
+        .notes-panel { position: fixed; top: 80px; right: 20px; width: 300px; height: 400px; background: #fff9c4; box-shadow: 0 10px 30px rgba(0,0,0,0.2); border-radius: 15px; z-index: 2000; padding: 15px; border: 1px solid #fbc02d; display: flex; flex-direction: column; transform: translateX(120%); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .notes-panel.open { transform: translateX(0); }
+        .notes-area { flex: 1; border: none; background: transparent; resize: none; outline: none; font-family: 'Segoe UI', sans-serif; font-size: 14px; line-height: 1.5; }
+        
+        .word-count-box { text-align: right; font-weight: bold; color: #7f8c8d; font-size: 14px; margin-right: 5px; }
+        .wc-good { color: #27ae60; } .wc-bad { color: #e74c3c; }
+
+        /* FOOTER */
+        .footer { position:fixed; bottom:0; width:100%; height:70px; background:#fff; border-top:1px solid #e1e4e8; display:flex; align-items:center; justify-content:space-between; padding:0 30px; z-index:1000; }
+        .part-nav { display: flex; gap: 10px; }
+        .part-btn { border:1px solid rgba(0,0,0,0.1); background: rgba(255,255,255,0.8); backdrop-filter: blur(10px); padding:10px 20px; border-radius:25px; cursor:pointer; font-weight:600; color:#555; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        .part-btn:hover { background: rgba(255,255,255,1); transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,0,0.1); border-color: rgba(0,0,0,0.15); }
+        .part-btn:active { transform: translateY(0); }
+        .part-btn.active { background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%); color:#fff; border: 1px solid rgba(255,255,255,0.2); box-shadow: 0 8px 20px rgba(44, 62, 80, 0.3); }
+        .part-btn.active:hover { box-shadow: 0 12px 25px rgba(44, 62, 80, 0.4); border-color: rgba(255,255,255,0.4); }
+        
+        .check-btn { background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%); color:white; border:1px solid rgba(255,255,255,0.2); padding:12px 30px; border-radius:30px; font-weight:bold; cursor:pointer; display: flex; align-items: center; gap: 8px; transition: all 0.3s ease; box-shadow: 0 8px 20px rgba(39, 174, 96, 0.3); backdrop-filter: blur(5px); }
+        .check-btn:hover { transform: translateY(-3px); box-shadow: 0 12px 30px rgba(39, 174, 96, 0.4); border-color: rgba(255,255,255,0.5); }
+        .check-btn:active { transform: translateY(1px); box-shadow: 0 4px 10px rgba(39, 174, 96, 0.3); }
+
+        /* MODAL */
+        .modal { display:none; position:fixed; z-index:9999; left:0; top:0; width:100%; height:100%; background-color:rgba(0,0,0,0.6); align-items:center; justify-content:center; backdrop-filter:blur(8px); transition: opacity 0.3s; }
+        .modal-content { background-color:#fff; padding:30px; border-radius:20px; width:85%; max-width:900px; height: 85vh; display: flex; flex-direction: column; animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); box-shadow: 0 25px 50px rgba(0,0,0,0.3); }
+        .modal-body { flex: 1; overflow-y: auto; padding: 20px; border: 1px solid #eee; margin: 15px 0; background: #f9f9f9; border-radius:10px; }
+        .model-answer-block { margin-bottom: 30px; padding-bottom: 30px; border-bottom: 2px dashed #ccc; }
+        .model-header { color: #8e44ad; margin-bottom: 10px; text-transform: uppercase; font-size: 14px; font-weight: bold; }
+        
+        .download-btn { background: linear-gradient(135deg, #3498db 0%, #5dade2 100%); color: white; border: 1px solid rgba(255,255,255,0.2); padding: 8px 15px; border-radius: 20px; cursor: pointer; font-weight: 600; margin-left: 5px; display: inline-flex; align-items: center; gap: 5px; font-size: 14px; transition: all 0.3s ease; box-shadow: 0 5px 15px rgba(52, 152, 219, 0.3); backdrop-filter: blur(4px); }
+        .download-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(52, 152, 219, 0.4); border-color: rgba(255,255,255,0.5); }
+        .download-btn:active { transform: translateY(0); }
+        .pdf-btn { background: linear-gradient(135deg, #e74c3c 0%, #ec7063 100%); box-shadow: 0 5px 15px rgba(231, 76, 60, 0.3); } .pdf-btn:hover { box-shadow: 0 8px 20px rgba(231, 76, 60, 0.4); }
+        .copy-btn { background: linear-gradient(135deg, #f1c40f 0%, #f4d03f 100%); color: #333; box-shadow: 0 5px 15px rgba(241, 196, 15, 0.3); } .copy-btn:hover { box-shadow: 0 8px 20px rgba(241, 196, 15, 0.4); }
+
+        .hidden { display: none !important; }
+        #printable-content { display: block; }
+    </style>
+</head>
+<body>
+    <div id="customAlert" class="custom-alert"></div>
+    
+    <div class="header">
+        <div class="logo">
+            IELTS Writing
+            <input type="text" id="studentName" class="name-input" placeholder="Student Name" oninput="saveName(); this.classList.remove('shake-active');">
+        </div>
+        <div class="header-right">
+            <button class="part-btn" onclick="document.getElementById('notesPanel').classList.toggle('open')" style="margin-right:10px; padding:5px 15px; font-size:12px; background:#f1c40f; border-color:#f39c12; color:#333;">📝 Notes</button>
+            <button class="part-btn theme-btn" onclick="toggleDarkMode(this)" style="margin-right:10px; padding:5px 15px; font-size:12px;">🌙 Dark Mode</button>
+            <div class="timer" id="timerDisplay"><%= timeLimit %>:00</div>
+        </div>
+    </div>
+
+    <div id="notesPanel" class="notes-panel">
+        <div style="font-weight:bold; color:#d35400; margin-bottom:10px; display:flex; justify-content:space-between;"><span>Planning Pad</span> <span style="cursor:pointer;" onclick="document.getElementById('notesPanel').classList.remove('open')">✖</span></div>
+        <textarea class="notes-area" placeholder="Type your plan here... (Not graded)"></textarea>
+    </div>
+
+    <div class="main-container">
+        <div class="prompt-panel" id="promptPanel">
+            <div id="p_task1" class="task-card">
+                <h2>Writing Task 1 (Report)</h2>
+                <hr style="margin: 15px 0; border:0; border-top:1px solid #eee;">
+                <% if(task1.image) { %>
+                    <img src="<%= task1.image %>" class="task-img" alt="Task 1 Chart">
+                <% } %>
+                <div class="instructions"><%= task1.prompt %></div>
+            </div>
+            <div id="p_task2" class="task-card hidden">
+                <h2>Writing Task 2 (Essay)</h2>
+                <hr style="margin: 15px 0; border:0; border-top:1px solid #eee;">
+                <div class="instructions"><%= task2.prompt %></div>
+            </div>
+        </div>
+
+        <div class="resizer" id="resizer"></div>
+
+        <div class="writing-panel">
+            <textarea id="input_task1" class="student-input" placeholder="Type your Task 1 response here..." oninput="updateCount(1)" onpaste="return false;"></textarea>
+            <textarea id="input_task2" class="student-input hidden" placeholder="Type your Task 2 Essay here..." oninput="updateCount(2)" onpaste="return false;"></textarea>
+            
+            <div class="word-count-box">
+                Words: <span id="wc_1">0</span> <span style="font-weight:normal; font-size:12px;">(Min: 150)</span>
+            </div>
+            <div class="word-count-box hidden" id="wc_box_2">
+                Words: <span id="wc_2">0</span> <span style="font-weight:normal; font-size:12px;">(Min: 250)</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer">
+        <div class="part-nav">
+            <button class="part-btn active" onclick="switchTask(1)">Task 1</button>
+            <button class="part-btn" onclick="switchTask(2)">Task 2</button>
+        </div>
+        <button class="check-btn" onclick="submitTest()">✅ Finish & Review</button>
+    </div>
+
+    <div id="resultModal" class="modal">
+        <div class="modal-content">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                <h2>Test Result</h2>
+                <div>
+                     <button class="download-btn copy-btn" onclick="copyEssays()">📋 Copy Text</button>
+                     <button class="download-btn" onclick="downloadWord()">📄 Word (.doc)</button>
+                     <button class="download-btn pdf-btn" onclick="downloadPDFDirect()">💾 Save as PDF</button>
+                </div>
+            </div>
+            
+            <div class="modal-body">
+                <div id="printable-content">
+                    <h3 style="color:#2c3e50; border-bottom:1px solid #eee; padding-bottom:10px;">Your Submission</h3>
+                    <p><strong>Student:</strong> <span id="disp_name"></span></p>
+                    <p><strong>Date:</strong> <span id="disp_date"></span></p>
+                    <p><strong>Test:</strong> <%= title %></p>
+                    <br>
+                    <h4>Task 1 (<span id="final_wc1"></span> words)</h4>
+                    <div id="view_t1" style="white-space: pre-wrap; font-family:'Georgia'; margin-bottom:20px; padding: 15px; background: #f9f9f9; border-radius: 5px;"></div>
+                    <h4>Task 2 (<span id="final_wc2"></span> words)</h4>
+                    <div id="view_t2" style="white-space: pre-wrap; font-family:'Georgia'; padding: 15px; background: #f9f9f9; border-radius: 5px;"></div>
+                </div>
+
+                <div class="model-answer-block">
+                    <h3 style="color: #8e44ad;">Band 9 Model Answer (Task 1):</h3>
+                    <p style="white-space: pre-wrap; line-height: 1.8;"><%= task1.modelAnswer %></p>
+                </div>
+                <div class="model-answer-block" style="border:none;">
+                    <h3 style="color: #8e44ad;">Band 9 Model Answer (Task 2):</h3>
+                    <p style="white-space: pre-wrap; line-height: 1.8;"><%= task2.modelAnswer %></p>
+                </div>
+            </div>
+            <div style="display:flex; justify-content: flex-end; align-items:center; padding-top:15px; border-top:1px solid #eee;">
+                <button class="check-btn" onclick="document.getElementById('resultModal').style.display='none'">Close Review</button>
+            </div>
+        </div>
+    </div>
+
+<script>
+    let time = <%= timeLimit * 60 %>; 
+    let isSubmitted = false;
+    let isTimeUpLocked = false;
+    let currentTask = 1;
+    const SESSION_ID = "writing_<%= testId %>"; 
+
+    document.addEventListener('keydown', function(e) {
+        if(e.ctrlKey && (e.key === 'u' || e.key === 'U')) { e.preventDefault(); return false; }
+    }, true);
+    document.addEventListener('contextmenu', event => event.preventDefault());
+
+    // Focus Tracking
+    let switchCount = 0;
+    window.addEventListener('blur', function() {
+        if(!isSubmitted) {
+            switchCount++;
+            document.title = "⚠️ Tab Switched (" + switchCount + ")";
+        }
+    });
+
+    // Resizer
+    const resizer = document.getElementById('resizer'); 
+    const leftSide = document.getElementById('promptPanel');
+    resizer.addEventListener('mousedown', (e) => { e.preventDefault(); document.addEventListener('mousemove', resize); document.addEventListener('mouseup', stopResize); });
+    function resize(e) { leftSide.style.flex = '0 0 ' + e.clientX + 'px'; }
+    function stopResize() { document.removeEventListener('mousemove', resize); }
+
+    function switchTask(num) {
+        currentTask = num;
+        document.querySelectorAll('.footer .part-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.footer .part-btn')[num-1].classList.add('active');
+
+        if(num === 1) {
+            document.getElementById('p_task1').classList.remove('hidden');
+            document.getElementById('p_task2').classList.add('hidden');
+            document.getElementById('input_task1').classList.remove('hidden');
+            document.getElementById('input_task2').classList.add('hidden');
+            document.querySelector('.word-count-box').classList.remove('hidden');
+            document.getElementById('wc_box_2').classList.add('hidden');
+        } else {
+            document.getElementById('p_task1').classList.add('hidden');
+            document.getElementById('p_task2').classList.remove('hidden');
+            document.getElementById('input_task1').classList.add('hidden');
+            document.getElementById('input_task2').classList.remove('hidden');
+            document.querySelector('.word-count-box').classList.add('hidden');
+            document.getElementById('wc_box_2').classList.remove('hidden');
+        }
+    }
+
+    function updateCount(taskNum) {
+        const text = document.getElementById('input_task'+taskNum).value;
+        const count = text.trim() === '' ? 0 : text.trim().split(/\s+/).length;
+        const disp = document.getElementById('wc_'+taskNum);
+        disp.innerText = count;
+        
+        const min = taskNum === 1 ? 150 : 250;
+        if(count >= min) { disp.className = 'wc-good'; } else { disp.className = 'wc-bad'; }
+    }
+
+    function saveName() {
+        localStorage.setItem(SESSION_ID + '_name', document.getElementById('studentName').value);
+    }
+    
+    function showCustomAlert(message) {
+        const alertBox = document.getElementById('customAlert');
+        alertBox.innerText = message;
+        alertBox.style.display = 'block';
+        setTimeout(() => { alertBox.style.display = 'none'; }, 4500);
+    }
+    
+    function triggerNameWarning() {
+        const nameInput = document.getElementById('studentName');
+        nameInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        
+        nameInput.classList.remove('shake-active');
+        void nameInput.offsetWidth;
+        nameInput.classList.add('shake-active');
+        nameInput.focus();
+    }
+
+    function checkTimeUp() {
+        let nameInput = document.getElementById('studentName');
+        let name = nameInput.value.trim();
+
+        if (name) {
+            submitTest();
+        } else {
+            if (!isTimeUpLocked) {
+                 isTimeUpLocked = true;
+                 document.getElementById('input_task1').disabled = true;
+                 document.getElementById('input_task2').disabled = true;
+                 document.getElementById('input_task1').readOnly = true;
+                 document.getElementById('input_task2').readOnly = true;
+
+                 showCustomAlert("Time is up! Please enter your name at the top, then click Finish.");
+                 triggerNameWarning();
+            }
+        }
+    }
+
+    function submitTest() {
+        if(isSubmitted) { document.getElementById('resultModal').style.display = 'flex'; return; }
+        
+        let nameInput = document.getElementById('studentName');
+        let name = nameInput.value.trim();
+
+        if (!name) {
+            showCustomAlert("Please enter your name at the top of the page before submitting.");
+            triggerNameWarning();
+            return;
+        }
+        nameInput.classList.remove('shake-active');
+        
+        if(time > 0 && !confirm("Finish test?")) return;
+        
+        isSubmitted = true;
+        localStorage.setItem(SESSION_ID + '_submitted', 'true');
+        
+        document.getElementById('input_task1').disabled = true;
+        document.getElementById('input_task2').disabled = true;
+        document.getElementById('input_task1').readOnly = true;
+        document.getElementById('input_task2').readOnly = true;
+        
+        const t1 = document.getElementById('input_task1').value;
+        const t2 = document.getElementById('input_task2').value;
+        const wc1 = document.getElementById('wc_1').innerText;
+        const wc2 = document.getElementById('wc_2').innerText;
+        
+        // Send to server
+        fetch('/submit-writing-test', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                testId: '<%= testId %>',
+                studentName: name,
+                task1: t1,
+                task2: t2,
+                wordCount1: parseInt(wc1),
+                wordCount2: parseInt(wc2),
+                timeTaken: <%= timeLimit * 60 %> - time
+            })
+        }).catch(err => console.error("Submission error:", err));
+        
+        document.getElementById('final_wc1').innerText = wc1;
+        document.getElementById('final_wc2').innerText = wc2;
+        document.getElementById('disp_name').innerText = name;
+        document.getElementById('disp_date').innerText = new Date().toLocaleString();
+        document.getElementById('view_t1').innerText = t1;
+        document.getElementById('view_t2').innerText = t2;
+        
+        document.getElementById('resultModal').style.display = 'flex';
+    }
+    
+    function toggleDarkMode(btn) {
+        document.body.classList.toggle('dark-mode');
+        if(document.body.classList.contains('dark-mode')) {
+            btn.innerText = "☀️ Light Mode";
+        } else {
+            btn.innerText = "🌙 Dark Mode";
+        }
+    }
+
+    function downloadWord() {
+        const name = document.getElementById('studentName').value || "Student";
+        const t1 = document.getElementById('input_task1').value;
+        const t2 = document.getElementById('input_task2').value;
+        
+        const htmlContent = `
+            <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+            <head><meta charset='utf-8'><title>IELTS Writing</title></head>
+            <body>
+                <h1>IELTS Writing Submission</h1>
+                <p><b>Name:</b> ${name}</p>
+                <p><b>Date:</b> ${new Date().toLocaleString()}</p>
+                <hr>
+                <h2>Task 1</h2>
+                <p>${t1.replace(/\n/g, '<br>')}</p>
+                <hr>
+                <h2>Task 2</h2>
+                <p>${t2.replace(/\n/g, '<br>')}</p>
+            </body></html>`;
+            
+        const blob = new Blob([htmlContent], { type: 'application/msword' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = `${name}_IELTS_Writing.doc`;
+        link.click();
+    }
+    
+    function downloadPDFDirect() {
+        const element = document.getElementById('printable-content');
+        const name = document.getElementById('studentName').value || "Student";
+        
+        const opt = {
+          margin:       1,
+          filename:     name + '_IELTS_Writing.pdf',
+          image:        { type: 'jpeg', quality: 0.98 },
+          html2canvas:  { scale: 2 },
+          jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+        };
+        html2pdf().set(opt).from(element).save();
+    }
+    
+    function copyEssays() {
+        const t1 = document.getElementById('input_task1').value;
+        const t2 = document.getElementById('input_task2').value;
+        const text = "TASK 1:\n" + t1 + "\n\nTASK 2:\n" + t2;
+        
+        navigator.clipboard.writeText(text).then(() => {
+            alert("Essays copied to clipboard!");
+        }).catch(err => {
+            alert("Failed to copy: " + err);
+        });
+    }
+
+    setInterval(() => { 
+        if(time > 0 && !isSubmitted) { 
+            time--; 
+            let m = Math.floor(time/60); let s = time%60; 
+            document.getElementById('timerDisplay').innerText = (m<10?'0':'')+m + ":" + (s<10?'0':'')+s;
+            localStorage.setItem(SESSION_ID + '_timer', time);
+            
+            localStorage.setItem(SESSION_ID + '_t1', document.getElementById('input_task1').value);
+            localStorage.setItem(SESSION_ID + '_t2', document.getElementById('input_task2').value);
+        } else if (time <= 0 && !isSubmitted) { 
+            checkTimeUp(); 
+        }
+    }, 1000);
+
+    window.onload = function() {
+        const savedTime = localStorage.getItem(SESSION_ID + '_timer');
+        if(savedTime) time = parseInt(savedTime);
+        if(localStorage.getItem(SESSION_ID + '_name')) document.getElementById('studentName').value = localStorage.getItem(SESSION_ID + '_name');
+        if(localStorage.getItem(SESSION_ID + '_t1')) { document.getElementById('input_task1').value = localStorage.getItem(SESSION_ID + '_t1'); updateCount(1); }
+        if(localStorage.getItem(SESSION_ID + '_t2')) { document.getElementById('input_task2').value = localStorage.getItem(SESSION_ID + '_t2'); updateCount(2); }
+        
+        if(localStorage.getItem(SESSION_ID + '_submitted') === 'true') { 
+            isSubmitted = true; 
+            document.getElementById('input_task1').disabled = true;
+            document.getElementById('input_task2').disabled = true;
+            document.getElementById('input_task1').readOnly = true;
+            document.getElementById('input_task2').readOnly = true;
+            submitTest(); 
+        }
+    }
+</script>
+</body>
+</html>

@@ -183,6 +183,42 @@ app.post('/create-test/listening', isAdmin, upload.any(), async (req, res) => {
     }
 });
 
+// --- WRITING TEST CREATION ---
+app.post('/create-test/writing', isAdmin, async (req, res) => {
+    try {
+        const { title, description, type, timeLimit, task1, task2 } = req.body;
+
+        const writingTestData = {
+            title,
+            description,
+            timeLimit,
+            task1: {
+                prompt: task1.prompt,
+                image: task1.image || null,
+                modelAnswer: task1.modelAnswer
+            },
+            task2: {
+                prompt: task2.prompt,
+                modelAnswer: task2.modelAnswer
+            }
+        };
+
+        const newTest = new Test({
+            title: title,
+            type: 'writing',
+            teacherName: req.session.username,
+            createdBy: req.session.userId,
+            readingPassage: JSON.stringify(writingTestData)
+        });
+
+        await newTest.save();
+        res.json({ success: true, message: "Writing test created successfully!", testId: newTest._id });
+    } catch (err) {
+        console.error("Writing test save error:", err);
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
 // --- THE UPGRADED "SAVE" ROUTE ---
 app.post('/create-test/:type', isAdmin, async (req, res) => {
     try {
@@ -332,6 +368,22 @@ app.get('/view-test/:id', async (req, res) => {
             }
         }
 
+        if (test.type === 'writing') {
+            try {
+                const writingData = JSON.parse(test.readingPassage);
+                return res.render('export-writing', {
+                    testId: test._id,
+                    title: test.title,
+                    timeLimit: writingData.timeLimit || 60,
+                    task1: writingData.task1,
+                    task2: writingData.task2
+                });
+            } catch (err) {
+                console.error('Writing test render error:', err);
+                return res.status(500).send(`Error rendering writing test: ${err.message}`);
+            }
+        }
+
         res.send(`<h1>${test.title}</h1><p>Test type ${test.type} viewer is coming soon.</p>`);
     } catch (err) {
         console.error('View test error:', err);
@@ -362,6 +414,27 @@ app.get('/download-test/:id', async (req, res) => {
     } catch (err) {
         console.error('Download test error:', err);
         res.status(500).send(`Error downloading test: ${err.message}`);
+    }
+});
+
+// --- SUBMIT WRITING TEST ---
+app.post('/submit-writing-test', async (req, res) => {
+    if(!req.session.userId) return res.status(401).json({ success: false, message: "Not logged in" });
+    try {
+        const { testId, studentName, task1, task2, wordCount1, wordCount2, timeTaken } = req.body;
+        
+        // Save submission data (optional: you can store this in a submissions collection)
+        console.log(`Writing test submission from ${studentName}:`, {
+            testId,
+            wordCounts: { task1: wordCount1, task2: wordCount2 },
+            timeTaken
+        });
+
+        // For now, just acknowledge the submission
+        res.json({ success: true, message: "Writing test submitted successfully" });
+    } catch (err) {
+        console.error('Submission error:', err);
+        res.status(500).json({ success: false, message: err.message });
     }
 });
 

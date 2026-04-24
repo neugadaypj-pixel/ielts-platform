@@ -971,8 +971,8 @@ const template = `<!DOCTYPE html>
                 el.appendChild(btn);
             }
             btn.className = 'flag-btn';
-            btn.innerHTML = 'вљ‘';
-            btn.dataset.tooltip = 'Flag for Review';
+            btn.textContent = '⚑';
+            btn.title = 'Flag for Review';
             btn.dataset.flagRole = 'block';
             btn.type = 'button';
         });
@@ -986,8 +986,8 @@ const template = `<!DOCTYPE html>
             }
             flag.className = 'q-flag inline-flag';
             if(wasActive || inp.classList.contains('flagged-input')) flag.classList.add('active');
-            flag.innerHTML = 'вљ‘';
-            flag.dataset.tooltip = 'Flag for Review';
+            flag.textContent = '⚑';
+            flag.title = 'Flag for Review';
             flag.dataset.flagRole = 'inline';
             flag.dataset.qid = inp.id.replace('q', '');
         });

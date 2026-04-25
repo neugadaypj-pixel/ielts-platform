@@ -1,24 +1,204 @@
-<!DOCTYPE html>
-<html>
+﻿<!DOCTYPE html>
+<html lang="en">
 <head>
-    <title>Add Teacher | Admin</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Teacher</title>
     <style>
-        body { font-family: sans-serif; max-width: 400px; margin: 100px auto; padding: 20px; background: #f4f4f4; }
-        .box { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        input { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
-        button { width: 100%; padding: 10px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #1f2937;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .container {
+            max-width: 600px;
+            width: 100%;
+            animation: slideUp 0.6s ease-out;
+        }
+        
+        .form-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            padding: 48px;
+            border-radius: 24px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15);
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        
+        .header-icon {
+            font-size: 3rem;
+            margin-bottom: 16px;
+        }
+        
+        .header h1 {
+            font-size: 2rem;
+            font-weight: 900;
+            color: #1f2937;
+            margin-bottom: 8px;
+        }
+        
+        .header p {
+            color: #6b7280;
+            font-size: 0.95rem;
+        }
+        
+        .form-group {
+            margin-bottom: 24px;
+        }
+        
+        .form-group:last-of-type { margin-bottom: 32px; }
+        
+        label {
+            display: block;
+            font-weight: 700;
+            color: #374151;
+            margin-bottom: 8px;
+            font-size: 0.95rem;
+        }
+        
+        input {
+            width: 100%;
+            padding: 14px 16px;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            font-size: 0.95rem;
+            font-family: inherit;
+            transition: all 0.3s ease;
+        }
+        
+        input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        .hint {
+            font-size: 0.85rem;
+            color: #9ca3af;
+            margin-top: 6px;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 16px;
+        }
+        
+        button, .btn-cancel {
+            flex: 1;
+            padding: 16px;
+            border: none;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .btn-submit {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            box-shadow: 0 6px 16px rgba(102, 126, 234, 0.3);
+        }
+        
+        .btn-submit:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 24px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-cancel {
+            background: #f3f4f6;
+            color: #374151;
+        }
+        
+        .btn-cancel:hover { background: #e5e7eb; }
+        
+        .back-link {
+            text-align: center;
+            margin-top: 20px;
+        }
+        
+        .back-link a {
+            color: white;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+        
+        .back-link a:hover { opacity: 0.8; }
+        
+        @media (max-width: 600px) {
+            .form-card { padding: 32px 24px; }
+            .header h1 { font-size: 1.5rem; }
+            .button-group { flex-direction: column; }
+        }
     </style>
 </head>
 <body>
-    <div class="box">
-        <h2>Register New Teacher</h2>
-        <form action="/admin/add-teacher" method="POST">
-            <input type="text" name="username" placeholder="Teacher Username" required>
-            <input type="password" name="password" placeholder="Set Temporary Password" required>
-            <button type="submit">Create Teacher Account</button>
-        </form>
-        <br>
-        <a href="/admin">Back to Dashboard</a>
+    <div class="container">
+        <div class="form-card">
+            <div class="header">
+                <div class="header-icon">👨‍🏫</div>
+                <h1>Add New Teacher</h1>
+                <p>Register a teacher to your platform</p>
+            </div>
+            
+            <form method="POST" action="/add-teacher">
+                <div class="form-group">
+                    <label for="username">Teacher Username *</label>
+                    <input type="text" id="username" name="username" required placeholder="jane_smith">
+                    <div class="hint">Unique username for the teacher</div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="email">Email Address *</label>
+                    <input type="email" id="email" name="email" required placeholder="jane@example.com">
+                </div>
+                
+                <div class="form-group">
+                    <label for="fullname">Full Name</label>
+                    <input type="text" id="fullname" name="fullname" placeholder="Jane Smith">
+                </div>
+                
+                <div class="form-group">
+                    <label for="password">Password *</label>
+                    <input type="password" id="password" name="password" required placeholder="••••••••">
+                    <div class="hint">Minimum 8 characters</div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="confirmPassword">Confirm Password *</label>
+                    <input type="password" id="confirmPassword" name="confirmPassword" required placeholder="••••••••">
+                </div>
+                
+                <div class="button-group">
+                    <a href="/admin" class="btn-cancel">Cancel</a>
+                    <button type="submit" class="btn-submit">Add Teacher →</button>
+                </div>
+            </form>
+        </div>
+        
+        <div class="back-link">
+            <a href="/admin">← Back to Admin</a>
+        </div>
     </div>
 </body>
 </html>

@@ -1,28 +1,219 @@
-<!DOCTYPE html>
-<html>
+﻿<!DOCTYPE html>
+<html lang="en">
 <head>
-    <title>Test Creator Hub</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Test - Choose Type</title>
     <style>
-        body { font-family: sans-serif; text-align: center; padding: 50px; background: #f0f2f5; }
-        .card-container { display: flex; justify-content: center; gap: 20px; margin-top: 30px; }
-        .card { background: white; padding: 30px; border-radius: 12px; width: 200px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); text-decoration: none; color: #333; transition: transform 0.2s; }
-        .card:hover { transform: translateY(-5px); box-shadow: 0 8px 16px rgba(0,0,0,0.15); }
-        .card h2 { margin: 0 0 10px 0; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #1f2937;
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+        
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes slideIn { from { opacity: 0; transform: translateX(-20px); } to { opacity: 1; transform: translateX(0); } }
+        
+        .container { max-width: 1100px; margin: 0 auto; }
+        
+        .back-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: white;
+            text-decoration: none;
+            font-weight: 600;
+            margin-bottom: 32px;
+            transition: all 0.3s ease;
+            font-size: 1rem;
+        }
+        
+        .back-btn:hover { transform: translateX(-4px); }
+        
+        header {
+            text-align: center;
+            color: white;
+            margin-bottom: 60px;
+            animation: slideUp 0.6s ease-out;
+        }
+        
+        header h1 {
+            font-size: 3rem;
+            font-weight: 900;
+            margin-bottom: 12px;
+            line-height: 1.1;
+        }
+        
+        header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        
+        .test-types {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 32px;
+            margin-bottom: 40px;
+        }
+        
+        .test-option {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border: 2px solid transparent;
+            padding: 40px 28px;
+            border-radius: 24px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            animation: slideUp 0.6s ease-out;
+            text-decoration: none;
+            color: inherit;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .test-option:hover {
+            border-color: #667eea;
+            transform: translateY(-12px);
+            box-shadow: 0 30px 50px rgba(0, 0, 0, 0.15);
+        }
+        
+        .test-icon {
+            font-size: 4rem;
+            line-height: 1;
+        }
+        
+        .test-name {
+            font-size: 1.4rem;
+            font-weight: 800;
+            color: #1f2937;
+        }
+        
+        .test-description {
+            font-size: 0.95rem;
+            color: #6b7280;
+            line-height: 1.6;
+        }
+        
+        .test-features {
+            text-align: left;
+            background: #f9fafb;
+            padding: 16px;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            color: #4b5563;
+        }
+        
+        .test-features li {
+            list-style: none;
+            padding: 4px 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .test-features li:before {
+            content: "✓";
+            color: #10b981;
+            font-weight: 700;
+        }
+        
+        .cta-button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 14px 28px;
+            border-radius: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.95rem;
+            margin-top: auto;
+        }
+        
+        .cta-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+        }
+        
+        @media (max-width: 768px) {
+            header h1 { font-size: 2rem; }
+            .test-types { grid-template-columns: 1fr; }
+            .test-option { padding: 32px 20px; }
+        }
     </style>
 </head>
 <body>
-    <h1>What type of test do you want to build?</h1>
-    <div class="card-container">
-        <a href="/create-test/reading" class="card" style="border-top: 5px solid #3498db;">
-            <h2>📖 Reading</h2><p>Advanced passage & question builder</p>
-        </a>
-        <a href="/create-test/listening" class="card" style="border-top: 5px solid #e67e22;">
-            <h2>🎧 Listening</h2><p>Audio upload & question builder</p>
-        </a>
-        <a href="/create-test/writing" class="card" style="border-top: 5px solid #9b59b6;">
-            <h2>✍️ Writing</h2><p>Task 1 & 2 prompt creator</p>
-        </a>
+    <div class="container">
+        <a href="/teacher-dashboard" class="back-btn">← Back to Dashboard</a>
+        
+        <header>
+            <h1>📝 Create a New Test</h1>
+            <p>Choose the type of test you want to create</p>
+        </header>
+        
+        <div class="test-types">
+            <a href="/create-test-hub" class="test-option">
+                <div class="test-icon">🎯</div>
+                <div class="test-name">Hub Test</div>
+                <div class="test-description">Quick test with general questions</div>
+                <div class="test-features">
+                    <ul>
+                        <li>Quick setup</li>
+                        <li>Text questions</li>
+                        <li>Instant grading</li>
+                    </ul>
+                </div>
+                <button class="cta-button">Create Hub Test</button>
+            </a>
+            
+            <a href="/create-test-listening" class="test-option">
+                <div class="test-icon">🎧</div>
+                <div class="test-name">Listening Test</div>
+                <div class="test-description">Audio-based assessment</div>
+                <div class="test-features">
+                    <ul>
+                        <li>R2 Audio support</li>
+                        <li>Audio questions</li>
+                        <li>Player controls</li>
+                    </ul>
+                </div>
+                <button class="cta-button">Create Listening Test</button>
+            </a>
+            
+            <a href="/create-test-reading" class="test-option">
+                <div class="test-icon">📖</div>
+                <div class="test-name">Reading Test</div>
+                <div class="test-description">Text comprehension assessment</div>
+                <div class="test-features">
+                    <ul>
+                        <li>Passage analysis</li>
+                        <li>Multiple choice</li>
+                        <li>Scoring included</li>
+                    </ul>
+                </div>
+                <button class="cta-button">Create Reading Test</button>
+            </a>
+            
+            <a href="/create-test-writing" class="test-option">
+                <div class="test-icon">✍️</div>
+                <div class="test-name">Writing Test</div>
+                <div class="test-description">Written composition assessment</div>
+                <div class="test-features">
+                    <ul>
+                        <li>Text editor</li>
+                        <li>Word count tracking</li>
+                        <li>AI feedback support</li>
+                    </ul>
+                </div>
+                <button class="cta-button">Create Writing Test</button>
+            </a>
+        </div>
     </div>
-    <br><br><a href="/admin">Back to Dashboard</a>
 </body>
 </html>

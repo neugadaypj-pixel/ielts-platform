@@ -1,23 +1,200 @@
-<!DOCTYPE html>
-<html>
+﻿<!DOCTYPE html>
+<html lang="en">
 <head>
-    <title>Exam Platform</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Platform</title>
     <style>
-        body { font-family: sans-serif; text-align: center; padding-top: 100px; background: #f4f4f4; }
-        .container { background: white; padding: 40px; display: inline-block; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-        .btn { padding: 15px 30px; margin: 10px; font-size: 18px; cursor: pointer; border: none; border-radius: 6px; transition: 0.3s; }
-        .btn-student { background: #007bff; color: white; }
-        .btn-teacher { background: #28a745; color: white; }
-        .btn:hover { opacity: 0.8; transform: translateY(-2px); }
-        a { text-decoration: none; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #1f2937;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes float { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-10px); } }
+        
+        .container {
+            max-width: 1200px;
+            width: 100%;
+            padding: 20px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 60px;
+            align-items: center;
+        }
+        
+        .content {
+            color: white;
+            animation: slideUp 0.8s ease-out;
+        }
+        
+        .logo-icon {
+            font-size: 5rem;
+            margin-bottom: 20px;
+            animation: float 3s ease-in-out infinite;
+        }
+        
+        .content h1 {
+            font-size: 3.5rem;
+            font-weight: 900;
+            margin-bottom: 20px;
+            line-height: 1.1;
+            letter-spacing: -0.02em;
+        }
+        
+        .content p {
+            font-size: 1.1rem;
+            opacity: 0.95;
+            margin-bottom: 32px;
+            line-height: 1.8;
+        }
+        
+        .cta-buttons {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            padding: 16px 32px;
+            border-radius: 16px;
+            font-weight: 700;
+            font-size: 1rem;
+            text-decoration: none;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .btn-primary {
+            background: white;
+            color: #667eea;
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.2);
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 16px 40px rgba(0, 0, 0, 0.3);
+        }
+        
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            color: white;
+            border: 2px solid white;
+        }
+        
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+        
+        .features {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-top: 40px;
+        }
+        
+        .feature-item {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            opacity: 0.9;
+            font-size: 0.95rem;
+        }
+        
+        .feature-icon {
+            font-size: 1.5rem;
+        }
+        
+        .illustration-box {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 24px;
+            padding: 60px 40px;
+            text-align: center;
+            animation: slideUp 0.8s ease-out 0.2s both;
+        }
+        
+        .illustration-icon {
+            font-size: 8rem;
+            margin-bottom: 20px;
+            animation: float 4s ease-in-out infinite;
+        }
+        
+        .illustration-text {
+            color: white;
+            font-size: 1.3rem;
+            font-weight: 700;
+            opacity: 0.95;
+        }
+        
+        @media (max-width: 1024px) {
+            .container {
+                grid-template-columns: 1fr;
+                gap: 40px;
+            }
+            .content h1 { font-size: 2.5rem; }
+        }
+        
+        @media (max-width: 768px) {
+            .content h1 { font-size: 2rem; }
+            .cta-buttons { flex-direction: column; }
+            .btn { justify-content: center; }
+            .features { grid-template-columns: 1fr; }
+            .illustration-box { padding: 40px 20px; }
+            .illustration-icon { font-size: 5rem; }
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Welcome to the Test Platform</h1>
-        <p>Select your role to continue</p>
-        <a href="/login"><button class="btn btn-student">I am a Student</button></a>
-        <a href="/login"><button class="btn btn-teacher">I am a Teacher</button></a>
+        <div class="content">
+            <div class="logo-icon">📚</div>
+            <h1>Assessment Excellence Platform</h1>
+            <p>Create, assign, and evaluate tests with ease. Empower teachers and students with a modern, intuitive testing platform.</p>
+            
+            <div class="cta-buttons">
+                <a href="/login" class="btn btn-primary">🔐 Get Started</a>
+                <a href="/login" class="btn btn-secondary">Learn More →</a>
+            </div>
+            
+            <div class="features">
+                <div class="feature-item">
+                    <span class="feature-icon">✅</span>
+                    <span>Multiple Test Types</span>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">📊</span>
+                    <span>Detailed Analytics</span>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">👥</span>
+                    <span>Group Management</span>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">📱</span>
+                    <span>Fully Responsive</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="illustration-box">
+            <div class="illustration-icon">🎯</div>
+            <div class="illustration-text">Ready to Test?</div>
+        </div>
     </div>
 </body>
 </html>

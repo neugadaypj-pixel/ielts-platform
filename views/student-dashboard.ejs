@@ -1,180 +1,234 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Student Dashboard - IELTS Master</title>
+    <title>Student Dashboard</title>
     <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", sans-serif;
             background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-            margin: 0;
-            padding: 20px;
-            color: #333;
+            color: #1f2937;
             min-height: 100vh;
+            padding: 20px;
         }
-
-        .container {
-            max-width: 1000px;
-            margin: 0 auto;
-        }
-
-        /* Header Styles */
+        
+        @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+        
+        .container { max-width: 1200px; margin: 0 auto; }
+        
         header {
-            background: #fff;
-            padding: 20px 30px;
-            border-radius: 20px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            padding: 32px;
+            border-radius: 24px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 30px;
+            margin-bottom: 40px;
+            animation: slideUp 0.6s ease-out;
         }
-
+        
         .user-info h1 {
-            margin: 0;
-            font-size: 24px;
-            color: #2c3e50;
+            font-size: 2rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 8px;
+            letter-spacing: -0.02em;
         }
-
+        
         .group-badge {
-            background: #8e44ad;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
-            padding: 5px 15px;
-            border-radius: 50px;
-            font-size: 14px;
-            font-weight: bold;
-            margin-top: 5px;
+            padding: 8px 16px;
+            border-radius: 12px;
+            font-size: 0.9rem;
+            font-weight: 700;
+            margin-top: 8px;
             display: inline-block;
+            box-shadow: 0 6px 16px rgba(102, 126, 234, 0.3);
         }
-
+        
         .logout-btn {
             text-decoration: none;
-            color: #e74c3c;
-            font-weight: bold;
-            border: 2px solid #e74c3c;
-            padding: 8px 20px;
-            border-radius: 12px;
-            transition: all 0.3s;
+            color: #ef4444;
+            font-weight: 700;
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
         }
-
-        .logout-btn:hover {
-            background: #e74c3c;
-            color: white;
-        }
-
-        /* Test Grid Styles */
+        
+        .logout-btn:hover { transform: translateX(4px); }
+        
         .section-title {
-            font-size: 20px;
-            margin-bottom: 20px;
-            color: #34495e;
+            font-size: 1.6rem;
+            font-weight: 800;
+            color: #1f2937;
+            margin-bottom: 28px;
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 12px;
         }
-
+        
+        .section-title:before {
+            content: '';
+            width: 4px;
+            height: 28px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 2px;
+        }
+        
         .test-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 20px;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 24px;
+            margin-bottom: 48px;
         }
-
+        
         .test-card {
-            background: white;
-            padding: 25px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border: 2px solid #e5e7eb;
+            padding: 28px;
             border-radius: 20px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
-            transition: transform 0.3s, box-shadow 0.3s;
-            border-top: 5px solid #3498db;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            animation: slideUp 0.6s ease-out;
         }
-
+        
         .test-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 12px 30px rgba(0,0,0,0.1);
+            border-color: #667eea;
+            transform: translateY(-8px);
+            box-shadow: 0 20px 40px rgba(102, 126, 234, 0.2);
         }
-
-        .test-card.listening { border-top-color: #f1c40f; }
-        .test-card.reading { border-top-color: #2ecc71; }
-        .test-card.writing { border-top-color: #e67e22; }
-
+        
         .test-type {
+            display: inline-block;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.15) 0%, rgba(118, 75, 162, 0.1) 100%);
+            color: #667eea;
+            padding: 6px 14px;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            font-weight: 700;
             text-transform: uppercase;
-            font-size: 12px;
-            font-weight: bold;
-            color: #95a5a6;
-            margin-bottom: 10px;
-            display: block;
+            letter-spacing: 0.5px;
+            margin-bottom: 12px;
         }
-
+        
         .test-title {
-            font-size: 18px;
-            font-weight: bold;
-            color: #2c3e50;
+            font-size: 1.2rem;
+            font-weight: 800;
+            color: #1f2937;
+            margin-bottom: 12px;
+        }
+        
+        .test-description {
+            font-size: 0.9rem;
+            color: #6b7280;
             margin-bottom: 20px;
-            min-height: 50px;
+            line-height: 1.6;
         }
-
-        .start-btn {
-            display: block;
-            text-align: center;
-            background: #3498db;
+        
+        .test-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 16px;
+            border-top: 1px solid #e5e7eb;
+        }
+        
+        .test-action {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
-            text-decoration: none;
-            padding: 12px;
+            border: none;
             border-radius: 12px;
-            font-weight: bold;
-            transition: background 0.3s;
+            font-weight: 700;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
         }
-
-        .test-card.listening .start-btn { background: #f1c40f; }
-        .test-card.reading .start-btn { background: #2ecc71; }
-        .test-card.writing .start-btn { background: #e67e22; }
-
-        .start-btn:hover {
-            filter: brightness(1.1);
-        }
-
-        .no-tests {
-            background: rgba(255,255,255,0.6);
-            padding: 40px;
+        
+        .test-action:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3); }
+        
+        .empty-state {
             text-align: center;
-            border-radius: 20px;
-            border: 2px dashed #bdc3c7;
-            color: #7f8c8d;
-            grid-column: 1 / -1;
+            padding: 60px 20px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            border: 2px dashed #e5e7eb;
+        }
+        
+        .empty-icon {
+            font-size: 4rem;
+            margin-bottom: 16px;
+        }
+        
+        .empty-text {
+            color: #9ca3af;
+            font-size: 1.1rem;
+            margin-top: 16px;
+        }
+        
+        @media (max-width: 768px) {
+            header { flex-direction: column; gap: 20px; text-align: center; }
+            .test-grid { grid-template-columns: 1fr; }
+            .user-info h1 { font-size: 1.6rem; }
         }
     </style>
 </head>
 <body>
-
     <div class="container">
         <header>
             <div class="user-info">
-                <h1>Welcome back, <%= student.username %>! 👋</h1>
-                <div class="group-badge">Group: <%= groupName %></div>
+                <h1>👋 Welcome, <%= student.username %></h1>
+                <% if(groupName && groupName !== 'No Group Assigned') { %>
+                    <div class="group-badge">📚 <%= groupName %></div>
+                <% } %>
             </div>
-            <a href="/logout" class="logout-btn">Logout</a>
+            <a href="/logout" class="logout-btn">Logout →</a>
         </header>
 
-        <h2 class="section-title">📝 Your Assigned Tests</h2>
-
-        <div class="test-grid">
-            <% if (tests.length > 0) { %>
-                <% tests.forEach(test => { %>
-                    <div class="test-card <%= test.type %>">
-                        <span class="test-type"><%= test.type %> Test</span>
-                        <div class="test-title"><%= test.title %></div>
-                        <a href="/view-test/<%= test._id %>" class="start-btn">Start Test</a>
-                    </div>
-                <% }) %>
+        <div>
+            <h2 class="section-title">Your Tests</h2>
+            <% if(tests && tests.length > 0) { %>
+                <div class="test-grid">
+                    <% tests.forEach(test => { %>
+                        <div class="test-card">
+                            <div class="test-type"><%= test.type %></div>
+                            <div class="test-title"><%= test.title %></div>
+                            <div class="test-description">
+                                <%= test.description || 'Take this test to assess your skills' %>
+                            </div>
+                            <div class="test-footer">
+                                <span style="color: #9ca3af; font-size: 0.85rem;">ID: <%= test._id.toString().slice(-6) %></span>
+                                <a href="/view-test/<%= test._id %>" class="test-action">Start Test →</a>
+                            </div>
+                        </div>
+                    <% }) %>
+                </div>
             <% } else { %>
-                <div class="no-tests">
-                    <h3>No tests assigned yet.</h3>
-                    <p>When your teacher assigns a test to your group, it will appear here!</p>
+                <div class="empty-state">
+                    <div class="empty-icon">📭</div>
+                    <h3 style="color: #6b7280; font-size: 1.2rem; margin-top: 0;">No Tests Assigned</h3>
+                    <p class="empty-text">Your teacher will assign tests here. Check back soon!</p>
                 </div>
             <% } %>
         </div>
     </div>
-
 </body>
 </html>

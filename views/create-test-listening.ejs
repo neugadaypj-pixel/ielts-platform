@@ -1,1142 +1,224 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IELTS Listening Builder v31</title>
+    <title>Create Listening Test</title>
     <style>
-        /* --- BUILDER EDITOR STYLES (v60 Port) --- */
-        body { font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); padding: 20px; margin: 0; color: #333; min-height: 100vh; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         
-        ::-webkit-scrollbar { width: 8px; height: 8px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-
-        .container { max-width: 96%; margin: 0 auto; background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); padding: 30px; box-shadow: 0 15px 35px rgba(0,0,0,0.05); border-radius: 25px; animation: slideUpFade 0.8s cubic-bezier(0.16, 1, 0.3, 1); position: relative; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            color: #1f2937;
+            min-height: 100vh;
+            padding: 20px;
+        }
         
-        @keyframes slideUpFade { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         
-        h1 { text-align: center; color: #2c3e50; margin-bottom: 5px; } 
-        p.subtitle { text-align: center; color: #8e44ad; font-weight: bold; margin-top: 0; margin-bottom: 30px; }
+        .container { max-width: 1000px; margin: 0 auto; }
         
-        /* PROJECT CONTROLS */
-        .project-controls { position: absolute; top: 30px; right: 30px; display: flex; gap: 10px; }
-        .btn-proj { padding: 8px 15px; border-radius: 12px; border: none; cursor: pointer; font-size: 13px; font-weight: bold; transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1); display: flex; align-items: center; gap: 5px; }
-        .btn-save { background: #f39c12; color: white; } .btn-save:hover { filter: brightness(1.05); transform: translateY(-2px); }
-        .btn-load { background: #3498db; color: white; } .btn-load:hover { filter: brightness(1.05); transform: translateY(-2px); }
-
-        .tabs { display: flex; border-bottom: 2px solid #e1e4e8; justify-content: center; margin-bottom: 20px; }
-        .tab { padding: 12px 30px; cursor: pointer; background: #f8f9fa; border: 1px solid #e1e4e8; border-bottom: none; margin-right: 5px; border-radius: 15px 15px 0 0; font-weight: 600; color: #666; transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); }
-        .tab:hover { background: #e9ecef; color: #8e44ad; }
-        .tab.active { background: white; color: #8e44ad; border-bottom: 2px solid white; margin-bottom: -2px; border-top: 3px solid #8e44ad; }
+        .back-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 600;
+            margin-bottom: 32px;
+            transition: all 0.3s ease;
+        }
         
-        .tab-content { display: none; padding: 30px; border: 1px solid #e1e4e8; border-top: none; background: white; border-radius: 0 0 20px 20px; }
-        .tab-content.active { display: block; animation: slideUpFade 0.4s ease-out; }
-
-        .editor-grid { display: flex; gap: 40px; }
-        .left-panel { flex: 0 0 300px; display: flex; flex-direction: column; } 
-        .right-panel { flex: 1; display: flex; flex-direction: column; }
+        .back-btn:hover { transform: translateX(-4px); }
         
-        h3 { color: #34495e; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-top: 0; }
-        label { font-weight: 600; margin-top: 15px; display: block; font-size: 14px; color: #34495e; }
-        input[type="text"], input[type="number"], select { width: 100%; padding: 10px; margin-top: 5px; border: 1px solid #ccc; border-radius: 12px; font-size: 14px; outline: none; transition: border 0.3s, box-shadow 0.3s; }
-        input[type="text"]:focus, textarea:focus, select:focus { border-color: #8e44ad; box-shadow: 0 0 0 4px rgba(142, 68, 173, 0.15); }
-        textarea { width: 100%; height: 400px; padding: 12px; font-family: 'Consolas', monospace; border: 1px solid #ccc; border-radius: 12px; resize: vertical; font-size: 13px; line-height: 1.5; background: #fdfdfd; outline: none; transition: border 0.3s, box-shadow 0.3s; }
+        .header-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            padding: 40px;
+            border-radius: 24px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+            margin-bottom: 32px;
+            animation: slideUp 0.6s ease-out;
+        }
         
-        .gen-textarea { height: 200px; border: 2px solid #3498db; }
-        .gen-editor { height: 300px; border: 2px solid #3498db; border-radius: 12px; padding: 15px; overflow-y: auto; background: #fff; outline: none; transition: border 0.3s, box-shadow 0.3s; }
-        .gen-editor:focus { border-color: #8e44ad; box-shadow: 0 0 0 4px rgba(142, 68, 173, 0.15); }
-        .gap-controls { background: #eaf2f8; padding: 12px; border-radius: 12px; margin-bottom: 10px; border: 1px solid #a9cce3; }
-
-        .tools { background: #f4ecf7; padding: 20px; border-radius: 20px; border: 1px solid #e8daef; margin-bottom: 20px; }
-        .tools h4 { margin: 0 0 15px 0; color: #8e44ad; font-size: 15px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .header-card h1 {
+            font-size: 2.5rem;
+            font-weight: 900;
+            color: #1f2937;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
         
-        .helper-row { display: flex; gap: 15px; margin-bottom: 15px; }
-        .col-1 { flex: 1; } .col-2 { flex: 2; } .col-3 { flex: 3; }
+        .header-card p {
+            color: #6b7280;
+            font-size: 1.05rem;
+        }
         
-        button { cursor: pointer; border: none; border-radius: 12px; font-weight: 600; transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1); }
-        button:hover { transform: translateY(-2px); filter: brightness(1.05); }
-        button:active { transform: scale(0.95); }
+        .form-section {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            padding: 32px;
+            border-radius: 20px;
+            margin-bottom: 24px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+            animation: slideUp 0.6s ease-out;
+        }
         
-        .btn-insert { background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%); color: white; padding: 12px; width: 100%; font-size: 14px; margin-top: 15px; border-radius: 30px; border: 1px solid rgba(255,255,255,0.2); box-shadow: 0 4px 10px rgba(142, 68, 173, 0.3); }
-        .btn-insert:hover { box-shadow: 0 8px 20px rgba(142, 68, 173, 0.4); }
+        .form-section h2 {
+            font-size: 1.4rem;
+            color: #1f2937;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
         
-        .btn-format { background: #ecf0f1; color: #2c3e50; padding: 6px 12px; font-size: 13px; margin-right: 5px; border: 1px solid #bdc3c7; border-radius: 8px; }
-        .btn-gap { background: #3498db; color: white; width: 100%; padding: 10px; border-radius: 8px; box-shadow: 0 3px 8px rgba(52, 152, 219, 0.3); }
-        .btn-small { padding: 4px 8px; font-size: 12px; margin-left: 5px; }
-        .btn-add { background: #27ae60; color: white; }
-        .btn-rem { background: #c0392b; color: white; }
-
-        .sub-group-box { border: 1px dashed #bdc3c7; padding: 10px; margin-top: 5px; border-radius: 12px; background: #fff; }
-        .match-row { display: flex; gap: 5px; margin-bottom: 5px; align-items: center; }
-
-        .action-area { margin-top: 40px; padding-top: 20px; border-top: 2px solid #eee; background: #fdfefe; padding: 20px; border-radius: 15px; }
-        .btn-download { background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%); color: white; font-size: 18px; padding: 15px 30px; display: block; border-radius: 30px; box-shadow: 0 10px 20px rgba(39, 174, 96, 0.3); cursor: pointer; border: 1px solid rgba(255,255,255,0.2); transition: all 0.3s ease; backdrop-filter: blur(5px); margin-top: 15px; }
+        .form-group {
+            margin-bottom: 24px;
+        }
         
-        .file-upload-box { border: 2px dashed #8e44ad; padding: 20px; border-radius: 15px; background: #f4ecf7; margin-bottom: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-        .audio-slot { background: white; padding: 15px; border-radius: 12px; border: 1px solid #e1e4e8; box-shadow: 0 2px 10px rgba(0,0,0,0.02); }
-        .audio-slot h4 { margin-top: 0; color: #8e44ad; }
-        .file-status { margin-top: 5px; font-weight: bold; color: #27ae60; font-size: 12px; min-height: 18px; }
-
-        .json-area { background: #2c3e50; color: #a5d6a7; border: none; font-family: monospace; padding: 15px; border-radius: 12px; height: 150px; width: 100%; box-sizing: border-box; }
-        .hidden-field { display: none; }
+        .form-group:last-child { margin-bottom: 0; }
         
-        .mcq-option-row { display: flex; gap: 5px; align-items: center; margin-bottom: 5px; }
-        .mcq-badge { background: #34495e; color: white; padding: 5px 10px; border-radius: 6px; font-size: 12px; min-width: 30px; text-align: center; }
-        .paste-tip { background: #d4edda; color: #155724; padding: 8px; border-radius: 8px; font-size: 13px; margin-bottom: 10px; border: 1px solid #c3e6cb; display: none; }
-
-        /* --- INVISIBLE TABLE STYLES (BUILDER) --- */
-        .invisible-table { width: 100%; border-collapse: collapse; margin-bottom: 15px; border: 2px dashed #bdc3c7; background-color: rgba(241, 245, 249, 0.3); }
-        .invisible-table td, .invisible-table th { border: 2px dashed #bdc3c7; padding: 10px; vertical-align: top; }
-
-        /* --- MODERN TABLE STYLES --- */
-        .modern-table-wrapper { width: 100%; overflow-x: auto; margin: 15px 0; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.03); border: 1px solid #e1e4e8; background: #fff; }
-        .modern-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 15px; }
-        .modern-table th, .modern-table td { padding: 12px 15px; border-bottom: 1px solid #e1e4e8; border-right: 1px solid #e1e4e8; vertical-align: top; }
-        .modern-table th:last-child, .modern-table td:last-child { border-right: none; }
-        .modern-table tr:last-child th, .modern-table tr:last-child td { border-bottom: none; }
-        .modern-table thead tr { background-color: #f8f9fa; color: #2c3e50; font-weight: 600; }
-        .modern-table tbody tr:nth-child(even) { background-color: #fdfdfd; }
-        .modern-table tbody tr:hover { background-color: #f4ecf7; }
+        label {
+            display: block;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 8px;
+            font-size: 0.95rem;
+        }
         
-        /* MODERN FLOW BOX (Pill-shaped ovals, strictly 15px font) */
-        .flow-box { padding: 8px 20px; border: 2px solid #e1e4e8; border-radius: 50px; background: #fff; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.02); transition: transform 0.2s, box-shadow 0.2s; min-width: 80px; display: inline-block; vertical-align: middle; margin: 0 auto; line-height: 1.5; font-size: 15px !important; color: #333; }
-        .flow-box:hover { border-color: #bdc3c7; box-shadow: 0 6px 15px rgba(0,0,0,0.05); }
-
-        /* Fix for overly wide flow chart gaps */
-        .flow-box .gap-input, .flow-chart-content .gap-input { width: 70px !important; padding: 5px; margin: 0 auto; text-align: center; }
-        .flow-box .map-drop-zone, .flow-chart-content .map-drop-zone { min-width: 60px; height: 30px; padding: 0 8px; font-size: 14px; margin: 0 auto; }
+        input, textarea, select {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            font-size: 0.95rem;
+            font-family: inherit;
+            transition: all 0.3s ease;
+        }
+        
+        input:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        textarea {
+            resize: vertical;
+            min-height: 120px;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 16px;
+            justify-content: flex-end;
+            margin-top: 32px;
+            padding-top: 24px;
+            border-top: 1px solid #e5e7eb;
+        }
+        
+        button {
+            padding: 14px 32px;
+            border: none;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-submit {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            box-shadow: 0 6px 16px rgba(102, 126, 234, 0.3);
+        }
+        
+        .btn-submit:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 24px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-cancel {
+            background: #f3f4f6;
+            color: #374151;
+        }
+        
+        .btn-cancel:hover { background: #e5e7eb; }
+        
+        .hint {
+            font-size: 0.85rem;
+            color: #9ca3af;
+            margin-top: 6px;
+        }
+        
+        @media (max-width: 768px) {
+            .header-card { padding: 24px; }
+            .header-card h1 { font-size: 1.8rem; }
+            .button-group { flex-direction: column; }
+            button { width: 100%; }
+        }
     </style>
 </head>
 <body>
-
-<div class="container">
-    <div class="project-controls">
-        <button class="btn-proj btn-save" onclick="saveBuilderProject()">💾 Save Project</button>
-        <button class="btn-proj btn-load" onclick="document.getElementById('projectLoader').click()">📂 Load Project</button>
-        <input type="file" id="projectLoader" style="display:none" onchange="loadBuilderProject(this)" accept=".json">
-    </div>
-
-    <h1>IELTS Listening Builder v31</h1>
-    <p class="subtitle">Auto-Scoring • Locked Timer • Telegram Submissions</p>
-
-    <div class="tabs">
-        <div class="tab active" onclick="switchTab(1)">Part 1</div>
-        <div class="tab" onclick="switchTab(2)">Part 2</div>
-        <div class="tab" onclick="switchTab(3)">Part 3</div>
-        <div class="tab" onclick="switchTab(4)">Part 4</div>
-    </div>
-
-    <div id="tab-wrapper"></div>
-
-    <div class="action-area">
-        <h3>Step 1: Upload Audio Files</h3>
+    <div class="container">
+        <a href="/create-test" class="back-btn">← Choose Test Type</a>
         
-        <div style="margin-bottom: 15px; background: #eaf2f8; padding: 10px 15px; border-radius: 10px; border: 1px solid #3498db; display: inline-block;">
-            <label style="margin: 0; cursor: pointer; color: #2980b9; font-weight: bold; display: flex; align-items: center; gap: 8px;">
-                <input type="checkbox" id="add_pause_cb" style="width: 18px; height: 18px; cursor: pointer; margin: 0;">
-                Add 30-Second Pause Between Parts (For split audio files)
-            </label>
+        <div class="header-card">
+            <h1>🎧 Create Listening Test</h1>
+            <p>Set up your listening assessment with audio questions</p>
         </div>
-
-        <div class="file-upload-box">
-            <div class="audio-slot" style="grid-column: span 2; background: #eaf2f8; border-color: #3498db; text-align: center;">
-                <h4 style="color: #2980b9;">Option A: Upload ONE Full Audio File</h4>
-                <input type="file" onchange="processFullAudio(this)" accept=".mp3, .wav, .ogg">
-                <div id="status_full" class="file-status"></div>
-                <p style="font-size:12px; color:#555; margin-top:5px;">(If you upload a file here, the 4 individual part audios below will be ignored)</p>
-            </div>
-            
-            <div style="grid-column: span 2; text-align: center; color: #7f8c8d; font-weight: bold; margin: -10px 0;">— OR (Upload By Parts) —</div>
-
-            <div class="audio-slot">
-                <h4>Part 1 Audio</h4>
-                <input type="file" onchange="processAudio(this, 1)" accept=".mp3, .wav, .ogg">
-                <div id="status_1" class="file-status"></div>
-            </div>
-            <div class="audio-slot">
-                <h4>Part 2 Audio</h4>
-                <input type="file" onchange="processAudio(this, 2)" accept=".mp3, .wav, .ogg">
-                <div id="status_2" class="file-status"></div>
-            </div>
-            <div class="audio-slot">
-                <h4>Part 3 Audio</h4>
-                <input type="file" onchange="processAudio(this, 3)" accept=".mp3, .wav, .ogg">
-                <div id="status_3" class="file-status"></div>
-            </div>
-            <div class="audio-slot">
-                <h4>Part 4 Audio</h4>
-                <input type="file" onchange="processAudio(this, 4)" accept=".mp3, .wav, .ogg">
-                <div id="status_4" class="file-status"></div>
-            </div>
-        </div>
-
-        <h3>Step 2: Answer Key (Auto-Generated)</h3>
-        <textarea id="answer_key_json" class="json-area">{}</textarea>
         
-        <div style="display: flex; gap: 15px; align-items: center; justify-content: space-between;">
-            <button class="btn-download" style="background: linear-gradient(135deg, #3498db 0%, #2980b9 100%); flex: 1; margin-top: 15px;" id="viewBtn" onclick="previewTest()">👀 View / Preview Test</button>
-            <button class="btn-download" id="downloadBtn" onclick="generateFile()" style="flex: 1; margin-top: 15px;">Download Final Listening Test</button>
-        </div>
-    </div>
-</div>
-
-<script>
-    // Мы больше не храним данные аудио в памяти, просто ссылки на файлы из input
-    let lastSavedRange = null;
-
-    function previewTest() {
-        // Collects the HTML you generated in the panels
-        const p1 = document.getElementById('q1_text').value;
-        const p2 = document.getElementById('q2_text').value;
-        const p3 = document.getElementById('q3_text').value;
-        const p4 = document.getElementById('q4_text').value;
-
-        // Opens a temporary preview window to show the test visually
-        const previewWindow = window.open('', '_blank');
-        previewWindow.document.write(`
-            <html>
-            <head>
-                <title>Test Preview</title>
-                <style>
-                    body { font-family: system-ui, sans-serif; padding: 40px; max-width: 900px; margin: 0 auto; line-height: 1.6; background: #fdfdfd; color: #333; }
-                    h1 { color: #2c3e50; border-bottom: 2px solid #eee; padding-bottom: 10px; }
-                    h2 { color: #8e44ad; margin-top: 30px; }
-                    .multi-choice-question, .short-answer-question, .gap-fill-text, .flow-question-block, .map-question-block, .matching-group-block { margin-bottom: 25px; padding: 20px; background: #fff; border: 1px solid #e1e4e8; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.03); }
-                    .question-prompt { font-weight: 500; font-size: 16px; margin-bottom: 15px; }
-                    .gap-input { width: 60px; padding: 5px; text-align: center; border: 2px solid #3498db; border-radius: 5px; outline: none; }
-                    .answer-input { border: 2px solid #3498db; padding: 5px; border-radius: 5px; outline: none; }
-                    .multi-choice-option { margin-bottom: 10px; }
-                    .map-image img { max-width: 100%; border-radius: 8px; }
-                    .modern-table { width: 100%; border-collapse: collapse; margin: 15px 0; }
-                    .modern-table th, .modern-table td { padding: 12px; border: 1px solid #e1e4e8; }
-                </style>
-            </head>
-            <body>
-                <h1>👀 Test Visual Preview</h1>
-                <p><em>Note: Interactive features (like dropdowns or auto-grading) require your Node server. This is just to verify the layout!</em></p>
-                ${p1 ? `<h2>Part 1</h2>${p1}` : ''}
-                ${p2 ? `<h2>Part 2</h2>${p2}` : ''}
-                ${p3 ? `<h2>Part 3</h2>${p3}` : ''}
-                ${p4 ? `<h2>Part 4</h2>${p4}` : ''}
-                ${(!p1 && !p2 && !p3 && !p4) ? '<p style="color: red;">No questions generated yet. Go back and insert some questions to the panel first!</p>' : ''}
-            </body>
-            </html>
-        `);
-        previewWindow.document.close();
-    }
-
-    function saveSelection() {
-        const sel = window.getSelection();
-        if (sel.rangeCount > 0) {
-            lastSavedRange = sel.getRangeAt(0);
-        }
-    }
-
-    function processFullAudio(input) {
-    if (input.files[0]) {
-        document.getElementById('status_full').innerText = "✅ File Selected: " + input.files[0].name;
-    }
-}
-
-function processAudio(input, partNum) {
-    if (input.files[0]) {
-        document.getElementById(`status_${partNum}`).innerText = "✅ Ready: " + input.files[0].name;
-    }
-}
-
-    function renderTabs() {
-        const wrapper = document.getElementById('tab-wrapper');
-        let html = "";
-        for (let i = 1; i <= 4; i++) {
-            const isActive = i === 1 ? 'active' : '';
-            html += `
-            <div id="part${i}" class="tab-content ${isActive}">
-                <div class="editor-grid">
-                    <div class="left-panel">
-                        <h3>Info</h3>
-                        <div style="background:#f8f9fa; padding:15px; border-radius:15px; border:1px solid #e9ecef;">
-                           <p><strong>Part ${i}</strong></p>
-                           <p style="font-size:13px; color:#555;">Design your questions here.</p>
-                        </div>
-                    </div>
-                    <div class="right-panel">
-                        <h3>Part ${i} Questions</h3>
-                        <div class="paste-tip" id="paste_tip_${i}">✅ Image detected!</div>
-                        <div class="tools">
-                            <h4>Question Generator</h4>
-                            <div class="helper-row">
-                                <div class="col-3"><label style="margin-top:0">Question Type</label>
-                                    <select id="gen_type_${i}" onchange="toggleGeneratorFields(${i})">
-                                        <option value="header">Section Header / Text</option>
-                                        <option value="gap">Fill in the Blanks (Gap Fill)</option>
-                                        <option value="table-gap">Fill in the Blanks (Table)</option>
-                                        <option value="mcq">Standard MCQ (Pick 1)</option>
-                                        <option value="match">Matching Features (Custom Dropdown)</option>
-                                        <option value="pick2">Pick 2 (Select 2)</option>
-                                        <option value="pick3">Pick 3 (Select 3)</option>
-                                        <option value="input">Short Answer</option>
-                                        <option value="drag">Map Labeling / Dropdowns</option>
-                                        <option value="flow">Completing Flow Chart</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div id="common_fields_${i}">
-                                <div id="q_num_row_${i}" class="helper-row">
-                                    <div class="col-1"><label>Start Q No.</label><input type="number" id="gen_q_num_${i}" value="${(i-1)*10 + 1}"></div>
-                                    <div class="col-2" id="info_pick_${i}" style="display:none; color:#e67e22; font-size:12px; padding-top:25px;"></div>
-                                </div>
-                                <div id="std_prompt_box_${i}">
-                                    <label>Prompt (Question Text / Image)</label>
-                                    <div style="margin-bottom:5px;">
-                                        <button class="btn-format" onmousedown="event.preventDefault()" onclick="insertTag('gen_prompt_${i}', '<p>', '</p>')">Paragraph</button>
-                                        <button class="btn-format" onmousedown="event.preventDefault()" onclick="insertTag('gen_prompt_${i}', '<strong>', '</strong>')">Bold</button>
-                                        <button class="btn-format" onmousedown="event.preventDefault()" onclick="insertTag('gen_prompt_${i}', '<em>', '</em>')">Italic</button>
-                                        <button class="btn-format" onmousedown="event.preventDefault()" onclick="insertTag('gen_prompt_${i}', '<u>', '</u>')">Underline</button>
-                                    </div>
-                                    <textarea id="gen_prompt_${i}" class="magic-paste" style="height:70px;"></textarea>
-                                </div>
-                            </div>
-                            <div id="match_fields_${i}" class="hidden-field">
-                                <label style="color:#8e44ad;">1. Define Features</label>
-                                <div class="sub-group-box">
-                                    <div id="match_options_list_${i}"></div>
-                                    <button class="btn-small btn-add" onclick="addMatchOption(${i})">+ Add Feature</button>
-                                    <button class="btn-small btn-rem" onclick="remMatchOption(${i})">- Remove</button>
-                                </div>
-                                <label style="color:#2980b9; margin-top:15px;">2. Add Questions</label>
-                                <div class="sub-group-box">
-                                    <div id="match_questions_list_${i}"></div>
-                                    <button class="btn-small btn-add" onclick="addMatchQuestion(${i})">+ Add Question</button>
-                                    <button class="btn-small btn-rem" onclick="remMatchQuestion(${i})">- Remove</button>
-                                </div>
-                            </div>
-                            <div id="gap_fields_${i}" class="hidden-field">
-                                <label style="color:#2980b9;">Gap Fill Editor</label>
-                                <div style="margin-bottom:5px;">
-                                    <button class="btn-format" onmousedown="event.preventDefault(); document.execCommand('bold');">Bold</button>
-                                    <button class="btn-format" onmousedown="event.preventDefault(); document.execCommand('italic');">Italic</button>
-                                    <button class="btn-format" onmousedown="event.preventDefault(); document.execCommand('underline');">Underline</button>
-                                    <button class="btn-format" onmousedown="event.preventDefault(); document.execCommand('justifyCenter');">Center</button>
-                                    <button class="btn-format" type="button" onmousedown="event.preventDefault()" onclick="insertTableTemplate(${i})">Create Modern Table</button>
-                                    <button class="btn-format" type="button" onmousedown="event.preventDefault()" onclick="insertInvisibleTable(${i})">Create Invisible Table</button>
-                                </div>
-                                <div class="gap-controls">
-                                    <button class="btn-gap" type="button" onmousedown="event.preventDefault()" onclick="insertGapPlaceholder(${i})">➕ Insert Gap [Input] at Cursor</button>
-                                </div>
-                                <div id="gap_editor_${i}" class="gen-editor magic-paste" contenteditable="true" onkeyup="saveSelection()" onmouseup="saveSelection()" onmouseout="saveSelection()"></div>
-                            </div>
-                            <div id="mcq_fields_${i}" class="hidden-field" style="margin-top:10px; border-top:1px dashed #ccc; padding-top:10px;">
-                                <label>Options List (A, B, C...):</label>
-                                <div id="mcq_options_container_${i}"></div>
-                                <div style="margin-top:5px;">
-                                    <button class="btn-small btn-add" onclick="addMcqOption(${i})">+ Add Option</button>
-                                    <button class="btn-small btn-rem" onclick="removeMcqOption(${i})">- Remove Last</button>
-                                </div>
-                            </div>
-                            <div id="drag_fields_${i}" class="hidden-field">
-                                <label>Map Prompt / Instruction</label>
-                                <input type="text" id="map_prompt_${i}" placeholder="e.g. Label the map below...">
-                                <label>1. Map Image (Paste Here)</label>
-                                <div id="map_img_${i}" class="gen-editor" contenteditable="true" onpaste="handleImagePaste(event, this)" style="height:200px; overflow:auto; border:2px dashed #ccc; padding:10px;"></div>
-                                
-                                <label style="color:#2980b9; margin-top:10px;">2. Questions</label>
-                                <div id="map_questions_container_${i}"></div>
-                                <div style="margin-top:5px;"><button class="btn-small btn-add" onclick="addMapQuestion(${i})">+ Add Q</button> <button class="btn-small btn-rem" onclick="remMapQuestion(${i})">- Remove</button></div>
-
-                                <label style="color:#8e44ad; margin-top:10px;">3. Variants (A, B, C...)</label>
-                                <div id="map_options_container_${i}" style="display:flex; flex-wrap:wrap; gap:5px; margin-bottom:5px; min-height:30px;"></div>
-                                <div style="margin-top:5px;"><button class="btn-small btn-add" onclick="addMapOption(${i})">+ Add Variant</button> <button class="btn-small btn-rem" onclick="remMapOption(${i})">- Remove</button></div>
-                            </div>
-                            
-                            <div id="flow_fields_${i}" class="hidden-field">
-                                <label>Flow Chart Prompt / Instruction</label>
-                                <input type="text" id="flow_prompt_${i}" placeholder="e.g. Complete the flow chart below...">
-                                
-                                <label style="color:#8e44ad; margin-top:10px;">1. Define Options (The Box of Choices)</label>
-                                <div class="sub-group-box">
-                                    <div id="flow_options_container_${i}"></div>
-                                    <div style="margin-top:5px;"><button class="btn-small btn-add" onclick="addFlowOption(${i})">+ Add Variant</button> <button class="btn-small btn-rem" onclick="remFlowOption(${i})">- Remove</button></div>
-                                </div>
-
-                                <label style="color:#2980b9; margin-top:15px;">2. Design Flow Chart (Write Text, Add Arrows, Insert Gaps)</label>
-                                <div style="margin-bottom:5px;">
-                                    <button class="btn-format" onmousedown="event.preventDefault(); document.execCommand('bold');">Bold</button>
-                                    <button class="btn-format" onmousedown="event.preventDefault(); document.execCommand('italic');">Italic</button>
-                                    <button class="btn-format" onmousedown="event.preventDefault(); document.execCommand('underline');">Underline</button>
-                                    
-                                    <button class="btn-format" onmousedown="event.preventDefault()" onclick="insertTag('flow_editor_${i}', '<div style=\\'text-align:center; margin:8px 0;\\'><span style=\\'font-size:22px; font-weight:bold; color:#8e44ad;\\'>&darr;</span></div><div><br></div>', '')">↓ Down Arrow (Centered)</button>
-                                    <button class="btn-format" onmousedown="event.preventDefault()" onclick="insertTag('flow_editor_${i}', ' <span style=\\'font-size:20px; font-weight:bold; color:#8e44ad;\\'>&rarr;</span> ', '')">→ Right Arrow</button>
-                                    <button class="btn-format" type="button" onmousedown="event.preventDefault()" onclick="insertFlowTableTemplate(${i})">Create Modern Boxes</button>
-                                </div>
-                                <div class="gap-controls">
-                                    <button class="btn-gap" type="button" onmousedown="event.preventDefault()" onclick="insertFlowGap(${i})">➕ Insert Gap [Select Picker]</button>
-                                </div>
-                                <div id="flow_editor_${i}" class="gen-editor magic-paste" contenteditable="true" onkeyup="saveSelection()" onmouseup="saveSelection()" onmouseout="saveSelection()" style="text-align: center; font-size:15px;"></div>
-                            </div>
-                            
-                            <div id="std_ans_field_${i}">
-                                <label>Correct Answer</label><input type="text" id="gen_ans_${i}">
-                            </div>
-                            <div id="pick_ans_field_${i}" class="hidden-field">
-                                <div class="helper-row">
-                                    <div class="col-1"><label>Ans 1</label><input type="text" id="pick_ans1_${i}" placeholder="e.g. A"></div>
-                                    <div class="col-1"><label>Ans 2</label><input type="text" id="pick_ans2_${i}" placeholder="e.g. C"></div>
-                                    <div class="col-1" id="pick3_input_${i}" style="display:none;"><label>Ans 3</label><input type="text" id="pick_ans3_${i}" placeholder="e.g. E"></div>
-                                </div>
-                            </div>
-                            <button class="btn-insert" onclick="insertQuestion(${i})">Insert to Panel</button>
-                        </div>
-                        <label>Final HTML Code:</label><textarea id="q${i}_text"></textarea>
-                    </div>
-                </div>
-            </div>`;
-        }
-        wrapper.innerHTML = html;
-        setTimeout(() => {
-            [1,2,3,4].forEach(i => { 
-                resetMcqOptions(i); 
-                addMatchOption(i, 'A'); addMatchOption(i, 'B'); addMatchOption(i, 'C');
-                addMatchQuestion(i);
-                addMapQuestion(i); addMapQuestion(i);
-                addMapOption(i, 'A'); addMapOption(i, 'B'); addMapOption(i, 'C');
-                addFlowOption(i, 'A'); addFlowOption(i, 'B'); addFlowOption(i, 'C');
-                document.getElementById(`gen_type_${i}`).value = 'gap'; 
-                toggleGeneratorFields(i); 
-            });
-            initMagicPaste();
-        }, 100);
-    }
-
-    /* --- UTILITIES --- */
-    function insertTableTemplate(partNum) { insertTableGeneric(`gap_editor_${partNum}`); }
-    function insertInvisibleTable(partNum) {
-        const editor = document.getElementById(`gap_editor_${partNum}`);
-        if (!editor) return;
-        let savedRange = null;
-        const sel = window.getSelection();
-        if (sel.rangeCount > 0 && editor.contains(sel.getRangeAt(0).commonAncestorContainer)) { savedRange = sel.getRangeAt(0); }
-        else if (lastSavedRange && editor.contains(lastSavedRange.commonAncestorContainer)) { savedRange = lastSavedRange; }
-
-        const rows = prompt("Rows:", "3"); if(!rows) return;
-        const cols = prompt("Columns:", "2"); if(!cols) return;
-
-        let t = '<table class="invisible-table"><tbody>';
-        for(let r=0; r<rows; r++) {
-            t += '<tr>';
-            for(let c=0; c<cols; c++) { t += '<td>Text...</td>'; }
-            t += '</tr>';
-        }
-        t += '</tbody></table><p><br></p>';
-        
-        editor.focus();
-        const newSel = window.getSelection(); newSel.removeAllRanges();
-        if (savedRange) newSel.addRange(savedRange);
-        else { const range = document.createRange(); range.selectNodeContents(editor); range.collapse(false); newSel.addRange(range); }
-        document.execCommand('insertHTML', false, t);
-        saveSelection();
-    }
-    
-    function insertFlowTableTemplate(partNum) {
-        const editor = document.getElementById(`flow_editor_${partNum}`);
-        if (!editor) return;
-        let savedRange = null;
-        const sel = window.getSelection();
-        if (sel.rangeCount > 0 && editor.contains(sel.getRangeAt(0).commonAncestorContainer)) { savedRange = sel.getRangeAt(0); }
-        else if (lastSavedRange && editor.contains(lastSavedRange.commonAncestorContainer)) { savedRange = lastSavedRange; }
-
-        const rows = prompt("Rows:", "3"); if(!rows) return;
-        const cols = prompt("Columns:", "1"); if(!cols) return;
-
-        let t = `<div style="display: grid; grid-template-columns: repeat(${cols}, 1fr); gap: 20px; margin-bottom: 15px; justify-items: center; align-items: center; text-align: center;">`;
-        for(let r=0; r<rows; r++) {
-            for(let c=0; c<cols; c++) { 
-                t += '<div class="flow-box">Text...</div>'; 
-            }
-        }
-        // SAFEY BREAK: Inserts a clean, normal-sized div after the flow chart so you don't get stuck inside it
-        t += '</div><div><br></div>';
-
-        editor.focus();
-        const newSel = window.getSelection(); newSel.removeAllRanges();
-        if (savedRange) newSel.addRange(savedRange);
-        else { const range = document.createRange(); range.selectNodeContents(editor); range.collapse(false); newSel.addRange(range); }
-        document.execCommand('insertHTML', false, t);
-        saveSelection();
-    }
-    
-    function insertTableGeneric(editorId) {
-        const editor = document.getElementById(editorId);
-        if (!editor) return;
-        let savedRange = null;
-        const sel = window.getSelection();
-        if (sel.rangeCount > 0 && editor.contains(sel.getRangeAt(0).commonAncestorContainer)) { savedRange = sel.getRangeAt(0); }
-        else if (lastSavedRange && editor.contains(lastSavedRange.commonAncestorContainer)) { savedRange = lastSavedRange; }
-
-        const rows = prompt("Rows (excluding header):", "3"); if(!rows) return;
-        const cols = prompt("Columns:", "2"); if(!cols) return;
-
-        let t = '<div class="modern-table-wrapper"><table class="modern-table"><thead><tr>';
-        for(let c=0; c<cols; c++) { t += '<th>Header ' + (c+1) + '</th>'; }
-        t += '</tr></thead><tbody>';
-        for(let r=0; r<rows; r++) {
-            t += '<tr>';
-            for(let c=0; c<cols; c++) { t += '<td>Text...</td>'; }
-            t += '</tr>';
-        }
-        t += '</tbody></table></div><p><br></p>';
-        
-        editor.focus();
-        const newSel = window.getSelection(); newSel.removeAllRanges();
-        if (savedRange) newSel.addRange(savedRange);
-        else { const range = document.createRange(); range.selectNodeContents(editor); range.collapse(false); newSel.addRange(range); }
-        document.execCommand('insertHTML', false, t);
-        saveSelection();
-    }
-
-    function initMagicPaste() {
-        document.querySelectorAll('.magic-paste').forEach(el => {
-            el.addEventListener('paste', function(e) {
-                const items = (e.clipboardData || e.originalEvent.clipboardData).items;
-                let hasImage = false;
-                for (let index in items) {
-                    const item = items[index];
-                    if (item.kind === 'file' && item.type.includes('image/')) {
-                        hasImage = true;
-                        e.preventDefault(); 
-                        const blob = item.getAsFile();
-                        const reader = new FileReader();
-                        reader.onload = function(event) {
-                            const base64 = event.target.result;
-                            const htmlTag = `<img src="${base64}" style="max-width:100%; display:block; margin:10px auto; border:1px solid #ddd; border-radius:8px;">`;
-                            insertAtCursor(el, htmlTag);
-                        };
-                        reader.readAsDataURL(blob);
-                    }
-                }
-                if(hasImage) {
-                    const tip = el.closest('.tab-content').querySelector('.paste-tip');
-                    if(tip) { tip.style.display = 'block'; setTimeout(() => tip.style.display = 'none', 3000); }
-                }
-            });
-        });
-    }
-
-    function handleImagePaste(e, el) {
-        const items = (e.clipboardData || e.originalEvent.clipboardData).items;
-        for (let index in items) {
-            const item = items[index];
-            if (item.kind === 'file' && item.type.includes('image/')) {
-                e.preventDefault();
-                const blob = item.getAsFile();
-                const reader = new FileReader();
-                reader.onload = function(event) {
-                    const base64 = event.target.result;
-                    const htmlTag = `<img src="${base64}" style="max-width:100%; display:block; margin:10px auto; border:1px solid #ddd; border-radius:8px;">`;
-                    document.execCommand('insertHTML', false, htmlTag);
-                };
-                reader.readAsDataURL(blob);
-                return;
-            }
-        }
-    }
-
-    function insertAtCursor(field, text) {
-        if (typeof field === 'string') field = document.getElementById(field);
-        if (!field) return;
-
-        if (field.tagName === 'TEXTAREA' || field.tagName === 'INPUT') {
-            if (document.selection) { field.focus(); let sel = document.selection.createRange(); sel.text = text; }
-            else if (field.selectionStart || field.selectionStart === 0) { let startPos = field.selectionStart; let endPos = field.selectionEnd; field.value = field.value.substring(0, startPos) + text + field.value.substring(endPos, field.value.length); field.selectionStart = startPos + text.length; field.selectionEnd = startPos + text.length; }
-            else { field.value += text; }
-        } else {
-            if (lastSavedRange) {
-                const sel = window.getSelection();
-                sel.removeAllRanges();
-                sel.addRange(lastSavedRange);
-            } else { field.focus(); }
-            document.execCommand('insertHTML', false, text);
-        }
-    }
-
-    function addMatchOption(part, labelOverride=null) {
-        const container = document.getElementById(`match_options_list_${part}`);
-        const count = container.children.length;
-        const label = labelOverride || String.fromCharCode(65 + count);
-        const div = document.createElement('div');
-        div.className = 'match-row';
-        div.innerHTML = `<span class="mcq-badge">${label}</span><input type="text" class="match-opt-text-${part}" placeholder="Feature Name...">`;
-        container.appendChild(div);
-    }
-    function remMatchOption(part) {
-        const container = document.getElementById(`match_options_list_${part}`);
-        if(container.children.length > 2) container.removeChild(container.lastElementChild);
-    }
-    function addMatchQuestion(part) {
-        const container = document.getElementById(`match_questions_list_${part}`);
-        const div = document.createElement('div');
-        div.className = 'match-row';
-        div.innerHTML = `<input type="text" class="match-q-text-${part}" placeholder="Question / Statement..." style="flex:2">
-                         <input type="text" class="match-q-ans-${part}" placeholder="Ans" style="flex:1; width:50px; text-align:center;">`;
-        container.appendChild(div);
-    }
-    function remMatchQuestion(part) {
-        const container = document.getElementById(`match_questions_list_${part}`);
-        if(container.children.length > 1) container.removeChild(container.lastElementChild);
-    }
-    // --- MAP HELPERS ---
-    function addMapQuestion(part) {
-        const container = document.getElementById(`map_questions_container_${part}`);
-        const count = container.children.length + 1;
-        const div = document.createElement('div');
-        div.className = 'match-row';
-        div.innerHTML = `<input type="number" class="map-q-num-${part}" placeholder="Q No." value="${(part-1)*10 + count}" style="width:60px;">
-                         <input type="text" class="map-q-text-${part}" placeholder="Question Text (e.g. Cafe)" style="flex:2;">
-                         <input type="text" class="map-q-ans-${part}" placeholder="Ans" style="flex:1;">`;
-        container.appendChild(div);
-    }
-    function remMapQuestion(part) {
-        const container = document.getElementById(`map_questions_container_${part}`);
-        if(container.children.length > 0) container.removeChild(container.lastElementChild);
-    }
-    function addMapOption(part, labelOverride=null) {
-        const container = document.getElementById(`map_options_container_${part}`);
-        const count = container.children.length;
-        const label = labelOverride || String.fromCharCode(65 + count);
-        const span = document.createElement('span');
-        span.className = 'mcq-badge';
-        span.innerText = label;
-        container.appendChild(span);
-    }
-    function remMapOption(part) {
-        const container = document.getElementById(`map_options_container_${part}`);
-        if(container.children.length > 0) container.removeChild(container.lastElementChild);
-    }
-    // --- FLOW CHART HELPERS ---
-    function addFlowOption(part, labelOverride=null) {
-        const container = document.getElementById(`flow_options_container_${part}`);
-        const count = container.children.length;
-        const label = labelOverride || String.fromCharCode(65 + count);
-        const div = document.createElement('div');
-        div.className = 'match-row';
-        div.innerHTML = `<span class="mcq-badge">${label}</span><input type="text" class="flow-opt-text-${part}" placeholder="Option Description...">`;
-        container.appendChild(div);
-    }
-    function remFlowOption(part) {
-        const container = document.getElementById(`flow_options_container_${part}`);
-        if(container.children.length > 0) container.removeChild(container.lastElementChild);
-    }
-
-    function insertFlowGap(partNum) {
-        const editor = document.getElementById(`flow_editor_${partNum}`);
-        if (!editor) return;
-        
-        let savedRange = null;
-        const sel = window.getSelection();
-        if (sel.rangeCount > 0 && editor.contains(sel.getRangeAt(0).commonAncestorContainer)) {
-            savedRange = sel.getRangeAt(0);
-        } else if (lastSavedRange && editor.contains(lastSavedRange.commonAncestorContainer)) {
-            savedRange = lastSavedRange;
-        }
-
-        const qNumInput = document.getElementById(`gen_q_num_${partNum}`);
-        let currentQ = qNumInput.value;
-        const finalQ = prompt("Enter Question Number for this gap:", currentQ);
-        if(!finalQ) return;
-        const ans = prompt("Enter CORRECT ANSWER (Letter) for Q" + finalQ + ":", "");
-        if(ans === null) return; 
-
-        editor.focus();
-
-        const inputNode = document.createElement('input');
-        inputNode.type = 'text';
-        inputNode.id = 'q' + finalQ;
-        inputNode.className = 'gap-input temp-flow-gap';
-        inputNode.placeholder = finalQ;
-        inputNode.style.cssText = 'width:60px; border:2px solid #3498db; text-align:center;';
-        inputNode.readOnly = true;
-        inputNode.value = '[Q' + finalQ + ']';
-
-        if (savedRange) {
-            savedRange.deleteContents();
-            savedRange.insertNode(inputNode);
-            const spaceNode = document.createTextNode('\u00A0');
-            inputNode.parentNode.insertBefore(spaceNode, inputNode.nextSibling);
-
-            const newSel = window.getSelection();
-            newSel.removeAllRanges();
-            savedRange.setStartAfter(spaceNode);
-            savedRange.collapse(true);
-            newSel.addRange(savedRange);
-        } else {
-            editor.appendChild(inputNode);
-        }
-
-        saveSelection();
-
-        updateAnswerKey(finalQ, ans);
-        qNumInput.value = parseInt(finalQ) + 1;
-    }
-
-    function insertGapPlaceholder(partNum) {
-        const editor = document.getElementById(`gap_editor_${partNum}`);
-        if (!editor) return;
-
-        let savedRange = null;
-        const sel = window.getSelection();
-        if (sel.rangeCount > 0 && editor.contains(sel.getRangeAt(0).commonAncestorContainer)) {
-            savedRange = sel.getRangeAt(0);
-        } else if (lastSavedRange && editor.contains(lastSavedRange.commonAncestorContainer)) {
-            savedRange = lastSavedRange;
-        }
-
-        const qNumInput = document.getElementById(`gen_q_num_${partNum}`);
-        let currentQ = qNumInput.value;
-        const finalQ = prompt("Enter Question Number for this gap:", currentQ);
-        if(!finalQ) return;
-        const ans = prompt("Enter CORRECT ANSWER for Q" + finalQ + ":", "");
-        if(ans === null) return; 
-
-        editor.focus();
-
-        const inputNode = document.createElement('input');
-        inputNode.type = 'text';
-        inputNode.id = 'q' + finalQ;
-        inputNode.className = 'gap-input';
-        inputNode.placeholder = finalQ;
-        inputNode.setAttribute('autocomplete', 'off');
-
-        if (savedRange) {
-            savedRange.deleteContents();
-            savedRange.insertNode(inputNode);
-            const spaceNode = document.createTextNode('\u00A0');
-            inputNode.parentNode.insertBefore(spaceNode, inputNode.nextSibling);
-
-            const newSel = window.getSelection();
-            newSel.removeAllRanges();
-            savedRange.setStartAfter(spaceNode);
-            savedRange.collapse(true);
-            newSel.addRange(savedRange);
-        } else {
-            editor.appendChild(inputNode);
-        }
-
-        saveSelection();
-
-        updateAnswerKey(finalQ, ans);
-        qNumInput.value = parseInt(finalQ) + 1;
-    }
-
-    function resetMcqOptions(partNum) {
-        const container = document.getElementById(`mcq_options_container_${partNum}`);
-        container.innerHTML = "";
-        ['A', 'B', 'C'].forEach(letter => addMcqOption(partNum, letter));
-    }
-    function addMcqOption(partNum, letterOverride = null) {
-        const container = document.getElementById(`mcq_options_container_${partNum}`);
-        const count = container.children.length;
-        const letter = letterOverride || String.fromCharCode(65 + count); 
-        const div = document.createElement('div');
-        div.className = 'mcq-option-row';
-        div.innerHTML = `<span class="mcq-badge">${letter}</span><input type="text" class="mcq-input-${partNum}" placeholder="Option text...">`;
-        container.appendChild(div);
-    }
-    function removeMcqOption(partNum) {
-        const container = document.getElementById(`mcq_options_container_${partNum}`);
-        if(container.children.length > 2) container.removeChild(container.lastElementChild);
-    }
-    function switchTab(num) {
-        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-        document.querySelectorAll('.tab')[num-1].classList.add('active');
-        document.getElementById('part'+num).classList.add('active');
-    }
-    function toggleGeneratorFields(partNum) {
-        const type = document.getElementById(`gen_type_${partNum}`).value;
-        const mcqArea = document.getElementById(`mcq_fields_${partNum}`);
-        const dragArea = document.getElementById(`drag_fields_${partNum}`);
-        const flowArea = document.getElementById(`flow_fields_${partNum}`);
-        const gapArea = document.getElementById(`gap_fields_${partNum}`);
-        const matchArea = document.getElementById(`match_fields_${partNum}`);
-        const stdAns = document.getElementById(`std_ans_field_${partNum}`);
-        const pickAns = document.getElementById(`pick_ans_field_${partNum}`);
-        const pick3Input = document.getElementById(`pick3_input_${partNum}`);
-        const common = document.getElementById(`common_fields_${partNum}`);
-        const stdPromptBox = document.getElementById(`std_prompt_box_${partNum}`);
-        const qNumRow = document.getElementById(`q_num_row_${partNum}`);
-        const infoPick = document.getElementById(`info_pick_${partNum}`);
-
-        [mcqArea, dragArea, flowArea, gapArea, matchArea, pickAns].forEach(el => el.classList.add('hidden-field'));
-        [stdAns, common, qNumRow, stdPromptBox].forEach(el => el.classList.remove('hidden-field'));
-        infoPick.style.display = 'none'; pick3Input.style.display = 'none';
-
-        if (type === 'header') { stdAns.classList.add('hidden-field'); qNumRow.classList.add('hidden-field'); } 
-        else if (type === 'mcq') { mcqArea.classList.remove('hidden-field'); } 
-        else if (type === 'match') { matchArea.classList.remove('hidden-field'); stdAns.classList.add('hidden-field'); } 
-        else if (type === 'pick2') { mcqArea.classList.remove('hidden-field'); stdAns.classList.add('hidden-field'); pickAns.classList.remove('hidden-field'); infoPick.style.display = 'block'; infoPick.innerHTML = '<strong>Note:</strong> Reserves 2 Qs'; } 
-        else if (type === 'pick3') { mcqArea.classList.remove('hidden-field'); stdAns.classList.add('hidden-field'); pickAns.classList.remove('hidden-field'); pick3Input.style.display = 'block'; infoPick.style.display = 'block'; infoPick.innerHTML = '<strong>Note:</strong> Reserves 3 Qs'; } 
-        else if (type === 'drag') { dragArea.classList.remove('hidden-field'); stdAns.classList.add('hidden-field'); common.classList.add('hidden-field'); } 
-        else if (type === 'flow') { flowArea.classList.remove('hidden-field'); stdAns.classList.add('hidden-field'); common.classList.add('hidden-field'); }
-        else if (type === 'gap' || type === 'table-gap') { gapArea.classList.remove('hidden-field'); stdPromptBox.classList.add('hidden-field'); stdAns.classList.add('hidden-field'); }
-    }
-    function insertTag(areaId, start, end) {
-        const area = document.getElementById(areaId);
-        if (!area) return;
-        
-        if (area.tagName === 'TEXTAREA' || area.tagName === 'INPUT') {
-            let s = area.selectionStart; let e = area.selectionEnd; area.focus();
-            if (typeof s === 'number') { area.setSelectionRange(s, e); }
-            const text = area.value.substring(s, e);
-            const fullText = start + text + end;
-            const success = document.execCommand('insertText', false, fullText);
-            if (!success) { area.setRangeText(fullText, s, e, 'end'); }
-        } else {
-            if (lastSavedRange) {
-                const sel = window.getSelection();
-                sel.removeAllRanges();
-                sel.addRange(lastSavedRange);
-            } else { area.focus(); }
-            const sel = window.getSelection();
-            if (sel.rangeCount > 0) {
-                const html = start + sel.toString() + end;
-                document.execCommand('insertHTML', false, html);
-            }
-        }
-    }
-    function updateAnswerKey(num, ans) {
-        if(!num || (ans === null || ans === undefined)) return;
-        try {
-            const currentVal = document.getElementById('answer_key_json').value || "{}";
-            const current = JSON.parse(currentVal);
-            let valueToSet = ans;
-            if (typeof ans === 'string') {
-                try {
-                    const parsed = JSON.parse(ans);
-                    if (Array.isArray(parsed)) valueToSet = parsed;
-                } catch(e) {
-                    if (ans.includes('|')) {
-                        valueToSet = ans.split('|').map(s => s.trim()).filter(Boolean);
-                    }
-                }
-            }
-            current[num] = valueToSet;
-            document.getElementById('answer_key_json').value = JSON.stringify(current, null, 2);
-        } catch(e) {
-            document.getElementById('answer_key_json').value = JSON.stringify({[num]: ans}, null, 2);
-        }
-    }
-    function insertQuestion(partNum) {
-        const type = document.getElementById(`gen_type_${partNum}`).value;
-        const targetArea = document.getElementById(`q${partNum}_text`);
-        let html = "";
-        const AC_OFF = 'autocomplete="off"';
-        const formatText = (txt) => txt.replace(/\n/g, '<br>');
-
-        if (type === 'header') {
-            const prompt = document.getElementById(`gen_prompt_${partNum}`).value;
-            html = `<div class="question-section-header">${formatText(prompt)}</div>`;
-            document.getElementById(`gen_prompt_${partNum}`).value = "";
-        } else if (type === 'match') {
-            const prompt = document.getElementById(`gen_prompt_${partNum}`).value;
-            let featuresHtml = `<div class="match-features-box">`;
-            const featInputs = document.querySelectorAll(`.match-opt-text-${partNum}`);
-            const featureLetters = [];
-            featInputs.forEach((inp, i) => {
-                const letter = String.fromCharCode(65 + i);
-                featureLetters.push(letter);
-                featuresHtml += `<div><b>${letter}</b> ${inp.value.trim()}</div>`;
-            });
-            featuresHtml += `</div>`;
-            const qInputs = document.querySelectorAll(`.match-q-text-${partNum}`);
-            const aInputs = document.querySelectorAll(`.match-q-ans-${partNum}`);
-            let qNumStart = parseInt(document.getElementById(`gen_q_num_${partNum}`).value);
-            
-            html = `<div class="matching-group-block"><p><strong>${formatText(prompt)}</strong></p>${featuresHtml}<div class="match-questions-list">`;
-            let currentQ = qNumStart;
-            for(let i=0; i<qInputs.length; i++) {
-                if(qInputs[i].value.trim()) {
-                    html += `\n<div class="multi-choice-question match-item" data-q-start="${currentQ}" style="display:flex; justify-content:space-between; align-items:center; overflow:visible;">
-                                 <div class="question-prompt" style="margin-bottom:0; flex:1; padding-right:15px;"><strong>${currentQ}</strong> ${qInputs[i].value.trim()}</div>
-                                 <div class="custom-select-wrapper" id="wrap_q${currentQ}">
-                                    <div class="custom-select-trigger" onclick="toggleCustomSelect(this)">
-                                        <span class="sel-text">Select...</span>
-                                        <span class="sel-arrow">▼</span>
-                                    </div>
-                                    <div class="custom-select-options">
-                                        <div class="custom-option clear-opt" onclick="selectCustomOption(this, '${currentQ}', '')">✕ Clear Answer</div>`;
-                    featureLetters.forEach(L => { 
-                        html += `       <div class="custom-option" onclick="selectCustomOption(this, '${currentQ}', '${L}')"><b>${L}</b></div>`; 
-                    });
-                    html += `       </div>
-                                    <input type="hidden" id="q${currentQ}" value="" ${AC_OFF}>
-                                 </div>
-                             </div>`;
-                    if(aInputs[i].value.trim()) updateAnswerKey(currentQ, aInputs[i].value.trim().toUpperCase());
-                    currentQ++;
-                }
-            }
-            html += `\n</div></div>`;
-            document.getElementById(`gen_q_num_${partNum}`).value = currentQ;
-        } else if (type === 'drag') {
-            const prompt = document.getElementById(`map_prompt_${partNum}`).value;
-            const imgContent = document.getElementById(`map_img_${partNum}`).innerHTML;
-            const qInputs = document.querySelectorAll(`.map-q-num-${partNum}`);
-            const tInputs = document.querySelectorAll(`.map-q-text-${partNum}`);
-            const aInputs = document.querySelectorAll(`.map-q-ans-${partNum}`);
-            const optContainer = document.getElementById(`map_options_container_${partNum}`);
-            
-            let variants = [];
-            for(let i=0; i<optContainer.children.length; i++) { variants.push(optContainer.children[i].innerText); }
-            const variantsStr = variants.join(',');
-
-            let questionsHtml = "";
-            qInputs.forEach((inp, i) => {
-                const qNum = inp.value;
-                const qText = tInputs[i] ? tInputs[i].value.trim() : "";
-                const ans = aInputs[i].value.trim().toUpperCase();
-                if(qNum) {
-                    let inputHtml = "";
-                    if (variants.length > 0) {
-                        inputHtml = `<span class="drop-zone map-drop-zone" data-qid="${qNum}" data-variants="${variantsStr}" onclick="openMapPicker(this)" ondblclick="clearZone(this)">? <input type="hidden" id="q${qNum}" value=""></span><span class="q-flag" onclick="toggleZoneFlag(this)">⚑</span>`;
-                    } else {
-                        inputHtml = `<input type="text" id="q${qNum}" class="answer-input" style="width:60px; text-align:center; margin-left:10px;" ${AC_OFF}>`;
-                    }
-                    questionsHtml += `<div class="map-q-item" style="margin-bottom:10px; font-size:18px; display:inline-block; margin-right:20px;"><strong>${qNum}</strong> ${qText} ${inputHtml}</div>`;
-                    if(ans) updateAnswerKey(qNum, ans);
-                }
-            });
-
-            html = `<div class="map-question-block">`;
-            if(prompt) html += `<p><strong>${formatText(prompt)}</strong></p>`;
-            html += `<div class="map-image" style="text-align:center; margin-bottom:20px; overflow-x:auto;">${imgContent}</div><div class="map-questions-list">${questionsHtml}</div></div>`;
-            document.getElementById(`map_img_${partNum}`).innerHTML = "";
-            document.getElementById(`map_prompt_${partNum}`).value = "";
-        } else if (type === 'flow') {
-            const prompt = document.getElementById(`flow_prompt_${partNum}`).value;
-            const editorContent = document.getElementById(`flow_editor_${partNum}`).innerHTML;
-            const optInputs = document.querySelectorAll(`.flow-opt-text-${partNum}`);
-            
-            let variants = [];
-            let optionsHtml = "";
-            if(optInputs.length > 0) {
-                optionsHtml = '<div class="match-features-box"><h4 style="margin: 0 0 15px 0; text-align: center; color: #8e44ad; text-transform: uppercase; font-size: 14px; letter-spacing: 1px;">Options</h4>';
-                optionsHtml += '<div style="display: flex; flex-wrap: wrap; gap: 20px; justify-content: center;">';
-                optInputs.forEach((inp, i) => {
-                    const label = String.fromCharCode(65 + i);
-                    variants.push(label);
-                    optionsHtml += `<div style="font-size: 15px; display: flex; align-items: center;"><span style="background: #34495e; color: #fff; padding: 2px 8px; border-radius: 6px; margin-right: 8px; font-size: 12px; font-weight: bold;">${label}</span> ${inp.value.trim()}</div>`;
-                });
-                optionsHtml += '</div></div>';
-            }
-            const variantsStr = variants.join(',');
-
-            const tempDiv = document.createElement('div');
-            tempDiv.innerHTML = editorContent;
-            
-            const gaps = tempDiv.querySelectorAll('.temp-flow-gap');
-            gaps.forEach(gap => {
-                const qId = gap.id; 
-                const qNum = gap.getAttribute('placeholder');
-                const newSpan = document.createElement('span');
-                newSpan.className = "drop-zone map-drop-zone";
-                newSpan.setAttribute('data-qid', qNum);
-                newSpan.setAttribute('data-variants', variantsStr);
-                newSpan.setAttribute('onclick', 'openMapPicker(this)');
-                newSpan.setAttribute('ondblclick', 'clearZone(this)');
-                newSpan.innerHTML = `? <input type="hidden" id="${qId}" value="">`;
-                gap.parentNode.replaceChild(newSpan, gap);
+        <form method="POST" action="/create-test-listening" enctype="multipart/form-data">
+            <div class="form-section">
+                <h2>📋 Test Information</h2>
                 
-                const flagSpan = document.createElement('span');
-                flagSpan.className = 'q-flag';
-                flagSpan.setAttribute('onclick', 'toggleZoneFlag(this)');
-                flagSpan.innerHTML = '⚑';
-                newSpan.parentNode.insertBefore(flagSpan, newSpan.nextSibling);
-            });
-
-            html = `<div class="flow-question-block">`;
-            if(prompt) html += `<p class="question-prompt" style="margin-bottom:20px;"><strong>${formatText(prompt)}</strong></p>`;
-            html += optionsHtml;
-            html += `<div class="flow-chart-content" style="text-align: center;">${tempDiv.innerHTML}</div></div>`;
+                <div class="form-group">
+                    <label for="title">Test Title *</label>
+                    <input type="text" id="title" name="title" required placeholder="e.g., English Listening Module 1">
+                    <div class="hint">Give your test a clear, descriptive name</div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="description">Description</label>
+                    <textarea id="description" name="description" placeholder="Describe what students will do in this listening test..."></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="duration">Duration (minutes) *</label>
+                    <input type="number" id="duration" name="duration" required min="1" placeholder="e.g., 30" value="30">
+                </div>
+            </div>
             
-            document.getElementById(`flow_editor_${partNum}`).innerHTML = "";
-            document.getElementById(`flow_prompt_${partNum}`).value = "";
-        } else if (type === 'gap') {
-            const editor = document.getElementById(`gap_editor_${partNum}`);
-            if(!editor.innerText.trim() && !editor.innerHTML.includes('<table') && !editor.innerHTML.includes('<div class="modern-table-wrapper"')) { alert("Gap text is empty."); return; }
-            html = `<div class="gap-fill-text">${editor.innerHTML}</div>`;
-            editor.innerHTML = "";
-        } else if (type === 'table-gap') {
-            const editor = document.getElementById(`gap_editor_${partNum}`);
-            if(!editor.innerText.trim() && !editor.innerHTML.includes('<table') && !editor.innerHTML.includes('<div class="modern-table-wrapper"')) { alert("Table content is empty."); return; }
-            html = `<div class="gap-fill-text">${editor.innerHTML}</div>`;
-            editor.innerHTML = "";
-        } else if (type === 'pick2' || type === 'pick3') {
-            const qNumStart = parseInt(document.getElementById(`gen_q_num_${partNum}`).value);
-            const prompt = document.getElementById(`gen_prompt_${partNum}`).value;
-            const ans1 = document.getElementById(`pick_ans1_${partNum}`).value;
-            const ans2 = document.getElementById(`pick_ans2_${partNum}`).value;
-            let ans3 = null; let limit = 2; let qNumEnd = qNumStart + 1;
-            if (type === 'pick3') { ans3 = document.getElementById(`pick_ans3_${partNum}`).value; limit = 3; qNumEnd = qNumStart + 2; }
-            html = `<div class="pick-n-question" data-group-start="${qNumStart}" data-limit="${limit}"><div class="question-prompt"><p><strong>${qNumStart}-${qNumEnd}</strong> ${formatText(prompt)}</p></div>`;
-            const inputs = document.querySelectorAll(`.mcq-input-${partNum}`);
-            let qIds = []; for(let k=0; k<limit; k++) qIds.push(qNumStart + k); const dataQ = qIds.join(" ");
-            inputs.forEach((inp, idx) => {
-                const letter = String.fromCharCode(65 + idx);
-                html += `\n<div class="multi-choice-option">
-                            <label class="modern-label">
-                                <input type="checkbox" class="multi-checkbox hidden-cb" data-questions="${dataQ}" value="${letter}" ${AC_OFF}>
-                                <span class="custom-cb"></span>
-                                <span class="opt-text"><b>${letter}.</b> ${inp.value.trim()}</span>
-                            </label>
-                         </div>`;
-            });
-            html += `\n</div>`;
-            updateAnswerKey(qNumStart, ans1); updateAnswerKey(qNumStart + 1, ans2); if(type === 'pick3') updateAnswerKey(qNumStart + 2, ans3);
-            document.getElementById(`gen_q_num_${partNum}`).value = qNumStart + limit;
-            document.getElementById(`gen_prompt_${partNum}`).value = "";
-            document.getElementById(`pick_ans1_${partNum}`).value = ""; document.getElementById(`pick_ans2_${partNum}`).value = ""; document.getElementById(`pick_ans3_${partNum}`).value = "";
-            document.querySelectorAll(`.mcq-input-${partNum}`).forEach(i => i.value = "");
-        } else {
-            const qNum = document.getElementById(`gen_q_num_${partNum}`).value;
-            const prompt = document.getElementById(`gen_prompt_${partNum}`).value;
-            const ans = document.getElementById(`gen_ans_${partNum}`).value;
-            if (type === 'mcq') {
-                html = `<div class="multi-choice-question" data-q-start="${qNum}"><div class="question-prompt"><p><strong>${qNum}</strong> ${formatText(prompt)}</p></div>`;
-                const inputs = document.querySelectorAll(`.mcq-input-${partNum}`);
-                inputs.forEach((inp, idx) => {
-                    const letter = String.fromCharCode(65 + idx);
-                    html += `\n<div class="multi-choice-option">
-                                <label class="modern-label">
-                                    <input type="radio" name="q${qNum}" class="hidden-cb" value="${letter}" ${AC_OFF} ondblclick="this.checked=false; saveState();">
-                                    <span class="custom-radio"></span>
-                                    <span class="opt-text"><b>${letter}.</b> ${inp.value.trim()}</span>
-                                </label>
-                             </div>`;
-                });
-                html += `\n</div>`;
-            } else if (type === 'input') {
-                html = `<div class="short-answer-question" data-q-start="${qNum}"><p><strong>${qNum}</strong> ${formatText(prompt)} <input id="q${qNum}" class="answer-input" placeholder="${qNum}" style="width:160px;" ${AC_OFF}></p></div>`;
-            }
-            updateAnswerKey(qNum, ans);
-            document.getElementById(`gen_q_num_${partNum}`).value = parseInt(qNum) + 1;
-            document.getElementById(`gen_prompt_${partNum}`).value = "";
-            document.getElementById(`gen_ans_${partNum}`).value = "";
-            document.querySelectorAll(`.mcq-input-${partNum}`).forEach(i => i.value = "");
-        }
-        targetArea.value += html + "\n";
-    }
-
-    /* --- BUILDER SAVE / LOAD --- */
-    function saveBuilderProject() {
-        const data = {
-            answerKey: document.getElementById('answer_key_json').value,
-            parts: {}
-        };
-        [1,2,3,4].forEach(i => {
-            data.parts[i] = {
-                finalHtml: document.getElementById(`q${i}_text`).value,
-                startQ: document.getElementById(`gen_q_num_${i}`).value
-            };
-        });
-        
-        const blob = new Blob([JSON.stringify(data)], {type: "application/json"});
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = "IELTS_Listening_Project.json";
-        document.body.appendChild(a); a.click(); document.body.removeChild(a);
-    }
-
-    function loadBuilderProject(input) {
-        const file = input.files[0];
-        if(!file) return;
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            try {
-                const data = JSON.parse(e.target.result);
-                document.getElementById('answer_key_json').value = data.answerKey;
-                for(let i=1; i<=4; i++) {
-                    if(data.parts[i]) {
-                        document.getElementById(`q${i}_text`).value = data.parts[i].finalHtml;
-                        if(data.parts[i].startQ) document.getElementById(`gen_q_num_${i}`).value = data.parts[i].startQ;
-                    }
-                }
-                alert("Project Loaded Successfully!");
-            } catch(err) { alert("Error loading file: " + err.message); }
-        };
-        reader.readAsText(file);
-    }
-
-    renderTabs();
-
-    async function generateFile() {
-    const getVal = (id) => document.getElementById(id).value;
-    const testTitle = prompt("Enter a title for this Listening Test:", "New Listening Test");
-    if (!testTitle) return;
-
-    const btn = document.getElementById('downloadBtn');
-    const originalText = btn.innerText;
-
-    // Ссылки на инпуты
-    const fullAudioInput = document.querySelector('input[onchange="processFullAudio(this)"]');
-    const partInputs = document.querySelectorAll('input[onchange^="processAudio(this,"]');
-
-    // Проверка: загружено ли хоть что-то?
-    const hasFull = fullAudioInput.files[0];
-    const hasParts = Array.from(partInputs).some(input => input.files[0]);
-
-    if (!hasFull && !hasParts) {
-        alert("Ошибка: Загрузи либо один полный файл (Option A), либо файлы по частям!");
-        return;
-    }
-
-    btn.innerText = "⏳ Uploading all audios...";
-    btn.disabled = true;
-
-    const formData = new FormData();
-    formData.append('title', testTitle);
-    formData.append('usePause', document.getElementById('add_pause_cb').checked);
-    
-    if (hasFull) {
-        formData.append('audioFile', fullAudioInput.files[0]);
-    }
-
-    partInputs.forEach((input, index) => {
-        if (input.files[0]) {
-            formData.append(`part${index + 1}`, input.files[0]);
-        }
-    });
-
-    const partsData = [
-        getVal('q1_text'),
-        getVal('q2_text'),
-        getVal('q3_text'),
-        getVal('q4_text')
-    ];
-    formData.append('parts', JSON.stringify(partsData));
-    formData.append('answerKey', getVal('answer_key_json'));
-
-    try {
-        const response = await fetch('/create-test/listening', {
-            method: 'POST',
-            body: formData 
-        });
-
-        const result = await response.json();
-        if (result.success) {
-            btn.innerText = "✅ Saved Successfully!";
-            btn.style.background = "#27ae60";
-            setTimeout(() => { window.location.href = "/admin"; }, 1500);
-        } else {
-            throw new Error(result.error);
-        }
-    } catch (err) {
-        alert("Upload failed: " + err.message);
-        btn.innerText = originalText;
-        btn.disabled = false;
-    }
-}
-</script>
+            <div class="form-section">
+                <h2>🎵 Audio Settings</h2>
+                
+                <div class="form-group">
+                    <label for="audioUrl">Audio URL or R2 Link</label>
+                    <input type="url" id="audioUrl" name="audioUrl" placeholder="https://...">
+                    <div class="hint">Paste the URL to your audio file</div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="listeningType">Listening Type</label>
+                    <select id="listeningType" name="listeningType">
+                        <option>Passage Listening</option>
+                        <option>Conversation Listening</option>
+                        <option>Lecture Listening</option>
+                        <option>Multiple Clips</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="form-section">
+                <div class="button-group">
+                    <a href="/create-test" class="btn-cancel" onclick="return confirm(''Are you sure? Progress will be lost.'');">Cancel</a>
+                    <button type="submit" class="btn-submit">Create Listening Test →</button>
+                </div>
+            </div>
+        </form>
+    </div>
 </body>
 </html>

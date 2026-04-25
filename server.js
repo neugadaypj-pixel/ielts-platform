@@ -7,7 +7,8 @@ const session = require('express-session');
 const { S3Client } = require("@aws-sdk/client-s3");
 const multer = require("multer");
 const multerS3 = require("multer-s3");
-const { generateHTMLFromTest } = require('./utils/htmlExporter');
+const { generateHTMLFromTest, stringifyContent } = require('./utils/htmlExporter');
+const { getAuthoringPageHtml } = require('./utils/builderAuthoring');
 const app = express();
 
 // --- 1. DATABASE CONNECTION ---
@@ -74,6 +75,35 @@ function isTeacher(req, res, next) {
     res.redirect('/login');
 }
 
+async function saveValidatedTest({ title, type, content, req }) {
+    if (!title || !String(title).trim()) {
+        throw new Error('Test title is required.');
+    }
+
+    const serializedContent = stringifyContent(content);
+
+    // Validate against the builder-matched renderer before saving.
+    generateHTMLFromTest({
+        _id: new mongoose.Types.ObjectId(),
+        title,
+        type,
+        readingPassage: serializedContent
+    }, {
+        groqApiKey: process.env.GROQ_API_KEY || ''
+    });
+
+    const newTest = new Test({
+        title: String(title).trim(),
+        type,
+        teacherName: req.session.username,
+        createdBy: req.session.userId,
+        readingPassage: serializedContent
+    });
+
+    await newTest.save();
+    return newTest;
+}
+
 // --- 5. ROUTES ---
 
 app.get('/', (req, res) => {
@@ -125,9 +155,17 @@ app.get('/create-test', isAdmin, (req, res) => {
     res.render('create-test-hub'); 
 });
 
-app.get('/create-test/reading', isAdmin, (req, res) => { res.render('create-test-reading'); });
-app.get('/create-test/listening', isAdmin, (req, res) => { res.render('create-test-listening'); });
-app.get('/create-test/writing', isAdmin, (req, res) => { res.render('create-test-writing'); });
+app.get('/create-test/reading', isAdmin, (req, res) => {
+    res.send(getAuthoringPageHtml('reading'));
+});
+
+app.get('/create-test/listening', isAdmin, (req, res) => {
+    res.send(getAuthoringPageHtml('listening'));
+});
+
+app.get('/create-test/writing', isAdmin, (req, res) => {
+    res.send(getAuthoringPageHtml('writing'));
+});
 
 // --- GENERIC FILE UPLOAD ---
 app.post('/upload-test', isAdmin, upload.single('audioFile'), async (req, res) => {
@@ -142,7 +180,7 @@ app.post('/upload-test', isAdmin, upload.single('audioFile'), async (req, res) =
 // --- LISTENING TEST UPLOAD (Direct to R2) ---
 app.post('/create-test/listening', isAdmin, upload.any(), async (req, res) => {
     try {
-        let audioUrls = {};
+        const audioUrls = {};
         
         // Collect all uploaded files and save their R2 URLs
         if (req.files) {
@@ -150,6 +188,15 @@ app.post('/create-test/listening', isAdmin, upload.any(), async (req, res) => {
                 // file.fieldname will be 'audioFile' or 'part1', 'part2', etc.
                 audioUrls[file.fieldname] = file.location;
             });
+        }
+
+        const partsPayload = JSON.parse(req.body.parts || '{}');
+        const parts = {};
+        for (let index = 1; index <= 4; index += 1) {
+            const source = partsPayload[index] ?? partsPayload[String(index)] ?? '';
+            parts[index] = typeof source === 'string'
+                ? { finalHtml: source }
+                : { ...(source || {}), finalHtml: source?.finalHtml ?? source?.html ?? '' };
         }
         
         // Map R2 URLs to the format expected by the template
@@ -162,23 +209,42 @@ app.post('/create-test/listening', isAdmin, upload.any(), async (req, res) => {
                 audioUrls['part3'] || null,
                 audioUrls['part4'] || null
             ],
-            parts: JSON.parse(req.body.parts || '[]'),
+            parts,
             answerKey: JSON.parse(req.body.answerKey || '{}'),
             includePause: req.body.usePause === 'true'
         };
 
-        const newTest = new Test({
+        const newTest = await saveValidatedTest({
             title: req.body.title,
             type: 'listening',
-            teacherName: req.session.username,
-            createdBy: req.session.userId,
-            readingPassage: JSON.stringify(contentObj)
+            content: contentObj,
+            req
         });
 
-        await newTest.save();
-        res.json({ success: true, message: "Test with Cloudflare R2 audio URLs saved successfully!" });
+        res.json({
+            success: true,
+            message: "Listening test saved successfully with Cloudflare R2 audio URLs.",
+            testId: newTest._id
+        });
     } catch (err) {
         console.error("Upload error:", err);
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// --- READING TEST CREATION ---
+app.post('/create-test/reading', isAdmin, async (req, res) => {
+    try {
+        const newTest = await saveValidatedTest({
+            title: req.body.title,
+            type: 'reading',
+            content: req.body.content,
+            req
+        });
+
+        res.json({ success: true, message: "Reading test created successfully!", testId: newTest._id });
+    } catch (err) {
+        console.error("Reading test save error:", err);
         res.status(500).json({ success: false, error: err.message });
     }
 });
@@ -186,36 +252,31 @@ app.post('/create-test/listening', isAdmin, upload.any(), async (req, res) => {
 // --- WRITING TEST CREATION ---
 app.post('/create-test/writing', isAdmin, async (req, res) => {
     try {
-        const { title, description, type, timeLimit, task1, task2 } = req.body;
-
-        const writingTestData = {
-            title,
-            description,
-            timeLimit,
+        const legacyBody = req.body || {};
+        const writingContent = legacyBody.content || {
+            timeLimit: legacyBody.timeLimit,
             task1: {
-                prompt: task1.prompt,
-                image: task1.image || null,
-                modelAnswer: task1.modelAnswer
+                prompt: legacyBody.task1?.prompt,
+                image: legacyBody.task1?.image || null,
+                modelAnswer: legacyBody.task1?.modelAnswer
             },
             task2: {
-                prompt: task2.prompt,
-                modelAnswer: task2.modelAnswer
+                prompt: legacyBody.task2?.prompt,
+                modelAnswer: legacyBody.task2?.modelAnswer
             }
         };
 
-        const newTest = new Test({
-            title: title,
+        const newTest = await saveValidatedTest({
+            title: legacyBody.title,
             type: 'writing',
-            teacherName: req.session.username,
-            createdBy: req.session.userId,
-            readingPassage: JSON.stringify(writingTestData)
+            content: writingContent,
+            req
         });
 
-        await newTest.save();
         res.json({ success: true, message: "Writing test created successfully!", testId: newTest._id });
     } catch (err) {
         console.error("Writing test save error:", err);
-        res.status(500).json({ success: false, message: err.message });
+        res.status(500).json({ success: false, error: err.message });
     }
 });
 
@@ -225,22 +286,17 @@ app.post('/create-test/:type', isAdmin, async (req, res) => {
         const { title, content } = req.body;
         const testType = req.params.type; 
 
-        // Ensure we are saving a clean stringified version of the content
-        const testDataToSave = typeof content === 'string' ? content : JSON.stringify(content);
-
-        const newTest = new Test({
-            title: title,
+        const newTest = await saveValidatedTest({
+            title,
             type: testType,
-            teacherName: req.session.username,
-            createdBy: req.session.userId, // Add reference to the teacher/admin who created it
-            readingPassage: testDataToSave 
+            content,
+            req
         });
 
-        await newTest.save();
         res.json({ success: true, message: `Saved ${testType} test successfully.` });
     } catch (err) {
         console.error("Save Error:", err);
-        res.status(500).json({ success: false, error: "Database save failed." });
+        res.status(500).json({ success: false, error: err.message || "Database save failed." });
     }
 });
 
@@ -356,36 +412,17 @@ app.get('/view-test/:id', async (req, res) => {
     try {
         const test = await Test.findById(req.params.id);
         if (!test) return res.status(404).send("Test not found.");
-        
-        if (test.type === 'reading' || test.type === 'listening') {
-            try {
-                const html = generateHTMLFromTest(test);
-                return res.send(html);
-            } catch (generatorErr) {
-                console.error('HTML generation error:', generatorErr);
-                console.error('Test data:', test);
-                return res.status(500).send(`Error generating test HTML: ${generatorErr.message}`);
-            }
-        }
 
-        if (test.type === 'writing') {
-            try {
-                const writingData = JSON.parse(test.readingPassage);
-                return res.render('export-writing', {
-                    testId: test._id,
-                    title: test.title,
-                    timeLimit: writingData.timeLimit || 60,
-                    task1: writingData.task1,
-                    task2: writingData.task2,
-                    groqApiKey: process.env.GROQ_API_KEY || ''
-                });
-            } catch (err) {
-                console.error('Writing test render error:', err);
-                return res.status(500).send(`Error rendering writing test: ${err.message}`);
-            }
+        try {
+            const html = generateHTMLFromTest(test, {
+                groqApiKey: process.env.GROQ_API_KEY || ''
+            });
+            return res.send(html);
+        } catch (generatorErr) {
+            console.error('HTML generation error:', generatorErr);
+            console.error('Test data:', test);
+            return res.status(500).send(`Error generating test HTML: ${generatorErr.message}`);
         }
-
-        res.send(`<h1>${test.title}</h1><p>Test type ${test.type} viewer is coming soon.</p>`);
     } catch (err) {
         console.error('View test error:', err);
         res.status(500).send(`Error loading test: ${err.message}`);
@@ -402,7 +439,9 @@ app.get('/download-test/:id', async (req, res) => {
         
         try {
             // Generate HTML using the exporter module
-            const html = generateHTMLFromTest(test);
+            const html = generateHTMLFromTest(test, {
+                groqApiKey: process.env.GROQ_API_KEY || ''
+            });
             const safeTitle = test.title.replace(/[^a-z0-9]/gi, '_').toLowerCase();
             res.setHeader('Content-Disposition', `attachment; filename="${safeTitle}.html"`);
             res.setHeader('Content-Type', 'text/html; charset=utf-8');

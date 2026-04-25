@@ -150,7 +150,7 @@
 </head>
 <body>
     <div class="container">
-        <a href="/teacher-dashboard" class="back-btn">← Back to Dashboard</a>
+        <a href="/admin" class="back-btn">← Back to Dashboard</a>
         
         <header>
             <h1>📝 Create a New Test</h1>
@@ -158,21 +158,21 @@
         </header>
         
         <div class="test-types">
-            <a href="/create-test-hub" class="test-option">
+            <div class="test-option" style="opacity: 0.6; cursor: default;">
                 <div class="test-icon">🎯</div>
                 <div class="test-name">Hub Test</div>
-                <div class="test-description">Quick test with general questions</div>
+                <div class="test-description">Legacy placeholder flow</div>
                 <div class="test-features">
                     <ul>
-                        <li>Quick setup</li>
-                        <li>Text questions</li>
-                        <li>Instant grading</li>
+                        <li>Not used for builder parity</li>
+                        <li>Reading, listening, and writing builders are below</li>
+                        <li>Student-facing tests now mirror the official builders</li>
                     </ul>
                 </div>
-                <button class="cta-button">Create Hub Test</button>
-            </a>
+                <button class="cta-button" type="button" disabled>Use Builder Tests Below</button>
+            </div>
             
-            <a href="/create-test-listening" class="test-option">
+            <a href="/create-test/listening" class="test-option">
                 <div class="test-icon">🎧</div>
                 <div class="test-name">Listening Test</div>
                 <div class="test-description">Audio-based assessment</div>
@@ -186,7 +186,7 @@
                 <button class="cta-button">Create Listening Test</button>
             </a>
             
-            <a href="/create-test-reading" class="test-option">
+            <a href="/create-test/reading" class="test-option">
                 <div class="test-icon">📖</div>
                 <div class="test-name">Reading Test</div>
                 <div class="test-description">Text comprehension assessment</div>
@@ -200,7 +200,7 @@
                 <button class="cta-button">Create Reading Test</button>
             </a>
             
-            <a href="/create-test-writing" class="test-option">
+            <a href="/create-test/writing" class="test-option">
                 <div class="test-icon">✍️</div>
                 <div class="test-name">Writing Test</div>
                 <div class="test-description">Written composition assessment</div>

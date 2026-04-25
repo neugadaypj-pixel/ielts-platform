@@ -1,0 +1,2632 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IELTS Listening Builder v31</title>
+    <style>
+        /* --- BUILDER EDITOR STYLES (v60 Port) --- */
+        body { font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); padding: 20px; margin: 0; color: #333; min-height: 100vh; }
+        
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        .container { max-width: 96%; margin: 0 auto; background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); padding: 30px; box-shadow: 0 15px 35px rgba(0,0,0,0.05); border-radius: 25px; animation: slideUpFade 0.8s cubic-bezier(0.16, 1, 0.3, 1); position: relative; }
+        
+        @keyframes slideUpFade { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+        
+        h1 { text-align: center; color: #2c3e50; margin-bottom: 5px; } 
+        p.subtitle { text-align: center; color: #8e44ad; font-weight: bold; margin-top: 0; margin-bottom: 30px; }
+        
+        /* PROJECT CONTROLS */
+        .project-controls { position: absolute; top: 30px; right: 30px; display: flex; gap: 10px; }
+        .btn-proj { padding: 8px 15px; border-radius: 12px; border: none; cursor: pointer; font-size: 13px; font-weight: bold; transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1); display: flex; align-items: center; gap: 5px; }
+        .btn-save { background: #f39c12; color: white; } .btn-save:hover { filter: brightness(1.05); transform: translateY(-2px); }
+        .btn-load { background: #3498db; color: white; } .btn-load:hover { filter: brightness(1.05); transform: translateY(-2px); }
+
+        .tabs { display: flex; border-bottom: 2px solid #e1e4e8; justify-content: center; margin-bottom: 20px; }
+        .tab { padding: 12px 30px; cursor: pointer; background: #f8f9fa; border: 1px solid #e1e4e8; border-bottom: none; margin-right: 5px; border-radius: 15px 15px 0 0; font-weight: 600; color: #666; transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); }
+        .tab:hover { background: #e9ecef; color: #8e44ad; }
+        .tab.active { background: white; color: #8e44ad; border-bottom: 2px solid white; margin-bottom: -2px; border-top: 3px solid #8e44ad; }
+        
+        .tab-content { display: none; padding: 30px; border: 1px solid #e1e4e8; border-top: none; background: white; border-radius: 0 0 20px 20px; }
+        .tab-content.active { display: block; animation: slideUpFade 0.4s ease-out; }
+
+        .editor-grid { display: flex; gap: 40px; }
+        .left-panel { flex: 0 0 300px; display: flex; flex-direction: column; } 
+        .right-panel { flex: 1; display: flex; flex-direction: column; }
+        
+        h3 { color: #34495e; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-top: 0; }
+        label { font-weight: 600; margin-top: 15px; display: block; font-size: 14px; color: #34495e; }
+        input[type="text"], input[type="number"], select { width: 100%; padding: 10px; margin-top: 5px; border: 1px solid #ccc; border-radius: 12px; font-size: 14px; outline: none; transition: border 0.3s, box-shadow 0.3s; }
+        input[type="text"]:focus, textarea:focus, select:focus { border-color: #8e44ad; box-shadow: 0 0 0 4px rgba(142, 68, 173, 0.15); }
+        textarea { width: 100%; height: 400px; padding: 12px; font-family: 'Consolas', monospace; border: 1px solid #ccc; border-radius: 12px; resize: vertical; font-size: 13px; line-height: 1.5; background: #fdfdfd; outline: none; transition: border 0.3s, box-shadow 0.3s; }
+        
+        .gen-textarea { height: 200px; border: 2px solid #3498db; }
+        .gen-editor { height: 300px; border: 2px solid #3498db; border-radius: 12px; padding: 15px; overflow-y: auto; background: #fff; outline: none; transition: border 0.3s, box-shadow 0.3s; }
+        .gen-editor:focus { border-color: #8e44ad; box-shadow: 0 0 0 4px rgba(142, 68, 173, 0.15); }
+        .gap-controls { background: #eaf2f8; padding: 12px; border-radius: 12px; margin-bottom: 10px; border: 1px solid #a9cce3; }
+
+        .tools { background: #f4ecf7; padding: 20px; border-radius: 20px; border: 1px solid #e8daef; margin-bottom: 20px; }
+        .tools h4 { margin: 0 0 15px 0; color: #8e44ad; font-size: 15px; text-transform: uppercase; letter-spacing: 0.5px; }
+        
+        .helper-row { display: flex; gap: 15px; margin-bottom: 15px; }
+        .col-1 { flex: 1; } .col-2 { flex: 2; } .col-3 { flex: 3; }
+        
+        button { cursor: pointer; border: none; border-radius: 12px; font-weight: 600; transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1); }
+        button:hover { transform: translateY(-2px); filter: brightness(1.05); }
+        button:active { transform: scale(0.95); }
+        
+        .btn-insert { background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%); color: white; padding: 12px; width: 100%; font-size: 14px; margin-top: 15px; border-radius: 30px; border: 1px solid rgba(255,255,255,0.2); box-shadow: 0 4px 10px rgba(142, 68, 173, 0.3); }
+        .btn-insert:hover { box-shadow: 0 8px 20px rgba(142, 68, 173, 0.4); }
+        
+        .btn-format { background: #ecf0f1; color: #2c3e50; padding: 6px 12px; font-size: 13px; margin-right: 5px; border: 1px solid #bdc3c7; border-radius: 8px; }
+        .btn-gap { background: #3498db; color: white; width: 100%; padding: 10px; border-radius: 8px; box-shadow: 0 3px 8px rgba(52, 152, 219, 0.3); }
+        .btn-small { padding: 4px 8px; font-size: 12px; margin-left: 5px; }
+        .btn-add { background: #27ae60; color: white; }
+        .btn-rem { background: #c0392b; color: white; }
+
+        .sub-group-box { border: 1px dashed #bdc3c7; padding: 10px; margin-top: 5px; border-radius: 12px; background: #fff; }
+        .match-row { display: flex; gap: 5px; margin-bottom: 5px; align-items: center; }
+
+        .action-area { margin-top: 40px; padding-top: 20px; border-top: 2px solid #eee; background: #fdfefe; padding: 20px; border-radius: 15px; }
+        .btn-download { background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%); color: white; font-size: 18px; padding: 15px 30px; width: 100%; display: block; border-radius: 30px; box-shadow: 0 10px 20px rgba(39, 174, 96, 0.3); cursor: pointer; border: 1px solid rgba(255,255,255,0.2); transition: all 0.3s ease; backdrop-filter: blur(5px); margin-top: 15px; }
+        
+        .file-upload-box { border: 2px dashed #8e44ad; padding: 20px; border-radius: 15px; background: #f4ecf7; margin-bottom: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .audio-slot { background: white; padding: 15px; border-radius: 12px; border: 1px solid #e1e4e8; box-shadow: 0 2px 10px rgba(0,0,0,0.02); }
+        .audio-slot h4 { margin-top: 0; color: #8e44ad; }
+        .file-status { margin-top: 5px; font-weight: bold; color: #27ae60; font-size: 12px; min-height: 18px; }
+
+        .json-area { background: #2c3e50; color: #a5d6a7; border: none; font-family: monospace; padding: 15px; border-radius: 12px; height: 150px; width: 100%; box-sizing: border-box; }
+        .hidden-field { display: none; }
+        
+        .mcq-option-row { display: flex; gap: 5px; align-items: center; margin-bottom: 5px; }
+        .mcq-badge { background: #34495e; color: white; padding: 5px 10px; border-radius: 6px; font-size: 12px; min-width: 30px; text-align: center; }
+        .paste-tip { background: #d4edda; color: #155724; padding: 8px; border-radius: 8px; font-size: 13px; margin-bottom: 10px; border: 1px solid #c3e6cb; display: none; }
+
+        /* --- INVISIBLE TABLE STYLES (BUILDER) --- */
+        .invisible-table { width: 100%; border-collapse: collapse; margin-bottom: 15px; border: 2px dashed #bdc3c7; background-color: rgba(241, 245, 249, 0.3); }
+        .invisible-table td, .invisible-table th { border: 2px dashed #bdc3c7; padding: 10px; vertical-align: top; }
+
+        /* --- MODERN TABLE STYLES --- */
+        .modern-table-wrapper { width: 100%; overflow-x: auto; margin: 15px 0; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.03); border: 1px solid #e1e4e8; background: #fff; }
+        .modern-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 15px; }
+        .modern-table th, .modern-table td { padding: 12px 15px; border-bottom: 1px solid #e1e4e8; border-right: 1px solid #e1e4e8; vertical-align: top; }
+        .modern-table th:last-child, .modern-table td:last-child { border-right: none; }
+        .modern-table tr:last-child th, .modern-table tr:last-child td { border-bottom: none; }
+        .modern-table thead tr { background-color: #f8f9fa; color: #2c3e50; font-weight: 600; }
+        .modern-table tbody tr:nth-child(even) { background-color: #fdfdfd; }
+        .modern-table tbody tr:hover { background-color: #f4ecf7; }
+        
+        /* MODERN FLOW BOX (Pill-shaped ovals, strictly 15px font) */
+        .flow-box { padding: 8px 20px; border: 2px solid #e1e4e8; border-radius: 50px; background: #fff; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.02); transition: transform 0.2s, box-shadow 0.2s; min-width: 80px; display: inline-block; vertical-align: middle; margin: 0 auto; line-height: 1.5; font-size: 15px !important; color: #333; }
+        .flow-box:hover { border-color: #bdc3c7; box-shadow: 0 6px 15px rgba(0,0,0,0.05); }
+
+        /* Fix for overly wide flow chart gaps */
+        .flow-box .gap-input, .flow-chart-content .gap-input { width: 70px !important; padding: 5px; margin: 0 auto; text-align: center; }
+        .flow-box .map-drop-zone, .flow-chart-content .map-drop-zone { min-width: 60px; height: 30px; padding: 0 8px; font-size: 14px; margin: 0 auto; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="project-controls">
+        <button class="btn-proj btn-save" onclick="saveBuilderProject()">💾 Save Project</button>
+        <button class="btn-proj btn-load" onclick="document.getElementById('projectLoader').click()">📂 Load Project</button>
+        <input type="file" id="projectLoader" style="display:none" onchange="loadBuilderProject(this)" accept=".json">
+    </div>
+
+    <h1>IELTS Listening Builder v31</h1>
+    <p class="subtitle">Auto-Scoring • Locked Timer • Telegram Submissions</p>
+
+    <div class="tabs">
+        <div class="tab active" onclick="switchTab(1)">Part 1</div>
+        <div class="tab" onclick="switchTab(2)">Part 2</div>
+        <div class="tab" onclick="switchTab(3)">Part 3</div>
+        <div class="tab" onclick="switchTab(4)">Part 4</div>
+    </div>
+
+    <div id="tab-wrapper"></div>
+
+    <div class="action-area">
+        <h3>Step 1: Upload Audio Files</h3>
+        
+        <div style="margin-bottom: 15px; background: #eaf2f8; padding: 10px 15px; border-radius: 10px; border: 1px solid #3498db; display: inline-block;">
+            <label style="margin: 0; cursor: pointer; color: #2980b9; font-weight: bold; display: flex; align-items: center; gap: 8px;">
+                <input type="checkbox" id="add_pause_cb" style="width: 18px; height: 18px; cursor: pointer; margin: 0;">
+                Add 30-Second Pause Between Parts (For split audio files)
+            </label>
+        </div>
+
+        <div class="file-upload-box">
+            <div class="audio-slot" style="grid-column: span 2; background: #eaf2f8; border-color: #3498db; text-align: center;">
+                <h4 style="color: #2980b9;">Option A: Upload ONE Full Audio File</h4>
+                <input type="file" onchange="processFullAudio(this)" accept=".mp3, .wav, .ogg">
+                <div id="status_full" class="file-status"></div>
+                <p style="font-size:12px; color:#555; margin-top:5px;">(If you upload a file here, the 4 individual part audios below will be ignored)</p>
+            </div>
+            
+            <div style="grid-column: span 2; text-align: center; color: #7f8c8d; font-weight: bold; margin: -10px 0;">— OR (Upload By Parts) —</div>
+
+            <div class="audio-slot">
+                <h4>Part 1 Audio</h4>
+                <input type="file" onchange="processAudio(this, 1)" accept=".mp3, .wav, .ogg">
+                <div id="status_1" class="file-status"></div>
+            </div>
+            <div class="audio-slot">
+                <h4>Part 2 Audio</h4>
+                <input type="file" onchange="processAudio(this, 2)" accept=".mp3, .wav, .ogg">
+                <div id="status_2" class="file-status"></div>
+            </div>
+            <div class="audio-slot">
+                <h4>Part 3 Audio</h4>
+                <input type="file" onchange="processAudio(this, 3)" accept=".mp3, .wav, .ogg">
+                <div id="status_3" class="file-status"></div>
+            </div>
+            <div class="audio-slot">
+                <h4>Part 4 Audio</h4>
+                <input type="file" onchange="processAudio(this, 4)" accept=".mp3, .wav, .ogg">
+                <div id="status_4" class="file-status"></div>
+            </div>
+        </div>
+
+        <h3>Step 2: Answer Key (Auto-Generated)</h3>
+        <textarea id="answer_key_json" class="json-area">{}</textarea>
+        <button class="btn-download" id="downloadBtn" onclick="generateFile()">Download Final Listening Test</button>
+    </div>
+</div>
+
+<script>
+    let fullAudioData = null;
+    let audioParts = [null, null, null, null]; 
+    let lastSavedRange = null;
+
+    function saveSelection() {
+        const sel = window.getSelection();
+        if (sel.rangeCount > 0) {
+            lastSavedRange = sel.getRangeAt(0);
+        }
+    }
+
+    function processFullAudio(input) {
+        const file = input.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(evt) {
+            fullAudioData = evt.target.result;
+            document.getElementById('status_full').innerText = "✅ Ready (Full Audio): " + file.name;
+        };
+        reader.readAsDataURL(file);
+    }
+
+    function processAudio(input, partNum) {
+        const file = input.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(evt) {
+            audioParts[partNum - 1] = evt.target.result;
+            document.getElementById(`status_${partNum}`).innerText = "✅ Ready: " + file.name;
+        };
+        reader.readAsDataURL(file);
+    }
+
+    function renderTabs() {
+        const wrapper = document.getElementById('tab-wrapper');
+        let html = "";
+        for (let i = 1; i <= 4; i++) {
+            const isActive = i === 1 ? 'active' : '';
+            html += `
+            <div id="part${i}" class="tab-content ${isActive}">
+                <div class="editor-grid">
+                    <div class="left-panel">
+                        <h3>Info</h3>
+                        <div style="background:#f8f9fa; padding:15px; border-radius:15px; border:1px solid #e9ecef;">
+                           <p><strong>Part ${i}</strong></p>
+                           <p style="font-size:13px; color:#555;">Design your questions here.</p>
+                        </div>
+                    </div>
+                    <div class="right-panel">
+                        <h3>Part ${i} Questions</h3>
+                        <div class="paste-tip" id="paste_tip_${i}">✅ Image detected!</div>
+                        <div class="tools">
+                            <h4>Question Generator</h4>
+                            <div class="helper-row">
+                                <div class="col-3"><label style="margin-top:0">Question Type</label>
+                                    <select id="gen_type_${i}" onchange="toggleGeneratorFields(${i})">
+                                        <option value="header">Section Header / Text</option>
+                                        <option value="gap">Fill in the Blanks (Gap Fill)</option>
+                                        <option value="table-gap">Fill in the Blanks (Table)</option>
+                                        <option value="mcq">Standard MCQ (Pick 1)</option>
+                                        <option value="match">Matching Features (Custom Dropdown)</option>
+                                        <option value="pick2">Pick 2 (Select 2)</option>
+                                        <option value="pick3">Pick 3 (Select 3)</option>
+                                        <option value="input">Short Answer</option>
+                                        <option value="drag">Map Labeling / Dropdowns</option>
+                                        <option value="flow">Completing Flow Chart</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div id="common_fields_${i}">
+                                <div id="q_num_row_${i}" class="helper-row">
+                                    <div class="col-1"><label>Start Q No.</label><input type="number" id="gen_q_num_${i}" value="${(i-1)*10 + 1}"></div>
+                                    <div class="col-2" id="info_pick_${i}" style="display:none; color:#e67e22; font-size:12px; padding-top:25px;"></div>
+                                </div>
+                                <div id="std_prompt_box_${i}">
+                                    <label>Prompt (Question Text / Image)</label>
+                                    <div style="margin-bottom:5px;">
+                                        <button class="btn-format" onmousedown="event.preventDefault()" onclick="insertTag('gen_prompt_${i}', '<p>', '</p>')">Paragraph</button>
+                                        <button class="btn-format" onmousedown="event.preventDefault()" onclick="insertTag('gen_prompt_${i}', '<strong>', '</strong>')">Bold</button>
+                                        <button class="btn-format" onmousedown="event.preventDefault()" onclick="insertTag('gen_prompt_${i}', '<em>', '</em>')">Italic</button>
+                                        <button class="btn-format" onmousedown="event.preventDefault()" onclick="insertTag('gen_prompt_${i}', '<u>', '</u>')">Underline</button>
+                                    </div>
+                                    <textarea id="gen_prompt_${i}" class="magic-paste" style="height:70px;"></textarea>
+                                </div>
+                            </div>
+                            <div id="match_fields_${i}" class="hidden-field">
+                                <label style="color:#8e44ad;">1. Define Features</label>
+                                <div class="sub-group-box">
+                                    <div id="match_options_list_${i}"></div>
+                                    <button class="btn-small btn-add" onclick="addMatchOption(${i})">+ Add Feature</button>
+                                    <button class="btn-small btn-rem" onclick="remMatchOption(${i})">- Remove</button>
+                                </div>
+                                <label style="color:#2980b9; margin-top:15px;">2. Add Questions</label>
+                                <div class="sub-group-box">
+                                    <div id="match_questions_list_${i}"></div>
+                                    <button class="btn-small btn-add" onclick="addMatchQuestion(${i})">+ Add Question</button>
+                                    <button class="btn-small btn-rem" onclick="remMatchQuestion(${i})">- Remove</button>
+                                </div>
+                            </div>
+                            <div id="gap_fields_${i}" class="hidden-field">
+                                <label style="color:#2980b9;">Gap Fill Editor</label>
+                                <div style="margin-bottom:5px;">
+                                    <button class="btn-format" onmousedown="event.preventDefault(); document.execCommand('bold');">Bold</button>
+                                    <button class="btn-format" onmousedown="event.preventDefault(); document.execCommand('italic');">Italic</button>
+                                    <button class="btn-format" onmousedown="event.preventDefault(); document.execCommand('underline');">Underline</button>
+                                    <button class="btn-format" onmousedown="event.preventDefault(); document.execCommand('justifyCenter');">Center</button>
+                                    <button class="btn-format" type="button" onmousedown="event.preventDefault()" onclick="insertTableTemplate(${i})">Create Modern Table</button>
+                                    <button class="btn-format" type="button" onmousedown="event.preventDefault()" onclick="insertInvisibleTable(${i})">Create Invisible Table</button>
+                                </div>
+                                <div class="gap-controls">
+                                    <button class="btn-gap" type="button" onmousedown="event.preventDefault()" onclick="insertGapPlaceholder(${i})">➕ Insert Gap [Input] at Cursor</button>
+                                </div>
+                                <div id="gap_editor_${i}" class="gen-editor magic-paste" contenteditable="true" onkeyup="saveSelection()" onmouseup="saveSelection()" onmouseout="saveSelection()"></div>
+                            </div>
+                            <div id="mcq_fields_${i}" class="hidden-field" style="margin-top:10px; border-top:1px dashed #ccc; padding-top:10px;">
+                                <label>Options List (A, B, C...):</label>
+                                <div id="mcq_options_container_${i}"></div>
+                                <div style="margin-top:5px;">
+                                    <button class="btn-small btn-add" onclick="addMcqOption(${i})">+ Add Option</button>
+                                    <button class="btn-small btn-rem" onclick="removeMcqOption(${i})">- Remove Last</button>
+                                </div>
+                            </div>
+                            <div id="drag_fields_${i}" class="hidden-field">
+                                <label>Map Prompt / Instruction</label>
+                                <input type="text" id="map_prompt_${i}" placeholder="e.g. Label the map below...">
+                                <label>1. Map Image (Paste Here)</label>
+                                <div id="map_img_${i}" class="gen-editor" contenteditable="true" onpaste="handleImagePaste(event, this)" style="height:200px; overflow:auto; border:2px dashed #ccc; padding:10px;"></div>
+                                
+                                <label style="color:#2980b9; margin-top:10px;">2. Questions</label>
+                                <div id="map_questions_container_${i}"></div>
+                                <div style="margin-top:5px;"><button class="btn-small btn-add" onclick="addMapQuestion(${i})">+ Add Q</button> <button class="btn-small btn-rem" onclick="remMapQuestion(${i})">- Remove</button></div>
+
+                                <label style="color:#8e44ad; margin-top:10px;">3. Variants (A, B, C...)</label>
+                                <div id="map_options_container_${i}" style="display:flex; flex-wrap:wrap; gap:5px; margin-bottom:5px; min-height:30px;"></div>
+                                <div style="margin-top:5px;"><button class="btn-small btn-add" onclick="addMapOption(${i})">+ Add Variant</button> <button class="btn-small btn-rem" onclick="remMapOption(${i})">- Remove</button></div>
+                            </div>
+                            
+                            <div id="flow_fields_${i}" class="hidden-field">
+                                <label>Flow Chart Prompt / Instruction</label>
+                                <input type="text" id="flow_prompt_${i}" placeholder="e.g. Complete the flow chart below...">
+                                
+                                <label style="color:#8e44ad; margin-top:10px;">1. Define Options (The Box of Choices)</label>
+                                <div class="sub-group-box">
+                                    <div id="flow_options_container_${i}"></div>
+                                    <div style="margin-top:5px;"><button class="btn-small btn-add" onclick="addFlowOption(${i})">+ Add Variant</button> <button class="btn-small btn-rem" onclick="remFlowOption(${i})">- Remove</button></div>
+                                </div>
+
+                                <label style="color:#2980b9; margin-top:15px;">2. Design Flow Chart (Write Text, Add Arrows, Insert Gaps)</label>
+                                <div style="margin-bottom:5px;">
+                                    <button class="btn-format" onmousedown="event.preventDefault(); document.execCommand('bold');">Bold</button>
+                                    <button class="btn-format" onmousedown="event.preventDefault(); document.execCommand('italic');">Italic</button>
+                                    <button class="btn-format" onmousedown="event.preventDefault(); document.execCommand('underline');">Underline</button>
+                                    
+                                    <button class="btn-format" onmousedown="event.preventDefault()" onclick="insertTag('flow_editor_${i}', '<div style=\\'text-align:center; margin:8px 0;\\'><span style=\\'font-size:22px; font-weight:bold; color:#8e44ad;\\'>&darr;</span></div><div><br></div>', '')">↓ Down Arrow (Centered)</button>
+                                    <button class="btn-format" onmousedown="event.preventDefault()" onclick="insertTag('flow_editor_${i}', ' <span style=\\'font-size:20px; font-weight:bold; color:#8e44ad;\\'>&rarr;</span> ', '')">→ Right Arrow</button>
+                                    <button class="btn-format" type="button" onmousedown="event.preventDefault()" onclick="insertFlowTableTemplate(${i})">Create Modern Boxes</button>
+                                </div>
+                                <div class="gap-controls">
+                                    <button class="btn-gap" type="button" onmousedown="event.preventDefault()" onclick="insertFlowGap(${i})">➕ Insert Gap [Select Picker]</button>
+                                </div>
+                                <div id="flow_editor_${i}" class="gen-editor magic-paste" contenteditable="true" onkeyup="saveSelection()" onmouseup="saveSelection()" onmouseout="saveSelection()" style="text-align: center; font-size:15px;"></div>
+                            </div>
+                            
+                            <div id="std_ans_field_${i}">
+                                <label>Correct Answer</label><input type="text" id="gen_ans_${i}">
+                            </div>
+                            <div id="pick_ans_field_${i}" class="hidden-field">
+                                <div class="helper-row">
+                                    <div class="col-1"><label>Ans 1</label><input type="text" id="pick_ans1_${i}" placeholder="e.g. A"></div>
+                                    <div class="col-1"><label>Ans 2</label><input type="text" id="pick_ans2_${i}" placeholder="e.g. C"></div>
+                                    <div class="col-1" id="pick3_input_${i}" style="display:none;"><label>Ans 3</label><input type="text" id="pick_ans3_${i}" placeholder="e.g. E"></div>
+                                </div>
+                            </div>
+                            <button class="btn-insert" onclick="insertQuestion(${i})">Insert to Panel</button>
+                        </div>
+                        <label>Final HTML Code:</label><textarea id="q${i}_text"></textarea>
+                    </div>
+                </div>
+            </div>`;
+        }
+        wrapper.innerHTML = html;
+        setTimeout(() => {
+            [1,2,3,4].forEach(i => { 
+                resetMcqOptions(i); 
+                addMatchOption(i, 'A'); addMatchOption(i, 'B'); addMatchOption(i, 'C');
+                addMatchQuestion(i);
+                addMapQuestion(i); addMapQuestion(i);
+                addMapOption(i, 'A'); addMapOption(i, 'B'); addMapOption(i, 'C');
+                addFlowOption(i, 'A'); addFlowOption(i, 'B'); addFlowOption(i, 'C');
+                document.getElementById(`gen_type_${i}`).value = 'gap'; 
+                toggleGeneratorFields(i); 
+            });
+            initMagicPaste();
+        }, 100);
+    }
+
+    /* --- UTILITIES --- */
+    function insertTableTemplate(partNum) { insertTableGeneric(`gap_editor_${partNum}`); }
+    function insertInvisibleTable(partNum) {
+        const editor = document.getElementById(`gap_editor_${partNum}`);
+        if (!editor) return;
+        let savedRange = null;
+        const sel = window.getSelection();
+        if (sel.rangeCount > 0 && editor.contains(sel.getRangeAt(0).commonAncestorContainer)) { savedRange = sel.getRangeAt(0); }
+        else if (lastSavedRange && editor.contains(lastSavedRange.commonAncestorContainer)) { savedRange = lastSavedRange; }
+
+        const rows = prompt("Rows:", "3"); if(!rows) return;
+        const cols = prompt("Columns:", "2"); if(!cols) return;
+
+        let t = '<table class="invisible-table"><tbody>';
+        for(let r=0; r<rows; r++) {
+            t += '<tr>';
+            for(let c=0; c<cols; c++) { t += '<td>Text...</td>'; }
+            t += '</tr>';
+        }
+        t += '</tbody></table><p><br></p>';
+        
+        editor.focus();
+        const newSel = window.getSelection(); newSel.removeAllRanges();
+        if (savedRange) newSel.addRange(savedRange);
+        else { const range = document.createRange(); range.selectNodeContents(editor); range.collapse(false); newSel.addRange(range); }
+        document.execCommand('insertHTML', false, t);
+        saveSelection();
+    }
+    
+    function insertFlowTableTemplate(partNum) {
+        const editor = document.getElementById(`flow_editor_${partNum}`);
+        if (!editor) return;
+        let savedRange = null;
+        const sel = window.getSelection();
+        if (sel.rangeCount > 0 && editor.contains(sel.getRangeAt(0).commonAncestorContainer)) { savedRange = sel.getRangeAt(0); }
+        else if (lastSavedRange && editor.contains(lastSavedRange.commonAncestorContainer)) { savedRange = lastSavedRange; }
+
+        const rows = prompt("Rows:", "3"); if(!rows) return;
+        const cols = prompt("Columns:", "1"); if(!cols) return;
+
+        let t = `<div style="display: grid; grid-template-columns: repeat(${cols}, 1fr); gap: 20px; margin-bottom: 15px; justify-items: center; align-items: center; text-align: center;">`;
+        for(let r=0; r<rows; r++) {
+            for(let c=0; c<cols; c++) { 
+                t += '<div class="flow-box">Text...</div>'; 
+            }
+        }
+        // SAFEY BREAK: Inserts a clean, normal-sized div after the flow chart so you don't get stuck inside it
+        t += '</div><div><br></div>';
+
+        editor.focus();
+        const newSel = window.getSelection(); newSel.removeAllRanges();
+        if (savedRange) newSel.addRange(savedRange);
+        else { const range = document.createRange(); range.selectNodeContents(editor); range.collapse(false); newSel.addRange(range); }
+        document.execCommand('insertHTML', false, t);
+        saveSelection();
+    }
+    
+    function insertTableGeneric(editorId) {
+        const editor = document.getElementById(editorId);
+        if (!editor) return;
+        let savedRange = null;
+        const sel = window.getSelection();
+        if (sel.rangeCount > 0 && editor.contains(sel.getRangeAt(0).commonAncestorContainer)) { savedRange = sel.getRangeAt(0); }
+        else if (lastSavedRange && editor.contains(lastSavedRange.commonAncestorContainer)) { savedRange = lastSavedRange; }
+
+        const rows = prompt("Rows (excluding header):", "3"); if(!rows) return;
+        const cols = prompt("Columns:", "2"); if(!cols) return;
+
+        let t = '<div class="modern-table-wrapper"><table class="modern-table"><thead><tr>';
+        for(let c=0; c<cols; c++) { t += '<th>Header ' + (c+1) + '</th>'; }
+        t += '</tr></thead><tbody>';
+        for(let r=0; r<rows; r++) {
+            t += '<tr>';
+            for(let c=0; c<cols; c++) { t += '<td>Text...</td>'; }
+            t += '</tr>';
+        }
+        t += '</tbody></table></div><p><br></p>';
+        
+        editor.focus();
+        const newSel = window.getSelection(); newSel.removeAllRanges();
+        if (savedRange) newSel.addRange(savedRange);
+        else { const range = document.createRange(); range.selectNodeContents(editor); range.collapse(false); newSel.addRange(range); }
+        document.execCommand('insertHTML', false, t);
+        saveSelection();
+    }
+
+    function initMagicPaste() {
+        document.querySelectorAll('.magic-paste').forEach(el => {
+            el.addEventListener('paste', function(e) {
+                const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+                let hasImage = false;
+                for (let index in items) {
+                    const item = items[index];
+                    if (item.kind === 'file' && item.type.includes('image/')) {
+                        hasImage = true;
+                        e.preventDefault(); 
+                        const blob = item.getAsFile();
+                        const reader = new FileReader();
+                        reader.onload = function(event) {
+                            const base64 = event.target.result;
+                            const htmlTag = `<img src="${base64}" style="max-width:100%; display:block; margin:10px auto; border:1px solid #ddd; border-radius:8px;">`;
+                            insertAtCursor(el, htmlTag);
+                        };
+                        reader.readAsDataURL(blob);
+                    }
+                }
+                if(hasImage) {
+                    const tip = el.closest('.tab-content').querySelector('.paste-tip');
+                    if(tip) { tip.style.display = 'block'; setTimeout(() => tip.style.display = 'none', 3000); }
+                }
+            });
+        });
+    }
+
+    function handleImagePaste(e, el) {
+        const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+        for (let index in items) {
+            const item = items[index];
+            if (item.kind === 'file' && item.type.includes('image/')) {
+                e.preventDefault();
+                const blob = item.getAsFile();
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    const base64 = event.target.result;
+                    const htmlTag = `<img src="${base64}" style="max-width:100%; display:block; margin:10px auto; border:1px solid #ddd; border-radius:8px;">`;
+                    document.execCommand('insertHTML', false, htmlTag);
+                };
+                reader.readAsDataURL(blob);
+                return;
+            }
+        }
+    }
+
+    function insertAtCursor(field, text) {
+        if (typeof field === 'string') field = document.getElementById(field);
+        if (!field) return;
+
+        if (field.tagName === 'TEXTAREA' || field.tagName === 'INPUT') {
+            if (document.selection) { field.focus(); let sel = document.selection.createRange(); sel.text = text; }
+            else if (field.selectionStart || field.selectionStart === 0) { let startPos = field.selectionStart; let endPos = field.selectionEnd; field.value = field.value.substring(0, startPos) + text + field.value.substring(endPos, field.value.length); field.selectionStart = startPos + text.length; field.selectionEnd = startPos + text.length; }
+            else { field.value += text; }
+        } else {
+            if (lastSavedRange) {
+                const sel = window.getSelection();
+                sel.removeAllRanges();
+                sel.addRange(lastSavedRange);
+            } else { field.focus(); }
+            document.execCommand('insertHTML', false, text);
+        }
+    }
+
+    function addMatchOption(part, labelOverride=null) {
+        const container = document.getElementById(`match_options_list_${part}`);
+        const count = container.children.length;
+        const label = labelOverride || String.fromCharCode(65 + count);
+        const div = document.createElement('div');
+        div.className = 'match-row';
+        div.innerHTML = `<span class="mcq-badge">${label}</span><input type="text" class="match-opt-text-${part}" placeholder="Feature Name...">`;
+        container.appendChild(div);
+    }
+    function remMatchOption(part) {
+        const container = document.getElementById(`match_options_list_${part}`);
+        if(container.children.length > 2) container.removeChild(container.lastElementChild);
+    }
+    function addMatchQuestion(part) {
+        const container = document.getElementById(`match_questions_list_${part}`);
+        const div = document.createElement('div');
+        div.className = 'match-row';
+        div.innerHTML = `<input type="text" class="match-q-text-${part}" placeholder="Question / Statement..." style="flex:2">
+                         <input type="text" class="match-q-ans-${part}" placeholder="Ans" style="flex:1; width:50px; text-align:center;">`;
+        container.appendChild(div);
+    }
+    function remMatchQuestion(part) {
+        const container = document.getElementById(`match_questions_list_${part}`);
+        if(container.children.length > 1) container.removeChild(container.lastElementChild);
+    }
+    // --- MAP HELPERS ---
+    function addMapQuestion(part) {
+        const container = document.getElementById(`map_questions_container_${part}`);
+        const count = container.children.length + 1;
+        const div = document.createElement('div');
+        div.className = 'match-row';
+        div.innerHTML = `<input type="number" class="map-q-num-${part}" placeholder="Q No." value="${(part-1)*10 + count}" style="width:60px;">
+                         <input type="text" class="map-q-text-${part}" placeholder="Question Text (e.g. Cafe)" style="flex:2;">
+                         <input type="text" class="map-q-ans-${part}" placeholder="Ans" style="flex:1;">`;
+        container.appendChild(div);
+    }
+    function remMapQuestion(part) {
+        const container = document.getElementById(`map_questions_container_${part}`);
+        if(container.children.length > 0) container.removeChild(container.lastElementChild);
+    }
+    function addMapOption(part, labelOverride=null) {
+        const container = document.getElementById(`map_options_container_${part}`);
+        const count = container.children.length;
+        const label = labelOverride || String.fromCharCode(65 + count);
+        const span = document.createElement('span');
+        span.className = 'mcq-badge';
+        span.innerText = label;
+        container.appendChild(span);
+    }
+    function remMapOption(part) {
+        const container = document.getElementById(`map_options_container_${part}`);
+        if(container.children.length > 0) container.removeChild(container.lastElementChild);
+    }
+    // --- FLOW CHART HELPERS ---
+    function addFlowOption(part, labelOverride=null) {
+        const container = document.getElementById(`flow_options_container_${part}`);
+        const count = container.children.length;
+        const label = labelOverride || String.fromCharCode(65 + count);
+        const div = document.createElement('div');
+        div.className = 'match-row';
+        div.innerHTML = `<span class="mcq-badge">${label}</span><input type="text" class="flow-opt-text-${part}" placeholder="Option Description...">`;
+        container.appendChild(div);
+    }
+    function remFlowOption(part) {
+        const container = document.getElementById(`flow_options_container_${part}`);
+        if(container.children.length > 0) container.removeChild(container.lastElementChild);
+    }
+
+    function insertFlowGap(partNum) {
+        const editor = document.getElementById(`flow_editor_${partNum}`);
+        if (!editor) return;
+        
+        let savedRange = null;
+        const sel = window.getSelection();
+        if (sel.rangeCount > 0 && editor.contains(sel.getRangeAt(0).commonAncestorContainer)) {
+            savedRange = sel.getRangeAt(0);
+        } else if (lastSavedRange && editor.contains(lastSavedRange.commonAncestorContainer)) {
+            savedRange = lastSavedRange;
+        }
+
+        const qNumInput = document.getElementById(`gen_q_num_${partNum}`);
+        let currentQ = qNumInput.value;
+        const finalQ = prompt("Enter Question Number for this gap:", currentQ);
+        if(!finalQ) return;
+        const ans = prompt("Enter CORRECT ANSWER (Letter) for Q" + finalQ + ":", "");
+        if(ans === null) return; 
+
+        editor.focus();
+
+        const inputNode = document.createElement('input');
+        inputNode.type = 'text';
+        inputNode.id = 'q' + finalQ;
+        inputNode.className = 'gap-input temp-flow-gap';
+        inputNode.placeholder = finalQ;
+        inputNode.style.cssText = 'width:60px; border:2px solid #3498db; text-align:center;';
+        inputNode.readOnly = true;
+        inputNode.value = '[Q' + finalQ + ']';
+
+        if (savedRange) {
+            savedRange.deleteContents();
+            savedRange.insertNode(inputNode);
+            const spaceNode = document.createTextNode('\u00A0');
+            inputNode.parentNode.insertBefore(spaceNode, inputNode.nextSibling);
+
+            const newSel = window.getSelection();
+            newSel.removeAllRanges();
+            savedRange.setStartAfter(spaceNode);
+            savedRange.collapse(true);
+            newSel.addRange(savedRange);
+        } else {
+            editor.appendChild(inputNode);
+        }
+
+        saveSelection();
+
+        updateAnswerKey(finalQ, ans);
+        qNumInput.value = parseInt(finalQ) + 1;
+    }
+
+    function insertGapPlaceholder(partNum) {
+        const editor = document.getElementById(`gap_editor_${partNum}`);
+        if (!editor) return;
+
+        let savedRange = null;
+        const sel = window.getSelection();
+        if (sel.rangeCount > 0 && editor.contains(sel.getRangeAt(0).commonAncestorContainer)) {
+            savedRange = sel.getRangeAt(0);
+        } else if (lastSavedRange && editor.contains(lastSavedRange.commonAncestorContainer)) {
+            savedRange = lastSavedRange;
+        }
+
+        const qNumInput = document.getElementById(`gen_q_num_${partNum}`);
+        let currentQ = qNumInput.value;
+        const finalQ = prompt("Enter Question Number for this gap:", currentQ);
+        if(!finalQ) return;
+        const ans = prompt("Enter CORRECT ANSWER for Q" + finalQ + ":", "");
+        if(ans === null) return; 
+
+        editor.focus();
+
+        const inputNode = document.createElement('input');
+        inputNode.type = 'text';
+        inputNode.id = 'q' + finalQ;
+        inputNode.className = 'gap-input';
+        inputNode.placeholder = finalQ;
+        inputNode.setAttribute('autocomplete', 'off');
+
+        if (savedRange) {
+            savedRange.deleteContents();
+            savedRange.insertNode(inputNode);
+            const spaceNode = document.createTextNode('\u00A0');
+            inputNode.parentNode.insertBefore(spaceNode, inputNode.nextSibling);
+
+            const newSel = window.getSelection();
+            newSel.removeAllRanges();
+            savedRange.setStartAfter(spaceNode);
+            savedRange.collapse(true);
+            newSel.addRange(savedRange);
+        } else {
+            editor.appendChild(inputNode);
+        }
+
+        saveSelection();
+
+        updateAnswerKey(finalQ, ans);
+        qNumInput.value = parseInt(finalQ) + 1;
+    }
+
+    function resetMcqOptions(partNum) {
+        const container = document.getElementById(`mcq_options_container_${partNum}`);
+        container.innerHTML = "";
+        ['A', 'B', 'C'].forEach(letter => addMcqOption(partNum, letter));
+    }
+    function addMcqOption(partNum, letterOverride = null) {
+        const container = document.getElementById(`mcq_options_container_${partNum}`);
+        const count = container.children.length;
+        const letter = letterOverride || String.fromCharCode(65 + count); 
+        const div = document.createElement('div');
+        div.className = 'mcq-option-row';
+        div.innerHTML = `<span class="mcq-badge">${letter}</span><input type="text" class="mcq-input-${partNum}" placeholder="Option text...">`;
+        container.appendChild(div);
+    }
+    function removeMcqOption(partNum) {
+        const container = document.getElementById(`mcq_options_container_${partNum}`);
+        if(container.children.length > 2) container.removeChild(container.lastElementChild);
+    }
+    function switchTab(num) {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        document.querySelectorAll('.tab')[num-1].classList.add('active');
+        document.getElementById('part'+num).classList.add('active');
+    }
+    function toggleGeneratorFields(partNum) {
+        const type = document.getElementById(`gen_type_${partNum}`).value;
+        const mcqArea = document.getElementById(`mcq_fields_${partNum}`);
+        const dragArea = document.getElementById(`drag_fields_${partNum}`);
+        const flowArea = document.getElementById(`flow_fields_${partNum}`);
+        const gapArea = document.getElementById(`gap_fields_${partNum}`);
+        const matchArea = document.getElementById(`match_fields_${partNum}`);
+        const stdAns = document.getElementById(`std_ans_field_${partNum}`);
+        const pickAns = document.getElementById(`pick_ans_field_${partNum}`);
+        const pick3Input = document.getElementById(`pick3_input_${partNum}`);
+        const common = document.getElementById(`common_fields_${partNum}`);
+        const stdPromptBox = document.getElementById(`std_prompt_box_${partNum}`);
+        const qNumRow = document.getElementById(`q_num_row_${partNum}`);
+        const infoPick = document.getElementById(`info_pick_${partNum}`);
+
+        [mcqArea, dragArea, flowArea, gapArea, matchArea, pickAns].forEach(el => el.classList.add('hidden-field'));
+        [stdAns, common, qNumRow, stdPromptBox].forEach(el => el.classList.remove('hidden-field'));
+        infoPick.style.display = 'none'; pick3Input.style.display = 'none';
+
+        if (type === 'header') { stdAns.classList.add('hidden-field'); qNumRow.classList.add('hidden-field'); } 
+        else if (type === 'mcq') { mcqArea.classList.remove('hidden-field'); } 
+        else if (type === 'match') { matchArea.classList.remove('hidden-field'); stdAns.classList.add('hidden-field'); } 
+        else if (type === 'pick2') { mcqArea.classList.remove('hidden-field'); stdAns.classList.add('hidden-field'); pickAns.classList.remove('hidden-field'); infoPick.style.display = 'block'; infoPick.innerHTML = '<strong>Note:</strong> Reserves 2 Qs'; } 
+        else if (type === 'pick3') { mcqArea.classList.remove('hidden-field'); stdAns.classList.add('hidden-field'); pickAns.classList.remove('hidden-field'); pick3Input.style.display = 'block'; infoPick.style.display = 'block'; infoPick.innerHTML = '<strong>Note:</strong> Reserves 3 Qs'; } 
+        else if (type === 'drag') { dragArea.classList.remove('hidden-field'); stdAns.classList.add('hidden-field'); common.classList.add('hidden-field'); } 
+        else if (type === 'flow') { flowArea.classList.remove('hidden-field'); stdAns.classList.add('hidden-field'); common.classList.add('hidden-field'); }
+        else if (type === 'gap' || type === 'table-gap') { gapArea.classList.remove('hidden-field'); stdPromptBox.classList.add('hidden-field'); stdAns.classList.add('hidden-field'); }
+    }
+    function insertTag(areaId, start, end) {
+        const area = document.getElementById(areaId);
+        if (!area) return;
+        
+        if (area.tagName === 'TEXTAREA' || area.tagName === 'INPUT') {
+            let s = area.selectionStart; let e = area.selectionEnd; area.focus();
+            if (typeof s === 'number') { area.setSelectionRange(s, e); }
+            const text = area.value.substring(s, e);
+            const fullText = start + text + end;
+            const success = document.execCommand('insertText', false, fullText);
+            if (!success) { area.setRangeText(fullText, s, e, 'end'); }
+        } else {
+            if (lastSavedRange) {
+                const sel = window.getSelection();
+                sel.removeAllRanges();
+                sel.addRange(lastSavedRange);
+            } else { area.focus(); }
+            const sel = window.getSelection();
+            if (sel.rangeCount > 0) {
+                const html = start + sel.toString() + end;
+                document.execCommand('insertHTML', false, html);
+            }
+        }
+    }
+    function updateAnswerKey(num, ans) {
+        if(!num || (ans === null || ans === undefined)) return;
+        try {
+            const currentVal = document.getElementById('answer_key_json').value || "{}";
+            const current = JSON.parse(currentVal);
+            let valueToSet = ans;
+            if (typeof ans === 'string') {
+                try {
+                    const parsed = JSON.parse(ans);
+                    if (Array.isArray(parsed)) valueToSet = parsed;
+                } catch(e) {
+                    if (ans.includes('|')) {
+                        valueToSet = ans.split('|').map(s => s.trim()).filter(Boolean);
+                    }
+                }
+            }
+            current[num] = valueToSet;
+            document.getElementById('answer_key_json').value = JSON.stringify(current, null, 2);
+        } catch(e) {
+            document.getElementById('answer_key_json').value = JSON.stringify({[num]: ans}, null, 2);
+        }
+    }
+    function insertQuestion(partNum) {
+        const type = document.getElementById(`gen_type_${partNum}`).value;
+        const targetArea = document.getElementById(`q${partNum}_text`);
+        let html = "";
+        const AC_OFF = 'autocomplete="off"';
+        const formatText = (txt) => txt.replace(/\n/g, '<br>');
+
+        if (type === 'header') {
+            const prompt = document.getElementById(`gen_prompt_${partNum}`).value;
+            html = `<div class="question-section-header">${formatText(prompt)}</div>`;
+            document.getElementById(`gen_prompt_${partNum}`).value = "";
+        } else if (type === 'match') {
+            const prompt = document.getElementById(`gen_prompt_${partNum}`).value;
+            let featuresHtml = `<div class="match-features-box">`;
+            const featInputs = document.querySelectorAll(`.match-opt-text-${partNum}`);
+            const featureLetters = [];
+            featInputs.forEach((inp, i) => {
+                const letter = String.fromCharCode(65 + i);
+                featureLetters.push(letter);
+                featuresHtml += `<div><b>${letter}</b> ${inp.value.trim()}</div>`;
+            });
+            featuresHtml += `</div>`;
+            const qInputs = document.querySelectorAll(`.match-q-text-${partNum}`);
+            const aInputs = document.querySelectorAll(`.match-q-ans-${partNum}`);
+            let qNumStart = parseInt(document.getElementById(`gen_q_num_${partNum}`).value);
+            
+            html = `<div class="matching-group-block"><p><strong>${formatText(prompt)}</strong></p>${featuresHtml}<div class="match-questions-list">`;
+            let currentQ = qNumStart;
+            for(let i=0; i<qInputs.length; i++) {
+                if(qInputs[i].value.trim()) {
+                    html += `\n<div class="multi-choice-question match-item" data-q-start="${currentQ}" style="display:flex; justify-content:space-between; align-items:center; overflow:visible;">
+                                 <div class="question-prompt" style="margin-bottom:0; flex:1; padding-right:15px;"><strong>${currentQ}</strong> ${qInputs[i].value.trim()}</div>
+                                 <div class="custom-select-wrapper" id="wrap_q${currentQ}">
+                                    <div class="custom-select-trigger" onclick="toggleCustomSelect(this)">
+                                        <span class="sel-text">Select...</span>
+                                        <span class="sel-arrow">▼</span>
+                                    </div>
+                                    <div class="custom-select-options">
+                                        <div class="custom-option clear-opt" onclick="selectCustomOption(this, '${currentQ}', '')">✕ Clear Answer</div>`;
+                    featureLetters.forEach(L => { 
+                        html += `       <div class="custom-option" onclick="selectCustomOption(this, '${currentQ}', '${L}')"><b>${L}</b></div>`; 
+                    });
+                    html += `       </div>
+                                    <input type="hidden" id="q${currentQ}" value="" ${AC_OFF}>
+                                 </div>
+                             </div>`;
+                    if(aInputs[i].value.trim()) updateAnswerKey(currentQ, aInputs[i].value.trim().toUpperCase());
+                    currentQ++;
+                }
+            }
+            html += `\n</div></div>`;
+            document.getElementById(`gen_q_num_${partNum}`).value = currentQ;
+        } else if (type === 'drag') {
+            const prompt = document.getElementById(`map_prompt_${partNum}`).value;
+            const imgContent = document.getElementById(`map_img_${partNum}`).innerHTML;
+            const qInputs = document.querySelectorAll(`.map-q-num-${partNum}`);
+            const tInputs = document.querySelectorAll(`.map-q-text-${partNum}`);
+            const aInputs = document.querySelectorAll(`.map-q-ans-${partNum}`);
+            const optContainer = document.getElementById(`map_options_container_${partNum}`);
+            
+            let variants = [];
+            for(let i=0; i<optContainer.children.length; i++) { variants.push(optContainer.children[i].innerText); }
+            const variantsStr = variants.join(',');
+
+            let questionsHtml = "";
+            qInputs.forEach((inp, i) => {
+                const qNum = inp.value;
+                const qText = tInputs[i] ? tInputs[i].value.trim() : "";
+                const ans = aInputs[i].value.trim().toUpperCase();
+                if(qNum) {
+                    let inputHtml = "";
+                    if (variants.length > 0) {
+                        inputHtml = `<span class="drop-zone map-drop-zone" data-qid="${qNum}" data-variants="${variantsStr}" onclick="openMapPicker(this)" ondblclick="clearZone(this)">? <input type="hidden" id="q${qNum}" value=""></span><span class="q-flag" onclick="toggleZoneFlag(this)">⚑</span>`;
+                    } else {
+                        inputHtml = `<input type="text" id="q${qNum}" class="answer-input" style="width:60px; text-align:center; margin-left:10px;" ${AC_OFF}>`;
+                    }
+                    questionsHtml += `<div class="map-q-item" style="margin-bottom:10px; font-size:18px; display:inline-block; margin-right:20px;"><strong>${qNum}</strong> ${qText} ${inputHtml}</div>`;
+                    if(ans) updateAnswerKey(qNum, ans);
+                }
+            });
+
+            html = `<div class="map-question-block">`;
+            if(prompt) html += `<p><strong>${formatText(prompt)}</strong></p>`;
+            html += `<div class="map-image" style="text-align:center; margin-bottom:20px; overflow-x:auto;">${imgContent}</div><div class="map-questions-list">${questionsHtml}</div></div>`;
+            document.getElementById(`map_img_${partNum}`).innerHTML = "";
+            document.getElementById(`map_prompt_${partNum}`).value = "";
+        } else if (type === 'flow') {
+            const prompt = document.getElementById(`flow_prompt_${partNum}`).value;
+            const editorContent = document.getElementById(`flow_editor_${partNum}`).innerHTML;
+            const optInputs = document.querySelectorAll(`.flow-opt-text-${partNum}`);
+            
+            let variants = [];
+            let optionsHtml = "";
+            if(optInputs.length > 0) {
+                optionsHtml = '<div class="match-features-box"><h4 style="margin: 0 0 15px 0; text-align: center; color: #8e44ad; text-transform: uppercase; font-size: 14px; letter-spacing: 1px;">Options</h4>';
+                optionsHtml += '<div style="display: flex; flex-wrap: wrap; gap: 20px; justify-content: center;">';
+                optInputs.forEach((inp, i) => {
+                    const label = String.fromCharCode(65 + i);
+                    variants.push(label);
+                    optionsHtml += `<div style="font-size: 15px; display: flex; align-items: center;"><span style="background: #34495e; color: #fff; padding: 2px 8px; border-radius: 6px; margin-right: 8px; font-size: 12px; font-weight: bold;">${label}</span> ${inp.value.trim()}</div>`;
+                });
+                optionsHtml += '</div></div>';
+            }
+            const variantsStr = variants.join(',');
+
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = editorContent;
+            
+            const gaps = tempDiv.querySelectorAll('.temp-flow-gap');
+            gaps.forEach(gap => {
+                const qId = gap.id; 
+                const qNum = gap.getAttribute('placeholder');
+                const newSpan = document.createElement('span');
+                newSpan.className = "drop-zone map-drop-zone";
+                newSpan.setAttribute('data-qid', qNum);
+                newSpan.setAttribute('data-variants', variantsStr);
+                newSpan.setAttribute('onclick', 'openMapPicker(this)');
+                newSpan.setAttribute('ondblclick', 'clearZone(this)');
+                newSpan.innerHTML = `? <input type="hidden" id="${qId}" value="">`;
+                gap.parentNode.replaceChild(newSpan, gap);
+                
+                const flagSpan = document.createElement('span');
+                flagSpan.className = 'q-flag';
+                flagSpan.setAttribute('onclick', 'toggleZoneFlag(this)');
+                flagSpan.innerHTML = '⚑';
+                newSpan.parentNode.insertBefore(flagSpan, newSpan.nextSibling);
+            });
+
+            html = `<div class="flow-question-block">`;
+            if(prompt) html += `<p class="question-prompt" style="margin-bottom:20px;"><strong>${formatText(prompt)}</strong></p>`;
+            html += optionsHtml;
+            html += `<div class="flow-chart-content" style="text-align: center;">${tempDiv.innerHTML}</div></div>`;
+            
+            document.getElementById(`flow_editor_${partNum}`).innerHTML = "";
+            document.getElementById(`flow_prompt_${partNum}`).value = "";
+        } else if (type === 'gap') {
+            const editor = document.getElementById(`gap_editor_${partNum}`);
+            if(!editor.innerText.trim() && !editor.innerHTML.includes('<table') && !editor.innerHTML.includes('<div class="modern-table-wrapper"')) { alert("Gap text is empty."); return; }
+            html = `<div class="gap-fill-text">${editor.innerHTML}</div>`;
+            editor.innerHTML = "";
+        } else if (type === 'table-gap') {
+            const editor = document.getElementById(`gap_editor_${partNum}`);
+            if(!editor.innerText.trim() && !editor.innerHTML.includes('<table') && !editor.innerHTML.includes('<div class="modern-table-wrapper"')) { alert("Table content is empty."); return; }
+            html = `<div class="gap-fill-text">${editor.innerHTML}</div>`;
+            editor.innerHTML = "";
+        } else if (type === 'pick2' || type === 'pick3') {
+            const qNumStart = parseInt(document.getElementById(`gen_q_num_${partNum}`).value);
+            const prompt = document.getElementById(`gen_prompt_${partNum}`).value;
+            const ans1 = document.getElementById(`pick_ans1_${partNum}`).value;
+            const ans2 = document.getElementById(`pick_ans2_${partNum}`).value;
+            let ans3 = null; let limit = 2; let qNumEnd = qNumStart + 1;
+            if (type === 'pick3') { ans3 = document.getElementById(`pick_ans3_${partNum}`).value; limit = 3; qNumEnd = qNumStart + 2; }
+            html = `<div class="pick-n-question" data-group-start="${qNumStart}" data-limit="${limit}"><div class="question-prompt"><p><strong>${qNumStart}-${qNumEnd}</strong> ${formatText(prompt)}</p></div>`;
+            const inputs = document.querySelectorAll(`.mcq-input-${partNum}`);
+            let qIds = []; for(let k=0; k<limit; k++) qIds.push(qNumStart + k); const dataQ = qIds.join(" ");
+            inputs.forEach((inp, idx) => {
+                const letter = String.fromCharCode(65 + idx);
+                html += `\n<div class="multi-choice-option">
+                            <label class="modern-label">
+                                <input type="checkbox" class="multi-checkbox hidden-cb" data-questions="${dataQ}" value="${letter}" ${AC_OFF}>
+                                <span class="custom-cb"></span>
+                                <span class="opt-text"><b>${letter}.</b> ${inp.value.trim()}</span>
+                            </label>
+                         </div>`;
+            });
+            html += `\n</div>`;
+            updateAnswerKey(qNumStart, ans1); updateAnswerKey(qNumStart + 1, ans2); if(type === 'pick3') updateAnswerKey(qNumStart + 2, ans3);
+            document.getElementById(`gen_q_num_${partNum}`).value = qNumStart + limit;
+            document.getElementById(`gen_prompt_${partNum}`).value = "";
+            document.getElementById(`pick_ans1_${partNum}`).value = ""; document.getElementById(`pick_ans2_${partNum}`).value = ""; document.getElementById(`pick_ans3_${partNum}`).value = "";
+            document.querySelectorAll(`.mcq-input-${partNum}`).forEach(i => i.value = "");
+        } else {
+            const qNum = document.getElementById(`gen_q_num_${partNum}`).value;
+            const prompt = document.getElementById(`gen_prompt_${partNum}`).value;
+            const ans = document.getElementById(`gen_ans_${partNum}`).value;
+            if (type === 'mcq') {
+                html = `<div class="multi-choice-question" data-q-start="${qNum}"><div class="question-prompt"><p><strong>${qNum}</strong> ${formatText(prompt)}</p></div>`;
+                const inputs = document.querySelectorAll(`.mcq-input-${partNum}`);
+                inputs.forEach((inp, idx) => {
+                    const letter = String.fromCharCode(65 + idx);
+                    html += `\n<div class="multi-choice-option">
+                                <label class="modern-label">
+                                    <input type="radio" name="q${qNum}" class="hidden-cb" value="${letter}" ${AC_OFF} ondblclick="this.checked=false; saveState();">
+                                    <span class="custom-radio"></span>
+                                    <span class="opt-text"><b>${letter}.</b> ${inp.value.trim()}</span>
+                                </label>
+                             </div>`;
+                });
+                html += `\n</div>`;
+            } else if (type === 'input') {
+                html = `<div class="short-answer-question" data-q-start="${qNum}"><p><strong>${qNum}</strong> ${formatText(prompt)} <input id="q${qNum}" class="answer-input" placeholder="${qNum}" style="width:160px;" ${AC_OFF}></p></div>`;
+            }
+            updateAnswerKey(qNum, ans);
+            document.getElementById(`gen_q_num_${partNum}`).value = parseInt(qNum) + 1;
+            document.getElementById(`gen_prompt_${partNum}`).value = "";
+            document.getElementById(`gen_ans_${partNum}`).value = "";
+            document.querySelectorAll(`.mcq-input-${partNum}`).forEach(i => i.value = "");
+        }
+        targetArea.value += html + "\n";
+    }
+
+    /* --- BUILDER SAVE / LOAD --- */
+    function saveBuilderProject() {
+        const data = {
+            answerKey: document.getElementById('answer_key_json').value,
+            parts: {}
+        };
+        [1,2,3,4].forEach(i => {
+            data.parts[i] = {
+                finalHtml: document.getElementById(`q${i}_text`).value,
+                startQ: document.getElementById(`gen_q_num_${i}`).value
+            };
+        });
+        
+        const blob = new Blob([JSON.stringify(data)], {type: "application/json"});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "IELTS_Listening_Project.json";
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    }
+
+    function loadBuilderProject(input) {
+        const file = input.files[0];
+        if(!file) return;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const data = JSON.parse(e.target.result);
+                document.getElementById('answer_key_json').value = data.answerKey;
+                for(let i=1; i<=4; i++) {
+                    if(data.parts[i]) {
+                        document.getElementById(`q${i}_text`).value = data.parts[i].finalHtml;
+                        if(data.parts[i].startQ) document.getElementById(`gen_q_num_${i}`).value = data.parts[i].startQ;
+                    }
+                }
+                alert("Project Loaded Successfully!");
+            } catch(err) { alert("Error loading file: " + err.message); }
+        };
+        reader.readAsText(file);
+    }
+
+    renderTabs();
+
+    function generateFile() {
+        const getVal = (id) => document.getElementById(id).value;
+        const q1b = getVal('q1_text');
+        const q2b = getVal('q2_text');
+        const q3b = getVal('q3_text');
+        const q4b = getVal('q4_text');
+        
+        // CHECK IF PAUSE IS ENABLED
+        const addPause = document.getElementById('add_pause_cb').checked;
+
+        let ansKeyStr = getVal('answer_key_json');
+        const uniqueId = "ielts_listening_" + Math.floor(Math.random() * 1000000);
+        try { JSON.parse(ansKeyStr); } catch(e) { alert("Invalid Answer Key JSON"); return; }
+        
+        const encodedAnsKey = btoa(ansKeyStr);
+        const escape = (str) => (str || "").replace(/`/g, '\\`').replace(/\${/g, '\\${');
+        const audios = JSON.stringify(audioParts);
+        const fullAudioStr = JSON.stringify(fullAudioData);
+        
+        // PASS PAUSE VARIABLE TO THE EXPORTED FILE
+        const includePause = addPause ? "true" : "false";
+
+        const template = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IELTS Listening Test</title>
+    <script>
+        document.addEventListener('keydown', function(e) {
+            if((e.ctrlKey || e.metaKey) && (e.key === 'u' || e.key === 'U')) { e.preventDefault(); return false; }
+        });
+        document.addEventListener('contextmenu', event => event.preventDefault());
+    ` + "<" + "/script>" + `
+    <style>
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); line-height:1.6; font-size:16px; color:#333; min-height: 100vh; transition: background 0.3s, color 0.3s; }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        @keyframes popIn { 0% { transform: scale(0.9); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+        @keyframes slideUpFade { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes highlightFade {
+            0% { background-color: #fff9c4; border-color: #fbc02d; box-shadow: 0 0 10px rgba(251, 192, 45, 0.3); }
+            70% { background-color: transparent; border-color: #fbc02d; }
+            100% { border-color: #e1e4e8; box-shadow: none; }
+        }
+        @keyframes shake { 10%, 90% { transform: translate3d(-1px, 0, 0); } 20%, 80% { transform: translate3d(2px, 0, 0); } 30%, 50%, 70% { transform: translate3d(-4px, 0, 0); } 40%, 60% { transform: translate3d(4px, 0, 0); } }
+        @keyframes popDown { from { top: -50px; opacity: 0; } to { top: 20px; opacity: 1; } }
+
+        /* --- CASCADING LIST ANIMATIONS --- */
+        @keyframes menuPop {
+            from { opacity: 0; transform: translateY(-10px) scale(0.95); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        @keyframes itemSlide {
+            from { opacity: 0; transform: translateX(-15px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        /* 1. Map/Flow Popup Container */
+        .variant-popup.active-popup {
+            display: block !important;
+            animation: menuPop 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        
+        /* 2. Map/Flow Items & Matching Dropdown Items */
+        .variant-popup.active-popup .variant-option,
+        .custom-select-wrapper.open .custom-option {
+            opacity: 0;
+            animation: itemSlide 0.3s forwards;
+        }
+
+        /* 3. Staggered delays for the cascading effect */
+        .variant-option:nth-child(1), .custom-option:nth-child(1) { animation-delay: 0.05s; }
+        .variant-option:nth-child(2), .custom-option:nth-child(2) { animation-delay: 0.10s; }
+        .variant-option:nth-child(3), .custom-option:nth-child(3) { animation-delay: 0.15s; }
+        .variant-option:nth-child(4), .custom-option:nth-child(4) { animation-delay: 0.20s; }
+        .variant-option:nth-child(5), .custom-option:nth-child(5) { animation-delay: 0.25s; }
+        .variant-option:nth-child(6), .custom-option:nth-child(6) { animation-delay: 0.30s; }
+        .variant-option:nth-child(7), .custom-option:nth-child(7) { animation-delay: 0.35s; }
+        .variant-option:nth-child(8), .custom-option:nth-child(8) { animation-delay: 0.40s; }
+        .variant-option:nth-child(9), .custom-option:nth-child(9) { animation-delay: 0.45s; }
+        .variant-option:nth-child(10), .custom-option:nth-child(10) { animation-delay: 0.50s; }
+
+        /* --- ANSWER POP-IN ANIMATION --- */
+        @keyframes answerPop {
+            0% { opacity: 0; transform: scale(0.5) translateY(10px); }
+            60% { transform: scale(1.1) translateY(-2px); }
+            100% { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        .anim-answer {
+            display: inline-block;
+            animation: answerPop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        /* HIGHLIGHT STYLE & MENU */
+        #contextMenu { display:none; position:fixed; z-index:5000; background:white; border:1px solid #e1e4e8; border-radius:12px; box-shadow:0 5px 20px rgba(0,0,0,0.15); min-width:160px; overflow:hidden; transition: background 0.3s, border-color 0.3s, color 0.3s; }
+        .ctx-header { padding: 12px 15px 5px; font-size: 12px; font-weight: 700; color: #7f8c8d; text-transform: uppercase; letter-spacing: 0.5px; }
+        .color-row { display: flex; gap: 10px; padding: 10px 15px 15px; justify-content: flex-start; }
+        .color-btn { width: 26px; height: 26px; border-radius: 50%; border: 2px solid #eee; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .color-btn:hover { transform: scale(1.15); box-shadow: 0 4px 8px rgba(0,0,0,0.15); border-color: #ccc; }
+        .color-yellow { background: #fff176; }
+        .color-green { background: #a5d6a7; }
+        .color-pink { background: #f48fb1; }
+        .ctx-item { padding:12px 15px; cursor:pointer; font-weight: 500; font-size: 14px; transition: background 0.2s; border-top: 1px solid #eee; color: #e74c3c; } 
+        .ctx-item:hover { background:#fff5f5; color: #c0392b; }
+        span[style*="background-color"] { border-radius: 4px; padding: 2px 0; box-shadow: 0 2px 5px rgba(0,0,0,0.05); border-bottom: 2px solid rgba(0,0,0,0.1); box-decoration-break: clone; -webkit-box-decoration-break: clone; color: #2c3e50; }
+        
+        /* Variant Popup (Glassmorphism) */
+        .variant-popup { position: absolute; background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); border: 1px solid rgba(225,228,232,0.8); border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.15); z-index: 10000; display: none; max-height: 250px; overflow-y: auto; padding: 5px; min-width: 80px; font-family: system-ui, sans-serif; transition: background 0.3s, border-color 0.3s, color 0.3s; }
+        .variant-option { padding: 10px 15px; cursor: pointer; border-radius: 10px; text-align: center; font-weight: bold; color: #2c3e50; transition: all 0.2s; }
+        .variant-option:hover { background-color: #f4ecf7; color: #8e44ad; }
+        
+        /* --- NOTION-STYLE CUSTOM POPOVER CSS FOR MATCHING --- */
+        .custom-select-wrapper { position: relative; width: 140px; font-family: system-ui, sans-serif; }
+        .custom-select-trigger { 
+            display: flex; justify-content: space-between; align-items: center;
+            background: #fff; border: 2px solid #e1e4e8; border-radius: 25px; padding: 8px 15px; 
+            cursor: pointer; font-weight: 600; color: #2c3e50; transition: all 0.2s; box-shadow: 0 2px 5px rgba(0,0,0,0.02);
+        }
+        .custom-select-trigger:hover { border-color: #8e44ad; }
+        .custom-select-trigger.answered { border-color: #8e44ad; background: #fdfafb; color: #8e44ad; }
+        .custom-select-trigger.correct { background: #d4edda !important; border-color: #28a745 !important; color: #155724 !important; }
+        .custom-select-trigger.incorrect { background: #fff5f5 !important; border-color: #e74c3c !important; color: #c0392b !important; }
+        
+        .sel-arrow { font-size: 10px; transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); color: #94a3b8; }
+        .custom-select-wrapper.open .sel-arrow { transform: rotate(180deg); }
+        .custom-select-wrapper.open .custom-select-trigger { border-color: #8e44ad; box-shadow: 0 0 0 4px rgba(142,68,173,0.15); }
+        
+        .custom-select-options { 
+            position: absolute; top: calc(100% + 8px); left: 0; right: 0;
+            background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15); border: 1px solid rgba(225,228,232,0.8);
+            opacity: 0; visibility: hidden; transform: translateY(-10px) scale(0.95); transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1), background 0.3s, border-color 0.3s;
+            overflow: hidden; max-height: 250px; overflow-y: auto; z-index:100;
+        }
+        .custom-select-wrapper.open .custom-select-options { opacity: 1; visibility: visible; transform: translateY(0) scale(1); }
+        .custom-option { padding: 12px 15px; cursor: pointer; transition: all 0.2s; color: #34495e; font-weight: 500; }
+        .custom-option:hover { background: #f4ecf7; color: #8e44ad; padding-left: 20px; }
+        .custom-option.clear-opt { color: #e74c3c; border-bottom: 1px solid #eee; font-size: 13px; font-weight: 600; }
+        .custom-option.clear-opt:hover { background: #fff5f5; color: #c0392b; }
+        
+        .header { background:rgba(255, 255, 255, 0.85); backdrop-filter: blur(12px); height:70px; padding:0 30px; border-bottom:1px solid rgba(225, 228, 232, 0.5); display:flex; justify-content:space-between; align-items:center; position:fixed; top:0; width:100%; z-index:1000; box-shadow:0 4px 15px rgba(0,0,0,0.03); transition: background 0.3s, border-color 0.3s; }
+        .logo { font-weight:800; font-size:20px; color:#2c3e50; transition: color 0.3s; display:flex; align-items:center; }
+        
+        .name-input { padding: 8px 15px; border: 2px solid #ddd; border-radius: 20px; font-size: 14px; width: 160px; transition: border 0.3s, box-shadow 0.3s; text-align: center; margin-left: 15px; font-weight: normal; color: #333; outline: none; }
+        .name-input:focus { border-color: #8e44ad; }
+        .name-input::placeholder { color: #aaa; }
+        .shake-active { animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both; border-color: #e74c3c !important; box-shadow: 0 0 8px rgba(231,76,60,0.4); }
+
+        .custom-alert { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #e74c3c; color: white; padding: 15px 30px; border-radius: 30px; z-index: 10001; box-shadow: 0 10px 20px rgba(0,0,0,0.2); font-weight: bold; display: none; animation: popDown 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+
+        .lockdown-overlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:10000; align-items:center; justify-content:center; flex-direction:column; backdrop-filter:blur(8px); }
+        .lockdown-box { background:#fff; padding:40px; border-radius:20px; text-align:center; box-shadow:0 15px 50px rgba(0,0,0,0.5); width: 90%; max-width: 400px; animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .lockdown-input { padding:12px 20px; font-size:18px; border-radius:10px; border:2px solid #ddd; margin:20px 0; width:100%; text-align:center; outline:none; transition: border 0.3s; color:#333; }
+        .lockdown-input:focus { border-color: #8e44ad; }
+        
+        .synergy-logo { display: flex; align-items: center; gap: 8px; background: #8e44ad; color: #f1c40f; text-decoration: none; font-weight: bold; font-size: 14px; padding: 8px 15px; border-radius: 20px; transition: transform 0.2s, box-shadow 0.2s; }
+        .synergy-logo:hover { transform: translateY(-2px); box-shadow: 0 4px 10px rgba(142,68,173,0.3); }
+        .synergy-logo svg { width: 18px; height: 18px; fill: currentColor; }
+
+        .theme-btn {
+            width: 30px; height: 30px;
+            background: #34495e; color: #fff;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: bold; font-size: 14px;
+            cursor: pointer; margin-right: 10px;
+            border: none; transition: transform 0.2s;
+        }
+        .theme-btn:hover { transform: scale(1.1); }
+
+        .help-btn {
+            width: 30px; height: 30px;
+            background: #3498db; color: #fff;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: bold; font-size: 16px;
+            cursor: pointer; margin-right: 15px;
+            border: none; transition: transform 0.2s;
+        }
+        .help-btn:hover { transform: scale(1.1); }
+        .timer { font-family:monospace; font-size:18px; font-weight:bold; color:#e74c3c; background:#fff0f0; padding:5px 15px; border-radius:20px; margin-right: 15px; transition: background 0.3s, color 0.3s; }
+
+        .main-container { margin-top:90px; margin-bottom: 80px; max-width: 900px; margin-left: auto; margin-right: auto; padding: 20px; animation: slideUpFade 0.6s ease-out; }
+        
+        .tf-question, .multi-choice-question, .short-answer-question, .gap-fill-text, .pick-n-question, .matching-group-block, .flow-question-block, .map-question-block { 
+            background:#fff; border:1px solid #edf2f7; padding:25px; margin-bottom:25px; border-radius:20px; 
+            box-shadow:0 8px 24px rgba(0,0,0,0.04); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.3s, background 0.3s, border-color 0.3s, color 0.3s;
+            position: relative;
+        }
+        .tf-question:hover, .multi-choice-question:hover, .short-answer-question:hover, .pick-n-question:hover, .matching-group-block:hover, .flow-question-block:hover, .map-question-block:hover {
+            transform: translateY(-4px); box-shadow: 0 12px 30px rgba(0,0,0,0.08);
+        }
+        .target-glow { animation: highlightFade 2s ease-out; }
+
+        .gap-fill-text { line-height: 2.4; font-size: 17px; overflow-x: auto; color: #444; }
+        .flow-chart-content { line-height: 2.0; font-size: 16px; overflow-x: auto; color: #444; text-align: center; }
+        
+        .gap-input { 
+            border: 1px solid #ccc; border-radius: 20px; padding: 5px 15px; 
+            background: #fff; width: 140px; text-align: center; color: #2c3e50; 
+            font-weight: 600; outline: none; font-size: 16px; margin: 0 4px; 
+            transition: all 0.2s; 
+            overflow-x: auto;
+        }
+        
+        .modern-table .gap-input {
+            width: 90%; 
+            max-width: 140px;
+        }
+
+        .gap-input:focus { border-color: #8e44ad; box-shadow: 0 0 0 4px rgba(142,68,173,0.15); }
+        .gap-input.correct { background-color: #d4edda !important; border-color: #28a745 !important; }
+        .gap-input.incorrect { background-color: #f8d7da !important; border-color: #dc3545 !important; }
+
+        .answer-input { 
+            padding:8px 15px; border:1px solid #ccc; border-radius:15px; 
+            font-size:15px; font-weight:600; color:#2c3e50; outline:none; transition: all 0.2s;
+        }
+        .answer-input:focus { border-color: #8e44ad; box-shadow: 0 0 0 4px rgba(142,68,173,0.15); }
+
+        .question-section-header { font-size: 20px; font-weight: 800; color: #2c3e50; border-bottom: 2px solid #bdc3c7; padding-bottom: 10px; margin: 30px 0 20px 0; transition: color 0.3s, border-color 0.3s; }
+        
+        /* --- MODERN MCQ CHECKBOXES & RADIOS --- */
+        .hidden-cb { position: absolute; opacity: 0; width: 0; height: 0; pointer-events: none; }
+        .modern-label { display: flex; align-items: flex-start; cursor: pointer; padding: 12px 15px; border-radius: 12px; transition: 0.2s; border: 1px solid transparent; }
+        .multi-choice-option:hover .modern-label { background: rgba(0,0,0,0.03); border-color: rgba(0,0,0,0.1); transform: translateX(5px); }
+        
+        .custom-cb, .custom-radio {
+            display: inline-block; width: 22px; height: 22px; flex-shrink: 0;
+            border: 2px solid #bdc3c7; background: #fff; margin-right: 12px; margin-top: 1px;
+            position: relative; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .custom-cb { border-radius: 6px; }
+        .custom-radio { border-radius: 50%; }
+
+        .hidden-cb:checked + .custom-cb, .hidden-cb:checked + .custom-radio { background: #8e44ad; border-color: #8e44ad; transform: scale(1.05); }
+        .hidden-cb:checked + .custom-cb::after { content: ''; position: absolute; left: 6px; top: 2px; width: 5px; height: 10px; border: solid white; border-width: 0 2px 2px 0; transform: rotate(45deg); }
+        .hidden-cb:checked + .custom-radio::after { content: ''; position: absolute; left: 6px; top: 6px; width: 6px; height: 6px; background: white; border-radius: 50%; }
+        .hidden-cb:checked ~ .opt-text { font-weight: 600; color: inherit; }
+        
+        .hidden-cb:disabled + .custom-cb, .hidden-cb:disabled + .custom-radio { background: #f1f2f6; border-color: #e1e4e8; cursor: not-allowed; opacity: 0.6; }
+        .hidden-cb:disabled ~ .opt-text { color: #bdc3c7; cursor: not-allowed; }
+        .modern-label:has(.hidden-cb:disabled) { cursor: not-allowed; }
+        .multi-choice-option:has(.hidden-cb:disabled):hover .modern-label { transform: none; background: transparent; border-color: transparent; }
+        
+        .correct.modern-label { background-color: rgba(40, 167, 69, 0.1) !important; border-color: #28a745 !important; }
+        .correct.modern-label .custom-cb, .correct.modern-label .custom-radio { border-color: #28a745 !important; background: #28a745 !important; }
+        .incorrect.modern-label { background-color: rgba(231, 76, 60, 0.1) !important; border-color: #e74c3c !important; }
+        .incorrect.modern-label .custom-cb, .incorrect.modern-label .custom-radio { border-color: #e74c3c !important; background: #e74c3c !important; }
+
+        .match-features-box { background: #f9f9f9; padding: 15px; border: 1px solid #eee; margin-bottom: 20px; border-radius: 12px; line-height: 1.8; transition: background 0.3s, border-color 0.3s; }
+        
+        /* MAP/FLOW DROP ZONE STYLES */
+        .map-drop-zone {
+            display: inline-flex; align-items: center; justify-content: center;
+            min-width: 80px; height: 35px; border: 1px solid #bdc3c7;
+            background: #f9f9f9; margin: 0 5px; vertical-align: middle;
+            color: #7f8c8d; font-weight: bold; cursor: pointer;
+            padding: 0 10px; border-radius: 20px; transition: all 0.2s;
+        }
+        .map-drop-zone:hover { border-color: #8e44ad; }
+        .map-drop-zone.filled { border-color: #3498db; color: #2c3e50; background: #eaf2f8; font-weight: 600; }
+
+        .footer { position:fixed; bottom:0; width:100%; height:70px; background:rgba(255, 255, 255, 0.85); backdrop-filter: blur(12px); border-top:1px solid rgba(225, 228, 232, 0.5); display:flex; align-items:center; justify-content:space-between; padding:0 30px; z-index:1000; box-shadow: 0 -4px 15px rgba(0,0,0,0.02); transition: background 0.3s, border-color 0.3s; }
+        .part-nav { display:flex; gap:10px; align-items: center; }
+        .part-btn { border:1px solid rgba(0,0,0,0.1); background: rgba(255,255,255,0.8); backdrop-filter: blur(10px); padding:10px 20px; border-radius:25px; cursor:pointer; font-weight:600; color:#555; transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1); box-shadow: 0 4px 10px rgba(0,0,0,0.05); margin-right:10px; white-space:nowrap; }
+        .part-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 15px rgba(0,0,0,0.08); }
+        .part-btn.active { background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%); color:#fff; border-color: #2c3e50; }
+        
+        /* FOOTER SUB-NAV */
+        .sub-nav { display: flex; align-items: center; gap: 8px; margin-left: 15px; overflow-x: auto; max-width: 40vw; padding: 5px; scrollbar-width: none; }
+        .sub-nav::-webkit-scrollbar { display: none; }
+        .nav-circle { width: 30px; height: 30px; border-radius: 50%; background: #fff; border: 2px solid #dcdcdc; color: #555; font-weight: bold; font-size: 12px; display: flex; justify-content: center; align-items: center; cursor: pointer; flex-shrink: 0; transition: all 0.2s; position: relative; }
+        .nav-circle:hover { border-color: #bbb; background: rgba(0,0,0,0.05); transform: scale(1.1); }
+        
+        /* STATE STYLES */
+        .nav-circle.answered { background: #34495e; color: white; border-color: #34495e; }
+        .nav-circle.flagged { border-color: #e74c3c; color: #e74c3c; background: #fff5f5; }
+        .nav-circle.answered.flagged { background: #e74c3c !important; color: white !important; border-color: #c0392b !important; }
+        .nav-circle.flagged::after { content: '⚑'; position: absolute; top: -8px; right: -4px; color: #e74c3c; font-size: 14px; text-shadow: 0 0 2px rgba(255,255,255,0.9); pointer-events: none; }
+        .nav-circle.answered.flagged::after { color: #fff; text-shadow: 0 0 2px rgba(0,0,0,0.5); }
+
+        .nav-enter { animation: slideIn 0.3s forwards; opacity: 0; transform: translateX(-10px); }
+        @keyframes slideIn { to { opacity: 1; transform: translateX(0); } }
+
+        .check-btn { background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%); color:white; border:1px solid rgba(255,255,255,0.2); padding:12px 30px; border-radius:30px; font-weight:bold; cursor:pointer; transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1); box-shadow: 0 8px 20px rgba(39, 174, 96, 0.3); backdrop-filter: blur(5px); }
+        .check-btn:hover { transform: translateY(-2px); box-shadow: 0 10px 25px rgba(39, 174, 96, 0.4); }
+        .check-btn:active { transform: scale(0.95); }
+        
+        .admin-btn { background: #e74c3c; color: white; border: none; width: 30px; height: 30px; border-radius: 50%; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: transform 0.2s; }
+        .admin-btn:hover { transform: scale(1.1); }
+
+        .hidden { display:none !important; }
+        .correct { animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .incorrect { animation: shake 0.4s; }
+        
+        .modal { display:none; position:fixed; z-index:9999; left:0; top:0; width:100%; height:100%; background-color:rgba(0,0,0,0.4); align-items:center; justify-content:center; backdrop-filter:blur(8px); }
+        .modal-content { background-color:rgba(255, 255, 255, 0.95); backdrop-filter: blur(15px); padding:40px; border-radius:25px; width:90%; max-width:500px; text-align:center; box-shadow:0 15px 50px rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.4); animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); transition: background 0.3s, color 0.3s, border-color 0.3s; }
+        .score-circle { width:120px; height:120px; border-radius:50%; background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%); color:white; display:flex; align-items:center; justify-content:center; font-size:40px; font-weight:bold; margin:20px auto; box-shadow: 0 10px 25px rgba(44, 62, 80, 0.3); }
+        
+        /* FLAG STYLES */
+        .flag-btn { position: absolute; top: 10px; right: 10px; background: transparent; border: none; font-size: 24px; color: #e0e0e0; cursor: pointer; transition: all 0.2s; z-index: 10; }
+        .flag-btn:hover { color: #f39c12; transform: scale(1.1); }
+        .flagged .flag-btn { color: #e74c3c; }
+        .flagged { border: 1px solid #e74c3c !important; border-left: 6px solid #e74c3c !important; }
+        
+        .q-flag { cursor: pointer; color: #e0e0e0; font-size: 18px; margin-left: 5px; vertical-align: middle; line-height: 1; user-select: none; transition: transform 0.2s; }
+        .q-flag:hover { color: #f39c12; transform: scale(1.2); }
+        .q-flag.active { color: #e74c3c; }
+        .q-flag.inline-flag { color: #cbd5e1; font-size: 18px; margin-left: 6px; }
+        .q-flag.inline-flag:hover { color: #f39c12; }
+        .q-flag.inline-flag.active { color: #e74c3c; }
+        .gap-input.flagged-input { border-color: #e74c3c !important; box-shadow: 0 0 0 4px rgba(231, 76, 60, 0.15) !important; background-color: #fff9f9 !important; }
+        .map-drop-zone.flagged-zone { border-color: #e74c3c; background-color: #fff5f5; }
+
+        /* --- START OVERLAY --- */
+        .start-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.85); z-index: 5000; display: flex; flex-direction: column; align-items: center; justify-content: center; backdrop-filter: blur(15px); transition: background 0.3s; }
+        .start-btn-big { background: linear-gradient(135deg, #8e44ad 0%, #2c3e50 100%); color: white; border: none; padding: 20px 50px; font-size: 24px; font-weight: bold; border-radius: 50px; cursor: pointer; box-shadow: 0 10px 25px rgba(142, 68, 173, 0.4); transition: all 0.2s; border: 1px solid rgba(255,255,255,0.2); }
+        .start-btn-big:hover { transform: translateY(-4px); box-shadow: 0 15px 35px rgba(142, 68, 173, 0.5); }
+
+        /* --- INVISIBLE TABLE STYLES (EXPORTED) --- */
+        .invisible-table { width: 100%; border-collapse: collapse; margin-bottom: 15px; border: none !important; background: transparent; }
+        .invisible-table td, .invisible-table th { border: none !important; padding: 10px; vertical-align: top; }
+
+        /* --- MODERN TABLE STYLES --- */
+        .modern-table-wrapper { width: 100%; overflow-x: auto; margin: 15px 0; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.03); border: 1px solid #e1e4e8; background: #fff; }
+        .modern-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 15px; }
+        .modern-table th, .modern-table td { padding: 12px 15px; border-bottom: 1px solid #e1e4e8; border-right: 1px solid #e1e4e8; vertical-align: top; }
+        .modern-table th:last-child, .modern-table td:last-child { border-right: none; }
+        .modern-table tr:last-child th, .modern-table tr:last-child td { border-bottom: none; }
+        .modern-table thead tr { background-color: #f8f9fa; color: #2c3e50; font-weight: 600; }
+        .modern-table tbody tr:nth-child(even) { background-color: #fdfdfd; }
+        .modern-table tbody tr:hover { background-color: #f4ecf7; }
+        
+        /* MODERN FLOW BOX (Pill-shaped ovals, strictly 15px font) */
+        .flow-box { padding: 8px 20px; border: 2px solid #e1e4e8; border-radius: 50px; background: #fff; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.02); transition: transform 0.2s, box-shadow 0.2s; min-width: 80px; display: inline-block; vertical-align: middle; margin: 0 auto; line-height: 1.5; font-size: 15px !important; color: #333; }
+        .flow-box:hover { border-color: #bdc3c7; box-shadow: 0 6px 15px rgba(0,0,0,0.05); }
+
+        /* --- MODERN CUSTOM MODAL --- */
+        .modern-modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); backdrop-filter: blur(8px); z-index: 20000; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.3s; }
+        .modern-modal-overlay.show { display: flex; opacity: 1; }
+        .modern-modal-box { background: #fff; border-radius: 20px; padding: 30px; max-width: 400px; width: 90%; text-align: center; box-shadow: 0 15px 35px rgba(0,0,0,0.2); transform: scale(0.9); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .modern-modal-overlay.show .modern-modal-box { transform: scale(1); }
+        .modern-modal-title { font-size: 22px; font-weight: 800; color: #2c3e50; margin-bottom: 15px; }
+        .modern-modal-text { font-size: 16px; color: #555; margin-bottom: 25px; line-height: 1.6; }
+        .modern-modal-buttons { display: flex; gap: 15px; justify-content: center; }
+        .btn-modal { padding: 12px 25px; border-radius: 30px; font-weight: bold; cursor: pointer; border: none; transition: transform 0.2s, box-shadow 0.2s; font-size: 15px; }
+        .btn-modal:hover { transform: translateY(-2px); box-shadow: 0 8px 15px rgba(0,0,0,0.1); }
+        .btn-modal-cancel { background: #ecf0f1; color: #7f8c8d; }
+        .btn-modal-confirm { background: linear-gradient(135deg, #8e44ad 0%, #2c3e50 100%); color: #fff; }
+        .modal-input-field { width: 80%; padding: 12px; margin: 0 auto 20px; border: 2px solid #ddd; border-radius: 12px; font-size: 16px; text-align: center; display: none; outline: none; transition: border-color 0.3s; }
+        .modal-input-field:focus { border-color: #8e44ad; }
+        .dark-mode .modern-modal-box { background: #252525; border: 1px solid #444; }
+        .dark-mode .modern-modal-title { color: #fff; }
+        .dark-mode .modern-modal-text { color: #ccc; }
+        .dark-mode .btn-modal-cancel { background: #333; color: #bbb; }
+        .dark-mode .modal-input-field { background: #333; color: #fff; border-color: #555; }
+
+        /* --- DARK MODE STYLES --- */
+        body.dark-mode { background: #121212; color: #e0e0e0; }
+        .dark-mode .header, .dark-mode .footer { background: rgba(30, 30, 30, 0.95); border-color: #333; color: #e0e0e0; }
+        .dark-mode .logo { color: #e0e0e0; }
+        .dark-mode .tf-question, .dark-mode .multi-choice-question, .dark-mode .short-answer-question, .dark-mode .gap-fill-text, .dark-mode .pick-n-question, .dark-mode .matching-group-block, .dark-mode .flow-question-block, .dark-mode .map-question-block { background: #252525; border-color: #333; color: #e0e0e0; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
+        .dark-mode h2, .dark-mode h3, .dark-mode strong, .dark-mode b, .dark-mode .question-section-header { color: #fff; border-color: #555; }
+        .dark-mode .gap-fill-text, .dark-mode .flow-chart-content { color: #d4d4d4; }
+        .dark-mode .gap-input, .dark-mode .answer-input { background: #333; color: #fff; border-color: #555; }
+        .dark-mode .map-drop-zone { background: #333; border-color: #555; color: #aaa; }
+        .dark-mode .map-drop-zone.filled { background: #34495e; color: #fff; border-color: #3498db; }
+        .dark-mode .custom-select-trigger { background: #333; color: #fff; border-color: #555; }
+        .dark-mode .custom-select-options { background: #2c2c2c; border-color: #444; color: #eee; }
+        .dark-mode .custom-option { color: #ccc; }
+        .dark-mode .custom-option:hover { background: #444; color: #9b59b6; }
+        .dark-mode .custom-cb, .dark-mode .custom-radio { background: #333; border-color: #666; }
+        .dark-mode .hidden-cb:checked + .custom-cb, .dark-mode .hidden-cb:checked + .custom-radio { background: #8e44ad; border-color: #8e44ad; }
+        .dark-mode .timer { background: #3a1c1c; color: #ff7675; }
+        .dark-mode .part-btn { background: #333; color: #aaa; border-color: #555; }
+        .dark-mode .part-btn.active { background: linear-gradient(135deg, #8e44ad 0%, #9b59b6 100%); color: #fff; border-color: #9b59b6; }
+        .dark-mode .nav-circle { background: #333; color: #aaa; border-color: #555; }
+        .dark-mode .nav-circle.answered { background: #8e44ad; color: #fff; border-color: #8e44ad; }
+        .dark-mode .modal-content { background-color: rgba(30, 30, 30, 0.95); color: #eee; border-color: #555; }
+        .dark-mode .ctx-item:hover { background: #3a3a3a; }
+        .dark-mode #contextMenu { background: #252525; border-color: #444; color: #eee; }
+        .dark-mode .ctx-header { color: #aaa; }
+        .dark-mode .start-overlay { background: rgba(18, 18, 18, 0.95); }
+        .dark-mode .start-overlay h1 { color: #e0e0e0 !important; }
+        .dark-mode .start-overlay p { color: #aaa !important; }
+        .dark-mode .variant-popup { background: rgba(44, 44, 44, 0.95); border-color: #555; color: #eee; }
+        .dark-mode .variant-option { color: #eee; }
+        .dark-mode .variant-option:hover { background-color: #555; color: #e0b0ff; }
+        .dark-mode .match-features-box { background: #333; border-color: #444; }
+        .dark-mode .gap-input.flagged-input { background-color: rgba(231, 76, 60, 0.1) !important; }
+        .dark-mode .map-drop-zone.flagged-zone { background-color: rgba(231, 76, 60, 0.1); }
+        .dark-mode .lockdown-box { background: #252525; border: 1px solid #444; color: #eee; }
+        .dark-mode .lockdown-input { background: #333; color: #fff; border-color: #555; }
+        .dark-mode .name-input { background: #333; color: #fff; border-color: #555; }
+        
+        .dark-mode .modern-table-wrapper { background: #252525; border-color: #444; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
+        .dark-mode .modern-table th, .dark-mode .modern-table td { border-color: #444; color: #e0e0e0; }
+        .dark-mode .modern-table thead tr { background-color: #2c2c2c; color: #fff; }
+        .dark-mode .modern-table tbody tr:nth-child(even) { background-color: #2a2a2a; }
+        .dark-mode .modern-table tbody tr:hover { background-color: #333; }
+        .dark-mode .flow-box { background: #2a2a2a !important; border-color: #444 !important; color: #e0e0e0 !important; }
+
+        /* --- PASTE FORMATTING FIXES FOR DARK MODE --- */
+        .dark-mode .tf-question *:not(span[style*="background-color"]):not(.correct-ans-marker)[style], 
+        .dark-mode .multi-choice-question *:not(span[style*="background-color"]):not(.correct-ans-marker)[style], 
+        .dark-mode .short-answer-question *:not(span[style*="background-color"]):not(.correct-ans-marker)[style], 
+        .dark-mode .gap-fill-text *:not(span[style*="background-color"]):not(.correct-ans-marker)[style], 
+        .dark-mode .pick-n-question *:not(span[style*="background-color"]):not(.correct-ans-marker)[style], 
+        .dark-mode .matching-group-block *:not(span[style*="background-color"]):not(.correct-ans-marker)[style], 
+        .dark-mode .flow-question-block *:not(span[style*="background-color"]):not(.correct-ans-marker)[style], 
+        .dark-mode .map-question-block *:not(span[style*="background-color"]):not(.correct-ans-marker)[style], 
+        .dark-mode .modern-table *:not(span[style*="background-color"]):not(.correct-ans-marker)[style] {
+            color: #d4d4d4 !important;
+        }
+        
+        .dark-mode [style*="background-color: white"], .dark-mode [style*="background-color: #fff"], 
+        .dark-mode [style*="background-color: #ffffff"], .dark-mode [style*="background-color: rgb(255, 255, 255)"],
+        .dark-mode [style*="background: white"], .dark-mode [style*="background: #fff"] {
+            background-color: transparent !important;
+        }
+
+        /* Enforce dark text on ALL colored highlights so they remain visible */
+        body.dark-mode div.main-container span[style*="background-color"] {
+            color: #1a1a1a !important;
+        }
+        
+        /* Ensure cleared highlights correctly revert to normal light gray text */
+        body.dark-mode div.main-container span[style*="background-color: transparent"],
+        body.dark-mode div.main-container span[style*="background-color: rgba(0, 0, 0, 0)"] {
+            color: #d4d4d4 !important;
+        }
+
+        .dark-mode span[style*="#8e44ad"] { color: #e0b0ff !important; } 
+        .dark-mode .correct-ans-marker, .dark-mode .correct-ans-markers-list span { color: #2ecc71 !important; }
+    </style>
+</head>
+<body>
+    <div id="customAlert" class="custom-alert"></div>
+    <div id="modernModal" class="modern-modal-overlay">
+        <div class="modern-modal-box">
+            <div id="modernModalTitle" class="modern-modal-title">Attention</div>
+            <div id="modernModalText" class="modern-modal-text"></div>
+            <input type="password" id="modernModalInput" class="modal-input-field" placeholder="Enter code..." autocomplete="off">
+            <div class="modern-modal-buttons">
+                <button id="modernModalCancel" class="btn-modal btn-modal-cancel">Cancel</button>
+                <button id="modernModalConfirm" class="btn-modal btn-modal-confirm">OK</button>
+            </div>
+        </div>
+    </div>
+    <div id="lockdownOverlay" class="lockdown-overlay">
+        <div class="lockdown-box">
+            <h2 style="color:#e74c3c; margin-top:0;">Time's Up!</h2>
+            <p>Please enter your full name to submit your test.</p>
+            <input type="text" id="lockdownName" class="lockdown-input" placeholder="Student Name">
+            <button class="check-btn" style="width:100%" onclick="submitFromLockdown()">Submit Test & View Results</button>
+        </div>
+    </div>
+
+    <div id="startOverlay" class="start-overlay">
+        <h1 style="color:#2c3e50; margin-bottom: 20px; font-size:3rem;">IELTS Listening Test</h1>
+        <p style="color:#7f8c8d; margin-bottom: 40px; font-size: 18px;" id="welcomeMsg">Click below to start the audio and timer.</p>
+        <button class="start-btn-big" id="mainStartBtn" onclick="startTest()">Start Test</button>
+    </div>
+
+    <div class="header">
+        <div class="logo">IELTS Listening Test
+            <input type="text" id="studentName" class="name-input" placeholder="Student Name" oninput="saveName(); this.classList.remove('shake-active');">
+        </div>
+        <div class="header-right" style="display:flex; align-items:center;">
+            <button class="theme-btn" data-tooltip="Toggle Dark Mode" onclick="toggleTheme()">🌙</button>
+            <button class="help-btn" onclick="showHelp()" title="Help / Instructions">?</button>
+            <div class="timer" id="timerDisplay">Wait...</div>
+            <a href="https://t.me/SynergyacademyBukhara" target="_blank" class="synergy-logo">
+                <svg viewBox="0 0 24 24"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221l-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.446 1.394c-.14.18-.357.223-.548.223l.188-2.85 5.18-4.68c.223-.198-.054-.306-.346-.109l-6.4 4.02-2.76-.86c-.6-.188-.612-.6.125-.892l10.782-4.156c.5-.187.943.114.785.832z"/></svg>
+                Synergy Academy
+            </a>
+        </div>
+    </div>
+
+    <div style="display:none;">
+        <audio id="testAudio" preload="auto"></audio>
+    </div>
+
+    <div class="main-container" id="questionsPanel">
+        <div id="panel_q1" class="question-set">${escape(q1b)}</div>
+        <div id="panel_q2" class="question-set hidden">${escape(q2b)}</div>
+        <div id="panel_q3" class="question-set hidden">${escape(q3b)}</div>
+        <div id="panel_q4" class="question-set hidden">${escape(q4b)}</div>
+    </div>
+
+    <div id="contextMenu">
+        <div class="ctx-header">Highlight</div>
+        <div class="color-row">
+            <div class="color-btn color-yellow" onclick="performHighlight('#fff176')"></div>
+            <div class="color-btn color-green" onclick="performHighlight('#a5d6a7')"></div>
+            <div class="color-btn color-pink" onclick="performHighlight('#f48fb1')"></div>
+        </div>
+        <div class="ctx-item" onclick="clearHighlight()">
+            ✕ Clear Highlight
+        </div>
+    </div>
+
+    <div class="footer">
+        <div class="part-nav">
+            <button class="part-btn active" onclick="switchPart(1)">Part 1</button>
+            <button class="part-btn" onclick="switchPart(2)">Part 2</button>
+            <button class="part-btn" onclick="switchPart(3)">Part 3</button>
+            <button class="part-btn" onclick="switchPart(4)">Part 4</button>
+            <div class="sub-nav" id="subNav"></div>
+        </div>
+        <div>
+            <button class="admin-btn" onclick="adminReset()" title="Reset All (Code Required)">⚠️</button>
+        </div>
+        <button class="check-btn" onclick="checkAnswers(false, false)">Submit & Check</button>
+    </div>
+
+    <div id="resultModal" class="modal">
+        <div class="modal-content">
+            <h2 id="modalTitle">Test Completed</h2>
+            <div class="score-circle" id="scoreValue">--</div>
+            <h3 id="bandValue">Band: --</h3>
+            <button class="part-btn" onclick="window.print()" style="margin-right:10px;">🖨️ Print Result</button>
+            <button class="check-btn" onclick="document.getElementById('resultModal').style.display='none'">Close</button>
+        </div>
+    </div>
+
+<script>
+(function() {
+    const encodedKey = "${encodedAnsKey}";
+    
+    let isSubmitted = false;
+    let isResetting = false; 
+    let testStarted = false;
+    let reviewTime = false;
+    let timerInterval = null;
+    let secondsLeft = 0; 
+    let currentPart = 1;
+    const SESSION_KEY = '${uniqueId}'; 
+    const AUDIO_KEY = SESSION_KEY + '_audio_state'; 
+
+// AUDIO PLAYLIST LOGIC
+    const rawAudioDataList = ${audios};
+    const rawFullAudioData = ${fullAudioStr};
+    const audioPlayer = document.getElementById('testAudio');
+    let currentAudioIndex = 0;
+    let isFullAudio = rawFullAudioData !== null;
+
+    // Fix for mobile devices: Convert Base64 to Blob URLs to prevent memory crashes
+    function createBlobUrl(base64Str) {
+        if (!base64Str) return null;
+        try {
+            const parts = base64Str.split(',');
+            const mime = parts[0].match(/:(.*?);/)[1];
+            const bstr = atob(parts[1]);
+            let n = bstr.length;
+            const u8arr = new Uint8Array(n);
+            while (n--) { u8arr[n] = bstr.charCodeAt(n); }
+            return URL.createObjectURL(new Blob([u8arr], { type: mime }));
+        } catch(e) { 
+            return base64Str; // Fallback
+        }
+    }
+
+    // Pre-process audio instantly so it is ready for playback
+    const audioDataList = rawAudioDataList ? rawAudioDataList.map(createBlobUrl) : [null, null, null, null];
+    const fullAudioData = rawFullAudioData ? createBlobUrl(rawFullAudioData) : null;
+    window.startTest = startTest;
+    window.switchPart = switchPart;
+    window.checkAnswers = checkAnswers;
+    window.adminReset = adminReset;
+    window.openMapPicker = openMapPicker;
+    window.clearZone = clearZone;
+    window.saveState = saveState;
+    window.performHighlight = performHighlight;
+    window.clearHighlight = clearHighlight;
+    window.toggleBlockFlag = toggleBlockFlag;
+    window.toggleZoneFlag = toggleZoneFlag;
+    window.toggleInlineFlag = toggleInlineFlag;
+    window.showHelp = showHelp;
+    window.toggleCustomSelect = toggleCustomSelect;
+    window.selectCustomOption = selectCustomOption;
+    window.toggleTheme = toggleTheme;
+    window.saveName = saveName;
+    window.submitFromLockdown = submitFromLockdown;
+
+    window.showModernModal = function(title, text, type, onConfirm) {
+        const overlay = document.getElementById('modernModal');
+        document.getElementById('modernModalTitle').innerHTML = title;
+        document.getElementById('modernModalText').innerHTML = text;
+        const input = document.getElementById('modernModalInput');
+        const btnCancel = document.getElementById('modernModalCancel');
+        const btnConfirm = document.getElementById('modernModalConfirm');
+        
+        input.style.display = 'none'; input.value = '';
+        btnCancel.style.display = 'block'; btnCancel.innerText = 'Cancel';
+        btnConfirm.innerText = 'Confirm';
+
+        if (type === 'alert') {
+            btnCancel.style.display = 'none';
+            btnConfirm.innerText = 'Got it';
+        } else if (type === 'prompt') {
+            input.style.display = 'block';
+            setTimeout(() => input.focus(), 100);
+        }
+
+        overlay.classList.add('show');
+
+        btnConfirm.onclick = function() {
+            overlay.classList.remove('show');
+            if (onConfirm) {
+                if (type === 'prompt') onConfirm(input.value);
+                else onConfirm();
+            }
+        };
+        btnCancel.onclick = function() { overlay.classList.remove('show'); };
+    };
+
+    function showHelp() {
+        showModernModal("Instructions", "• Double-click any text box to clear the answer.<br>• Double-click a radio option to unselect it.<br>• Right-click text to Highlight.<br>• Click ⚑ to flag a question.", "alert");
+    }
+
+    function adminReset() {
+        showModernModal("Admin Reset", "Enter Admin Reset Code:", "prompt", function(code) {
+            if(btoa(code) === "TUFTVEVSX1JFU0VUXzc3Nw==") {
+                showModernModal("Warning", "Are you sure? This will wipe all answers.", "confirm", function() {
+                    isResetting = true;
+                    localStorage.removeItem(SESSION_KEY);
+                    localStorage.removeItem(AUDIO_KEY);
+                    localStorage.removeItem('theme_' + SESSION_KEY);
+                    location.reload();
+                });
+            } else {
+                showModernModal("Error", "Incorrect Code", "alert");
+            }
+        });
+    }
+    
+    function showCustomAlert(message) {
+        const alertBox = document.getElementById('customAlert');
+        alertBox.innerText = message;
+        alertBox.style.display = 'block';
+        setTimeout(() => { alertBox.style.display = 'none'; }, 4500);
+    }
+
+    function triggerNameWarning() {
+        const nameInput = document.getElementById('studentName');
+        nameInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        nameInput.classList.remove('shake-active');
+        void nameInput.offsetWidth; 
+        nameInput.classList.add('shake-active');
+        nameInput.focus();
+    }
+
+    function saveName() {
+        localStorage.setItem(SESSION_KEY + '_name', document.getElementById('studentName').value);
+    }
+    
+    function sendToTelegram(studentName, score, total, band, incorrectSummary) {
+        const botToken = "8349045424:AAEmXXa818OHQYb9uU7u9BJt-JOyARCAKTs"; 
+        const chatId = "-1003572167252"; 
+        
+        let message = "🎧 *New IELTS Listening Submission*\\n\\n" +
+                        "👤 *Student:* " + studentName + "\\n" +
+                        "📊 *Score:* " + score + "/" + total + "\\n" +
+                        "🎯 *Estimated Band:* " + band + "\\n\\n";
+                        
+        if (incorrectSummary) {
+            message += "*Incorrect Answers:*\\n" + incorrectSummary;
+        } else {
+            message += "🌟 *Perfect Score!*";
+        }
+
+        const url = "https://api.telegram.org/bot" + botToken + "/sendMessage";
+        
+        fetch(url, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ chat_id: chatId, text: message, parse_mode: "Markdown" })
+        }).catch(error => console.error(error));
+    }
+
+    function submitFromLockdown() {
+        let name = document.getElementById('lockdownName').value.trim();
+        if(!name) { 
+            document.getElementById('lockdownName').style.borderColor = '#e74c3c';
+            return; 
+        }
+        document.getElementById('studentName').value = name;
+        document.getElementById('lockdownOverlay').style.display = 'none';
+        saveName();
+        checkAnswers(false, true, true); 
+    }
+
+    /* --- DARK MODE TOGGLE --- */
+    function toggleTheme() {
+        document.body.classList.toggle('dark-mode');
+        const isDark = document.body.classList.contains('dark-mode');
+        localStorage.setItem('theme_' + SESSION_KEY, isDark ? 'dark' : 'light');
+        const btn = document.querySelector('.theme-btn');
+        if(btn) btn.innerText = isDark ? '☀️' : '🌙';
+    }
+
+    /* --- NOTION-STYLE DROPDOWN LOGIC --- */
+    function toggleCustomSelect(trigger) {
+        if(isSubmitted) return;
+        const wrapper = trigger.closest('.custom-select-wrapper');
+        const matchItem = trigger.closest('.match-item');
+        const wasOpen = wrapper.classList.contains('open');
+        
+        document.querySelectorAll('.custom-select-wrapper').forEach(w => {
+            w.classList.remove('open');
+            w.style.zIndex = '1';
+            const mi = w.closest('.match-item');
+            if(mi) mi.style.zIndex = '1';
+        });
+
+        if (!wasOpen) {
+            wrapper.classList.add('open');
+            wrapper.style.zIndex = '1000';
+            if(matchItem) { 
+                matchItem.style.position = 'relative'; 
+                matchItem.style.zIndex = '1000'; 
+            }
+        }
+    }
+
+    function selectCustomOption(optEl, qId, val) {
+        if(isSubmitted) return;
+        const wrapper = optEl.closest('.custom-select-wrapper');
+        const triggerText = wrapper.querySelector('.sel-text');
+        const trigger = wrapper.querySelector('.custom-select-trigger');
+        const input = document.getElementById('q' + qId);
+        
+        input.value = val;
+        if (val === '') {
+            triggerText.innerText = 'Select...';
+            trigger.classList.remove('answered');
+        } else {
+            triggerText.innerHTML = \`<span class="anim-answer">\${val}</span>\`;
+            trigger.classList.add('answered');
+        }
+        
+        wrapper.classList.remove('open');
+        wrapper.style.zIndex = '1';
+        const matchItem = wrapper.closest('.match-item');
+        if(matchItem) matchItem.style.zIndex = '1';
+        
+        saveState();
+    }
+
+    /* --- CHECKBOX LIMIT LOGIC --- */
+    function updatePickNStates() {
+        if(isSubmitted) return;
+        document.querySelectorAll('.pick-n-question').forEach(group => {
+            const limit = parseInt(group.dataset.limit);
+            const boxes = group.querySelectorAll('input[type="checkbox"]');
+            const checkedCount = group.querySelectorAll('input[type="checkbox"]:checked').length;
+            
+            boxes.forEach(box => {
+                if (!box.checked) {
+                    box.disabled = (checkedCount >= limit);
+                }
+            });
+        });
+    }
+
+    /* --- FLAG LOGIC --- */
+    function toggleBlockFlag(btn) {
+        const block = btn.closest('.tf-question, .multi-choice-question, .short-answer-question, .pick-n-question, .matching-group-block, .flow-question-block, .map-question-block');
+        if(!block) return;
+        block.classList.toggle('flagged');
+        saveState();
+    }
+    
+    function toggleZoneFlag(btn) {
+        btn.classList.toggle('active');
+        const zone = btn.previousElementSibling;
+        if(zone && zone.classList.contains('map-drop-zone')) { zone.classList.toggle('flagged-zone'); saveState(); }
+    }
+    
+    function toggleInlineFlag(btn, qId) {
+        btn.classList.toggle('active');
+        const inp = document.getElementById('q' + qId);
+        if(inp) { inp.classList.toggle('flagged-input'); saveState(); }
+    }
+
+    /* --- RESTORE LOGIC --- */
+    window.addEventListener('load', function() {
+        const savedTheme = localStorage.getItem('theme_' + SESSION_KEY);
+        if (savedTheme === 'dark') {
+            document.body.classList.add('dark-mode');
+            const tBtn = document.querySelector('.theme-btn');
+            if(tBtn) tBtn.innerText = '☀️';
+        }
+
+        if(localStorage.getItem(SESSION_KEY + '_name')) document.getElementById('studentName').value = localStorage.getItem(SESSION_KEY + '_name');
+
+        restoreState(); 
+        updatePickNStates();
+        setTimeout(() => renderSubNav(1), 100); 
+        
+        // Add Block Flag Buttons dynamically
+        document.querySelectorAll('.tf-question, .multi-choice-question, .short-answer-question, .pick-n-question, .matching-group-block, .flow-question-block, .map-question-block').forEach(el => {
+            if(el.querySelector('.flag-btn')) return;
+            const btn = document.createElement('button');
+            btn.className = 'flag-btn'; btn.innerHTML = '⚑'; btn.title = 'Flag for Review';
+            btn.onclick = function() { toggleBlockFlag(this); };
+            el.appendChild(btn);
+        });
+
+        // Add Inline Flags to standard gaps
+        document.querySelectorAll('.gap-input').forEach(inp => {
+            if(!inp.nextElementSibling || !inp.nextElementSibling.classList.contains('inline-flag')) {
+                const flag = document.createElement('span');
+                flag.className = 'q-flag inline-flag';
+                flag.innerHTML = '⚑';
+                flag.title = 'Flag for Review';
+                flag.onclick = function() { toggleInlineFlag(this, inp.id.replace('q', '')); };
+                inp.parentNode.insertBefore(flag, inp.nextSibling);
+            }
+        });
+
+        const savedState = localStorage.getItem(AUDIO_KEY);
+        if(savedState) {
+            try {
+                const state = JSON.parse(savedState);
+                if(isFullAudio && state.time > 0) {
+                    audioPlayer.src = fullAudioData;
+                    audioPlayer.currentTime = state.time;
+                    document.getElementById('mainStartBtn').innerText = "Resume Test";
+                    document.getElementById('mainStartBtn').style.background = "linear-gradient(135deg, #27ae60 0%, #2ecc71 100%)";
+                    document.getElementById('welcomeMsg').innerText = "Resume your test";
+                } else if (!isFullAudio && state.index !== undefined && state.time > 0) {
+                    currentAudioIndex = state.index;
+                    if(audioDataList[currentAudioIndex]) {
+                        audioPlayer.src = audioDataList[currentAudioIndex];
+                        audioPlayer.currentTime = state.time;
+                    }
+                    document.getElementById('mainStartBtn').innerText = "Resume Test";
+                    document.getElementById('mainStartBtn').style.background = "linear-gradient(135deg, #27ae60 0%, #2ecc71 100%)";
+                    document.getElementById('welcomeMsg').innerText = "Resume from Part " + (state.index+1);
+                }
+            } catch(e) {}
+        }
+    });
+
+    // AUTO-SEQUENCE & SAVE
+    const usePause = ${includePause};
+
+    if(audioPlayer) {
+        audioPlayer.addEventListener('timeupdate', function() {
+            if(!audioPlayer.paused && !audioPlayer.ended) {
+                const state = isFullAudio ? { time: audioPlayer.currentTime } : { index: currentAudioIndex, time: audioPlayer.currentTime };
+                localStorage.setItem(AUDIO_KEY, JSON.stringify(state));
+            }
+        });
+
+        audioPlayer.addEventListener('ended', function() {
+            if(isFullAudio) {
+                finishAudio();
+            } else {
+                if(currentAudioIndex < audioDataList.length - 1) {
+                    currentAudioIndex++;
+                    if(audioDataList[currentAudioIndex]) {
+                        
+                        if (usePause) {
+                            // 30 SECOND COUNTDOWN LOGIC
+                            let pauseSeconds = 30;
+                            document.getElementById('timerDisplay').style.color = "#e67e22";
+                            document.getElementById('timerDisplay').innerText = "Next Part in: " + pauseSeconds + "s";
+                            
+                            let pauseInterval = setInterval(() => {
+                                pauseSeconds--;
+                                if (pauseSeconds <= 0) {
+                                    clearInterval(pauseInterval);
+                                    document.getElementById('timerDisplay').style.color = "";
+                                    document.getElementById('timerDisplay').innerText = "Playing Part " + (currentAudioIndex+1);
+                                    audioPlayer.src = audioDataList[currentAudioIndex];
+                                    audioPlayer.play();
+                                } else {
+                                    document.getElementById('timerDisplay').innerText = "Next Part in: " + pauseSeconds + "s";
+                                }
+                            }, 1000);
+                        } else {
+                            // NORMAL PLAYBACK
+                            audioPlayer.src = audioDataList[currentAudioIndex];
+                            audioPlayer.play();
+                        }
+                        
+                    } else {
+                        finishAudio();
+                    }
+                } else {
+                    finishAudio();
+                }
+            }
+        });
+    }
+
+    function finishAudio() {
+        localStorage.removeItem(AUDIO_KEY);
+        startReviewTimer(120); 
+    }
+
+    function startTest() {
+        document.getElementById('startOverlay').style.display = 'none';
+        testStarted = true;
+        
+        if(!audioPlayer.src) {
+            if(isFullAudio && fullAudioData) {
+                audioPlayer.src = fullAudioData;
+            } else if (!isFullAudio && audioDataList[0]) {
+                audioPlayer.src = audioDataList[0];
+            } else if (!isFullAudio && audioDataList[currentAudioIndex]) {
+                audioPlayer.src = audioDataList[currentAudioIndex];
+            }
+        }
+        
+        audioPlayer.play().then(() => {
+            document.getElementById('timerDisplay').innerText = isFullAudio ? "Playing Audio" : "Playing Part " + (currentAudioIndex+1);
+        }).catch(e => {
+            document.getElementById('timerDisplay').innerText = "Click to Play";
+        });
+    }
+
+    function startReviewTimer(sec) {
+        reviewTime = true;
+        secondsLeft = sec;
+        clearInterval(timerInterval);
+        document.getElementById('timerDisplay').style.color = "#e67e22";
+        
+        timerInterval = setInterval(() => {
+            if(secondsLeft <= 0) {
+                clearInterval(timerInterval);
+                checkAnswers(false, true); 
+            } else {
+                secondsLeft--;
+                let m = Math.floor(secondsLeft/60);
+                let s = secondsLeft%60;
+                document.getElementById('timerDisplay').innerText = "Review: " + m + ":" + (s<10?'0':'')+s;
+            }
+        }, 1000);
+    }
+
+    /* --- HIGHLIGHT LOGIC (3 COLORS) --- */
+    const ctxMenu = document.getElementById('contextMenu');
+    const questionsPanel = document.getElementById('questionsPanel');
+    let savedRange = null;
+
+    questionsPanel.addEventListener('contextmenu', function(e) {
+        e.preventDefault();
+        const sel = window.getSelection();
+        if (sel.rangeCount > 0 && !sel.isCollapsed) {
+            savedRange = sel.getRangeAt(0);
+            ctxMenu.style.display = 'block'; 
+            ctxMenu.style.left = e.clientX + 'px'; 
+            ctxMenu.style.top = e.clientY + 'px';
+        }
+    });
+
+    document.addEventListener('click', function(e) { 
+        if (!ctxMenu.contains(e.target)) ctxMenu.style.display = 'none'; 
+    });
+
+    function performHighlight(colorCode) { 
+        if (savedRange) { 
+            const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(savedRange);
+            document.body.contentEditable = "true";
+            document.execCommand("BackColor", false, colorCode); 
+            document.body.contentEditable = "false";
+            sel.removeAllRanges(); savedRange = null; 
+            saveState(); 
+        } 
+        ctxMenu.style.display = 'none'; 
+    }
+
+    function clearHighlight() { 
+        if (savedRange) { 
+            const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(savedRange); 
+            document.body.contentEditable = "true";
+            document.execCommand("BackColor", false, "transparent"); 
+            document.body.contentEditable = "false";
+            sel.removeAllRanges(); savedRange = null; 
+            saveState(); 
+        } 
+        ctxMenu.style.display = 'none'; 
+    }
+
+    /* --- MAP / FLOW LOGIC --- */
+    function openMapPicker(zone) {
+        if(isSubmitted) return;
+        const variants = zone.dataset.variants.split(',');
+        let popup = document.getElementById('variantPopup');
+        if (!popup) { popup = document.createElement('div'); popup.id = 'variantPopup'; popup.className = 'variant-popup'; document.body.appendChild(popup); }
+        popup.innerHTML = '';
+        variants.forEach(v => {
+            const div = document.createElement('div'); div.className = 'variant-option'; div.innerText = v;
+            div.onclick = function() { 
+                const qId = zone.dataset.qid;
+                zone.innerHTML = \`<strong>\${qId}</strong> \${v} <input type="hidden" id="q\${qId}" value="\${v}" autocomplete="off">\`;
+                zone.dataset.droppedText = v;
+                zone.classList.add('filled');
+                popup.style.display = ''; 
+                popup.classList.remove('active-popup');
+                saveState();
+            };
+            popup.appendChild(div);
+        });
+        
+        // SMART POSITIONING LOGIC
+        popup.style.display = '';
+        popup.classList.add('active-popup');
+        const rect = zone.getBoundingClientRect();
+        const popupHeight = popup.offsetHeight;
+        const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+        const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
+        const spaceBelow = window.innerHeight - rect.bottom;
+        
+        if (spaceBelow < popupHeight && rect.top > popupHeight) {
+            popup.style.top = (rect.top + scrollTop - popupHeight - 5) + 'px';
+        } else {
+            popup.style.top = (rect.bottom + scrollTop + 5) + 'px';
+        }
+        popup.style.left = (rect.left + scrollLeft) + 'px';
+    }
+
+    function clearZone(zone) {
+        if(isSubmitted) return;
+        if(zone.classList.contains('filled')) {
+            const qId = zone.dataset.qid;
+            zone.innerHTML = \`? <input type="hidden" id="q\${qId}" value="">\`;
+            zone.classList.remove('filled');
+            delete zone.dataset.droppedText;
+            saveState();
+        }
+    }
+
+    function scrollToQuestion(qNum) {
+        let el = document.getElementById('q' + qNum);
+        let target = el;
+        
+        if (!target) {
+            target = document.querySelector('[data-q-start="' + qNum + '"]');
+        }
+        
+        if (!target) {
+            const cb = document.querySelector('input[data-questions~="' + qNum + '"]');
+            if (cb) target = cb.closest('.pick-n-question');
+        }
+
+        if (target && target.tagName === 'INPUT' && target.type === 'hidden') {
+            const mapZone = target.closest('.map-drop-zone');
+            const matchItem = target.closest('.match-item');
+            if (mapZone) target = mapZone;
+            else if (matchItem) target = matchItem;
+        }
+
+        if (target) {
+            target.scrollIntoView({behavior: "smooth", block: "center"});
+            target.classList.remove('target-glow');
+            void target.offsetWidth; 
+            target.classList.add('target-glow');
+            setTimeout(() => target.classList.remove('target-glow'), 2000);
+        }
+    }
+
+    /* --- NAV LOGIC --- */
+    function renderSubNav(partNum) {
+        const container = document.getElementById('subNav');
+        container.innerHTML = '';
+        
+        const qPanel = document.getElementById('panel_q'+partNum);
+        const qSet = new Set();
+        
+        if(!qPanel) return;
+        
+        qPanel.querySelectorAll('input[id^="q"], select[id^="q"]').forEach(el => qSet.add(el.id.replace('q','')));
+        qPanel.querySelectorAll('.map-drop-zone').forEach(el => qSet.add(el.dataset.qid));
+        qPanel.querySelectorAll('.multi-checkbox').forEach(el => {
+            el.dataset.questions.split(' ').forEach(q => qSet.add(q));
+        });
+        qPanel.querySelectorAll('[data-q-start]').forEach(el => qSet.add(el.dataset.qStart));
+        
+        const sortedQs = Array.from(qSet).sort((a,b) => parseInt(a)-parseInt(b));
+        
+        sortedQs.forEach((q, idx) => {
+            const btn = document.createElement('div');
+            btn.className = 'nav-circle';
+            btn.style.animationDelay = (idx * 0.05) + 's';
+            btn.classList.add('nav-enter');
+            btn.innerText = q;
+            btn.onclick = () => scrollToQuestion(q);
+            container.appendChild(btn);
+        });
+        
+        let saved = null;
+        try { saved = JSON.parse(localStorage.getItem(SESSION_KEY)); } catch(e){}
+        if(saved) updateNavigatorUI(saved);
+    }
+
+    function adminReset() {
+        showModernModal("Admin Reset", "Enter Admin Reset Code:", "prompt", function(code) {
+            if(btoa(code) === "TUFTVEVSX1JFU0VUXzc3Nw==") {
+                showModernModal("Warning", "Are you sure? This will wipe all answers.", "confirm", function() {
+                    isResetting = true;
+                    localStorage.removeItem(SESSION_KEY);
+                    localStorage.removeItem(AUDIO_KEY);
+                    localStorage.removeItem('theme_' + SESSION_KEY);
+                    location.reload();
+                });
+            } else {
+                showModernModal("Error", "Incorrect Code", "alert");
+            }
+        });
+    }
+
+    function saveState() {
+        if(isResetting || !testStarted) return;
+        const state = { submitted: isSubmitted, answers: {}, drops: {}, flags: [], htmlContent: {} };
+        
+        [1,2,3,4].forEach(i => {
+             const el = document.getElementById('panel_q'+i);
+             if(el) state.htmlContent['p'+i] = el.innerHTML;
+        });
+
+        document.querySelectorAll('input:not([type="hidden"]), select').forEach(el => {
+            if(el.type === 'radio') { if(el.checked) state.answers[el.name] = el.value; } 
+            else if(el.id) { state.answers[el.id] = el.value; }
+        });
+        
+        document.querySelectorAll('.custom-select-wrapper input[type="hidden"]').forEach(el => {
+            if(el.value) state.answers[el.id] = el.value;
+        });
+        
+        document.querySelectorAll('.pick-n-question').forEach(group => {
+            const startQ = group.dataset.groupStart; const checks = [];
+            group.querySelectorAll('input[type="checkbox"]:checked').forEach(cb => checks.push(cb.value));
+            if(checks.length > 0) state.answers['multi_'+startQ] = checks;
+        });
+        
+        document.querySelectorAll('.map-drop-zone.filled').forEach(zone => {
+            const hidden = zone.querySelector('input[type="hidden"]');
+            if(hidden && hidden.value) {
+                state.drops[zone.dataset.qid] = { val: hidden.value, text: zone.dataset.droppedText || hidden.value };
+            }
+        });
+        
+        document.querySelectorAll('.flagged').forEach(block => {
+             block.querySelectorAll('input[id^="q"], select[id^="q"]').forEach(el => {
+                 const id = String(el.id).replace('q','');
+                 if(id && !state.flags.includes(id)) state.flags.push(id);
+             });
+             block.querySelectorAll('.map-drop-zone').forEach(el => {
+                 const id = String(el.dataset.qid);
+                 if(id && !state.flags.includes(id)) state.flags.push(id);
+             });
+             block.querySelectorAll('input[type="radio"][name^="q"]').forEach(el => {
+                 const id = String(el.name).replace('q','');
+                 if(id && !state.flags.includes(id)) state.flags.push(id);
+             });
+             block.querySelectorAll('input[type="checkbox"][data-questions]').forEach(el => {
+                 el.dataset.questions.split(' ').forEach(id => {
+                     if(id && !state.flags.includes(id)) state.flags.push(String(id));
+                 });
+             });
+             if(block.dataset.qStart && !state.flags.includes(String(block.dataset.qStart))) { 
+                 state.flags.push(String(block.dataset.qStart)); 
+             }
+        });
+        
+        document.querySelectorAll('.gap-input.flagged-input').forEach(inp => {
+             const id = String(inp.id).replace('q', '');
+             if(id && !state.flags.includes(id)) state.flags.push(id);
+        });
+        document.querySelectorAll('.map-drop-zone.flagged-zone').forEach(zone => {
+             const id = String(zone.dataset.qid);
+             if(id && !state.flags.includes(id)) state.flags.push(id);
+        });
+
+        updateNavigatorUI(state);
+        localStorage.setItem(SESSION_KEY, JSON.stringify(state));
+    }
+    
+    function updateNavigatorUI(state) {
+        document.querySelectorAll('.nav-circle').forEach(btn => {
+            const q = btn.innerText;
+            let isAnswered = false;
+            if(state.answers['q'+q] || state.answers[q]) isAnswered = true;
+            if(state.drops[q]) isAnswered = true;
+            for(const k in state.answers) {
+                if(k.startsWith('multi_')) {
+                    if(state.answers[k].length > 0) {
+                         const group = document.querySelector(\`.pick-n-question[data-group-start="\${k.replace('multi_','')}"]\`);
+                         if(group) {
+                             const qs = group.querySelectorAll('input')[0].dataset.questions.split(' ');
+                             if(qs.includes(q)) isAnswered = true;
+                         }
+                    }
+                }
+            }
+            const isFlagged = state.flags.includes(String(q));
+            
+            btn.classList.remove('answered', 'flagged');
+            if(isAnswered) btn.classList.add('answered');
+            if(isFlagged) btn.classList.add('flagged');
+        });
+    }
+
+    function restoreState() {
+        let saved = null;
+        try { saved = localStorage.getItem(SESSION_KEY); } catch(e){}
+        if(!saved) return; 
+        try {
+            const state = JSON.parse(saved);
+            
+            if(state.htmlContent) {
+                for(const [pid, html] of Object.entries(state.htmlContent)) {
+                    const el = document.getElementById(pid.replace('p', 'panel_q'));
+                    if(el) el.innerHTML = html;
+                }
+            }
+            if(state.submitted) isSubmitted = true;
+            
+            for(const [key, val] of Object.entries(state.answers)) {
+                if(key.startsWith('multi_')) {
+                    const startQ = key.replace('multi_', '');
+                    const group = document.querySelector(\`.pick-n-question[data-group-start="\${startQ}"]\`);
+                    if(group) {
+                        val.forEach(v => {
+                            const cb = group.querySelector(\`input[value="\${v}"]\`);
+                            if(cb) cb.checked = true;
+                        });
+                    }
+                } else {
+                    const radios = document.getElementsByName(key);
+                    if(radios.length > 0) {
+                        for(let i=0; i<radios.length; i++) { if(radios[i].value === val) radios[i].checked = true; }
+                    } else {
+                        const el = document.getElementById(key);
+                        if(el) {
+                            el.value = val;
+                            const wrapper = el.closest('.custom-select-wrapper');
+                            if (wrapper) {
+                                const triggerText = wrapper.querySelector('.sel-text');
+                                const trigger = wrapper.querySelector('.custom-select-trigger');
+                                if(val) { triggerText.innerText = val; trigger.classList.add('answered'); } 
+                                else { triggerText.innerText = 'Select...'; trigger.classList.remove('answered'); }
+                            }
+                        }
+                    }
+                }
+            }
+            
+            if(state.drops) {
+                for(const [qid, data] of Object.entries(state.drops)) {
+                    const zone = document.querySelector(\`.map-drop-zone[data-qid="\${qid}"]\`);
+                    if(zone) {
+                        zone.innerHTML = \`<strong>\${qid}</strong> \${data.text} <input type="hidden" id="q\${qid}" value="\${data.val}" autocomplete="off">\`;
+                        zone.dataset.droppedText = data.text;
+                        zone.classList.add('filled');
+                    }
+                }
+            }
+            
+             if(state.flags) {
+                state.flags.forEach(qid => {
+                    const zone = document.querySelector(\`.map-drop-zone[data-qid="\${qid}"]\`);
+                    if(zone) { 
+                        zone.classList.add('flagged-zone'); 
+                        if(zone.nextElementSibling && zone.nextElementSibling.classList.contains('q-flag')) { 
+                            zone.nextElementSibling.classList.add('active'); 
+                        } 
+                    }
+                    
+                    const gapInp = document.getElementById('q'+qid);
+                    if(gapInp && gapInp.classList.contains('gap-input')) {
+                        gapInp.classList.add('flagged-input');
+                        if(gapInp.nextElementSibling && gapInp.nextElementSibling.classList.contains('inline-flag')) {
+                            gapInp.nextElementSibling.classList.add('active');
+                        }
+                    }
+
+                    let target = document.getElementById('q'+qid) 
+                              || document.querySelector(\`input[name="q\${qid}"]\`) 
+                              || document.querySelector(\`input[data-questions~="\${qid}"]\`)
+                              || document.querySelector(\`[data-q-start="\${qid}"]\`);
+                    
+                    if(target) {
+                        const block = target.closest('.tf-question, .multi-choice-question, .short-answer-question, .pick-n-question, .matching-group-block, .flow-question-block, .map-question-block');
+                        if(block && !block.classList.contains('flagged')) { block.classList.add('flagged'); }
+                    }
+                });
+            }
+            
+            if(isSubmitted) checkAnswers(true); 
+        } catch(e) { console.error("Restore failed", e); }
+    }
+
+    document.addEventListener('input', saveState);
+    document.addEventListener('change', function(e) {
+        if(e.target.classList.contains('multi-checkbox')) {
+            updatePickNStates();
+        }
+        saveState();
+    });
+
+    function checkAnswers(restoring=false, auto=false, bypassNameCheck=false, userConfirmed=false) {
+        try {
+            const correctAnswers = JSON.parse(atob(encodedKey));
+
+            let nameInput = document.getElementById('studentName');
+            let name = nameInput ? nameInput.value.trim() : "";
+
+            if(!restoring && !bypassNameCheck) {
+                if (!name) {
+                    if (auto) {
+                        document.getElementById('lockdownOverlay').style.display = 'flex';
+                        document.getElementById('lockdownName').focus();
+                        document.querySelectorAll('input, select, .map-drop-zone, .custom-select-wrapper').forEach(el => { 
+                            if(el.id !== 'lockdownName' && el.id !== 'studentName' && el.id !== 'modernModalInput') { // <-- Added exclusion here
+                                if(el.classList.contains('custom-select-wrapper') || el.classList.contains('map-drop-zone')) { el.style.pointerEvents = 'none'; }
+                                else { el.disabled = true; }
+                            }
+                        });
+                        return;
+                    } else {
+                        showCustomAlert("Please enter your name at the top of the page before submitting.");
+                        triggerNameWarning();
+                        return;
+                    }
+                }
+                
+                // --- NEW UNANSWERED QUESTIONS WARNING (MODERN MODAL) ---
+                if (!auto && !userConfirmed) {
+                    let unanswered = [];
+                    for (const [qId, correctRaw] of Object.entries(correctAnswers)) {
+                        let answered = false;
+                        let elById = document.getElementById('q' + qId);
+                        
+                        if (elById && (elById.type === 'hidden' || elById.type === 'text' || elById.type === 'number' || elById.tagName === 'SELECT')) {
+                            if (elById.value && elById.value.trim() !== '') answered = true;
+                        } else {
+                            const multiBoxes = document.querySelectorAll('input[type="checkbox"][data-questions~="' + qId + '"]');
+                            if(multiBoxes.length > 0) {
+                                if(Array.from(multiBoxes).some(cb => cb.checked)) answered = true;
+                            } else {
+                                if(document.querySelector('input[name="q' + qId + '"]:checked')) answered = true;
+                            }
+                        }
+                        if (!answered) unanswered.push(qId);
+                    }
+
+                    if (unanswered.length > 0) {
+                        let msg = "Wait! You have <b>" + unanswered.length + "</b> unanswered question(s):<br><br>" + 
+                                  "<span style='color:#e74c3c; font-weight:bold; font-size:18px;'>Q" + unanswered.slice(0, 5).join(', Q') + (unanswered.length > 5 ? "..." : "") + "</span><br><br>" + 
+                                  "Are you sure you want to submit?";
+                        showModernModal("Incomplete Test", msg, "confirm", function() {
+                            checkAnswers(false, false, true, true);
+                        });
+                        return;
+                    } else {
+                        showModernModal("Submit Test", "All questions answered!<br>Ready to check your score?", "confirm", function() {
+                            checkAnswers(false, false, true, true);
+                        });
+                        return;
+                    }
+                }
+                // ----------------------------------------
+            }
+
+            if(!restoring) { isSubmitted = true; saveState(); }
+            let score = 0; let total = 0;
+            let incorrectLogs = [];
+            
+            document.querySelectorAll('input, select').forEach(el => { 
+                if(el.id !== 'lockdownName' && el.id !== 'studentName' && el.id !== 'modernModalInput') el.disabled = true; // <-- Added exclusion here
+            });
+            document.querySelectorAll('.map-drop-zone, .custom-select-wrapper').forEach(el => { el.style.pointerEvents = 'none'; });
+            document.querySelectorAll('.correct-ans-marker, .correct-ans-markers-list').forEach(el => el.remove());
+            
+            if(document.getElementById('studentName')) document.getElementById('studentName').readOnly = true;
+
+            for (const [qId, correctRaw] of Object.entries(correctAnswers)) {
+                total++;
+                let correctVariants = [];
+                if (Array.isArray(correctRaw)) {
+                    correctVariants = correctRaw.map(c => String(c).trim().toUpperCase());
+                } else if (typeof correctRaw === 'string' && correctRaw.includes('|')) {
+                    correctVariants = correctRaw.split('|').map(c => c.trim().toUpperCase());
+                } else {
+                    correctVariants = [String(correctRaw).trim().toUpperCase()];
+                }
+
+                let isCorrect = false; 
+                let container = null; 
+                let elById = document.getElementById('q'+qId);
+                let userVal = "";
+
+                if (elById && (elById.type === 'hidden' || elById.type === 'text' || elById.type === 'number' || elById.tagName === 'SELECT')) {
+                    userVal = elById.value?.trim().toUpperCase() || ""; 
+                    
+                    let visualTarget = elById;
+                    if (elById.type === 'hidden' && elById.closest('.map-drop-zone')) {
+                        visualTarget = elById.closest('.map-drop-zone');
+                    } else if (elById.type === 'hidden' && elById.closest('.custom-select-wrapper')) {
+                        visualTarget = elById.closest('.custom-select-wrapper').querySelector('.custom-select-trigger');
+                    }
+
+                    if (correctVariants.includes(userVal)) { 
+                        isCorrect = true; 
+                        visualTarget.classList.add('correct'); 
+                    } else { 
+                        visualTarget.classList.add('incorrect'); 
+                    }
+                } else {
+                    const multiBoxes = document.querySelectorAll(\`input[type="checkbox"][data-questions~="\${qId}"]\`);
+                    if(multiBoxes.length > 0) {
+                        container = multiBoxes[0].closest('.pick-n-question');
+                        const checkedVals = Array.from(multiBoxes).filter(cb => cb.checked).map(cb => cb.value.toUpperCase());
+                        userVal = checkedVals.length > 0 ? checkedVals.join(", ") : "";
+                        if(checkedVals.some(v => correctVariants.includes(v))) {
+                            isCorrect = true;
+                            const correctBox = Array.from(multiBoxes).find(cb => correctVariants.includes(cb.value.toUpperCase()));
+                            if(correctBox) correctBox.closest('.modern-label').classList.add('correct');
+                        }
+                    } else {
+                        const radios = document.querySelectorAll(\`input[name="q\${qId}"]\`);
+                        if (radios.length > 0) {
+                            container = radios[0].closest('.tf-question, .multi-choice-question, .match-item'); 
+                            const checked = document.querySelector(\`input[name="q\${qId}"]:checked\`);
+                            if (checked) {
+                                userVal = checked.value.toUpperCase();
+                                if (correctVariants.includes(userVal)) { isCorrect = true; checked.closest('.modern-label').classList.add('correct'); }
+                                else { checked.closest('.modern-label').classList.add('incorrect'); }
+                            }
+                        }
+                    }
+                }
+
+                if (isCorrect) score++;
+
+                if (!isCorrect) {
+                    let displayCorrect = '';
+                    if (Array.isArray(correctRaw)) displayCorrect = correctRaw.join(' / ');
+                    else if (typeof correctRaw === 'string' && correctRaw.includes('|')) displayCorrect = correctRaw.split('|').map(s => s.trim()).join(' / ');
+                    else displayCorrect = String(correctRaw);
+                    
+                    let cleanUserVal = userVal ? userVal : "(blank)";
+                    incorrectLogs.push("Q" + qId + ": Wrote *" + cleanUserVal + "*, Correct is *" + displayCorrect + "*");
+                    
+                    const text = '✓ ' + displayCorrect;
+
+                    if (elById) {
+                        let targetNode = elById;
+                        if(elById.type === 'hidden' && elById.closest('.map-drop-zone')) {
+                            targetNode = elById.closest('.map-drop-zone');
+                        } else if(elById.type === 'hidden' && elById.closest('.custom-select-wrapper')) {
+                            targetNode = elById.closest('.custom-select-wrapper');
+                        }
+                        
+                        const marker = document.createElement('span'); 
+                        marker.className = 'correct-ans-marker';
+                        marker.style.color = '#27ae60'; 
+                        marker.style.fontWeight = 'bold'; 
+                        marker.style.marginLeft = '12px'; 
+                        marker.style.display = 'inline-block';
+                        marker.innerText = text;
+                        if(targetNode.nextSibling) {
+                            targetNode.parentNode.insertBefore(marker, targetNode.nextSibling);
+                        } else {
+                            targetNode.parentNode.appendChild(marker);
+                        }
+                    } else if (container) {
+                        let existing = container.querySelector('.correct-ans-markers-list');
+                        if (!existing) {
+                            existing = document.createElement('div');
+                            existing.className = 'correct-ans-markers-list';
+                            existing.style.marginTop = '10px';
+                            existing.style.padding = '10px';
+                            existing.style.backgroundColor = '#e8f5e9';
+                            existing.style.border = '1px solid #c3e6cb';
+                            existing.style.borderRadius = '8px';
+                            existing.style.color = '#2c3e50'; 
+                            existing.style.fontSize = '14px';
+                            container.appendChild(existing);
+                        }
+                        
+                        const item = document.createElement('div');
+                        item.innerHTML = "<span style='color:#27ae60; font-weight:bold'>✓ " + displayCorrect + "</span>";
+                        item.style.marginBottom = '4px';
+                        existing.appendChild(item);
+                    }
+                }
+            }
+            const band = calculateBand(score);
+            if(!restoring) {
+                sendToTelegram(name, score, total, band, incorrectLogs.join('\\n'));
+                
+                if(document.getElementById('modalTitle').innerText !== "Time's Up!") {
+                    if(auto) document.getElementById('modalTitle').innerText = "Time's Up!";
+                    else document.getElementById('modalTitle').innerText = "Test Completed";
+                }
+                document.getElementById('scoreValue').innerText = score + "/" + total;
+                document.getElementById('bandValue').innerText = "Band: " + band;
+                document.getElementById('resultModal').style.display = 'flex';
+                localStorage.removeItem(AUDIO_KEY);
+            }
+        } catch(err) { showModernModal("Grading Error", err.message, "alert"); }
+    }
+    
+    function calculateBand(score) {
+        if (score >= 39) return "9.0"; if (score >= 37) return "8.5"; if (score >= 35) return "8.0";
+        if (score >= 32) return "7.5"; if (score >= 30) return "7.0"; if (score >= 26) return "6.5";
+        if (score >= 23) return "6.0"; if (score >= 18) return "5.5"; if (score >= 16) return "5.0";
+        if (score >= 13) return "4.5"; return "4.0";
+    }
+
+    function switchPart(num) {
+        currentPart = num;
+        [1,2,3,4].forEach(i => { document.getElementById('panel_q'+i).classList.add('hidden'); });
+        document.querySelectorAll('.part-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById('panel_q'+num).classList.remove('hidden');
+        document.querySelectorAll('.part-btn')[num-1].classList.add('active');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        renderSubNav(num);
+    }
+
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+            const active = document.activeElement;
+            // Only trigger if they are currently typing inside a visible text/number input
+            if (active && active.tagName === 'INPUT' && active.type !== 'hidden') {
+                e.preventDefault();
+                
+                // Gather all typable inputs that are currently visible on the screen
+                const visibleInputs = Array.from(document.querySelectorAll('input:not([type="hidden"])')).filter(el => {
+                    return el.offsetParent !== null; 
+                });
+                
+                const index = visibleInputs.indexOf(active);
+                if (index > -1 && index < visibleInputs.length - 1) {
+                    const nextInput = visibleInputs[index + 1];
+                    nextInput.focus();
+                    // Smoothly scroll the page so the new input is in the center of the screen
+                    nextInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            }
+        }
+    });
+
+    document.addEventListener('click', function(e) {
+        const variantPopup = document.getElementById('variantPopup');
+        if (variantPopup && e.target.id !== 'variantPopup' && !e.target.classList.contains('map-drop-zone') && !variantPopup.contains(e.target)) {
+            variantPopup.style.display = '';
+            variantPopup.classList.remove('active-popup');
+        }
+
+        if (!e.target.closest('.custom-select-wrapper')) {
+            document.querySelectorAll('.custom-select-wrapper').forEach(w => {
+                w.classList.remove('open');
+                w.style.zIndex = '1';
+                const mi = w.closest('.match-item');
+                if(mi) mi.style.zIndex = '1';
+            });
+        }
+    });
+})();
+` + "<" + "/script>" + `
+</body>
+</html>`;
+        const blob = new Blob([template], {type: "text/html"});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a"); a.href = url; a.download = "IELTS_Listening.html";
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        
+        const btn = document.getElementById('downloadBtn');
+        const originalText = btn.innerText;
+        btn.innerText = "✅ Test Generated & Downloaded!";
+        btn.style.background = "linear-gradient(135deg, #16a085 0%, #2ecc71 100%)";
+        setTimeout(() => {
+            btn.innerText = originalText;
+            btn.style.background = "";
+        }, 3000);
+    }
+</script>
+</body>
+</html>

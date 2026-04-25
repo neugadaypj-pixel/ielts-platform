@@ -1,4 +1,7 @@
-const { readBuilderFinalTemplate } = require('./builderAssets');
+const vm = require('vm');
+const { readBuilderFinalTemplate, readBuilderSource } = require('./builderAssets');
+
+const generateFileSourceCache = new Map();
 
 function toPlainObject(testDoc) {
     if (typeof testDoc?.toObject === 'function') {
@@ -60,6 +63,147 @@ function createStableSessionId(testDoc, prefix) {
     const rawId = plainTest._id ? String(plainTest._id) : `${plainTest.type || 'test'}_${plainTest.title || 'platform'}`;
     const safeId = rawId.replace(/[^a-zA-Z0-9_-]/g, '_');
     return `${prefix}${safeId}`;
+}
+
+function hashStringToSixDigits(value) {
+    const source = String(value || '0');
+    let hash = 17;
+
+    for (let index = 0; index < source.length; index += 1) {
+        hash = (hash * 31 + source.charCodeAt(index)) % 1000000;
+    }
+
+    return hash;
+}
+
+function createDeterministicMath(seedValue) {
+    const mathObject = {};
+
+    for (const propertyName of Object.getOwnPropertyNames(Math)) {
+        mathObject[propertyName] = Math[propertyName];
+    }
+
+    const sixDigitSeed = hashStringToSixDigits(seedValue);
+    mathObject.random = () => (sixDigitSeed + 0.5) / 1000000;
+
+    return mathObject;
+}
+
+function extractGenerateFileSource(type) {
+    const normalizedType = String(type || '').toLowerCase();
+
+    if (generateFileSourceCache.has(normalizedType)) {
+        return generateFileSourceCache.get(normalizedType);
+    }
+
+    const source = readBuilderSource(normalizedType);
+    const functionStart = source.indexOf('function generateFile()');
+
+    if (functionStart === -1) {
+        throw new Error(`Could not find generateFile() in ${normalizedType} builder source`);
+    }
+
+    const scriptEnd = source.lastIndexOf('</script>');
+    if (scriptEnd === -1 || scriptEnd <= functionStart) {
+        throw new Error(`Could not determine the script boundary for ${normalizedType}`);
+    }
+
+    const functionSource = source.slice(functionStart, scriptEnd).trim();
+    generateFileSourceCache.set(normalizedType, functionSource);
+    return functionSource;
+}
+
+function runBuilderGenerateFile(type, fields, globals, seedValue) {
+    const elements = {};
+    let capturedHtml = '';
+
+    const makeElement = (overrides = {}) => ({
+        value: '',
+        checked: false,
+        innerText: '',
+        style: {},
+        files: [],
+        ...overrides
+    });
+
+    Object.entries(fields || {}).forEach(([id, overrides]) => {
+        elements[id] = makeElement(overrides);
+    });
+
+    if (!elements.downloadBtn) {
+        elements.downloadBtn = makeElement({ innerText: 'Download', style: {} });
+    }
+
+    const documentMock = {
+        addEventListener() {},
+        getElementById(id) {
+            if (!elements[id]) {
+                elements[id] = makeElement();
+            }
+            return elements[id];
+        },
+        createElement() {
+            return {
+                href: '',
+                download: '',
+                click() {},
+                style: {}
+            };
+        },
+        body: {
+            appendChild() {},
+            removeChild() {}
+        }
+    };
+
+    function BlobMock(parts, options) {
+        this.parts = parts;
+        this.options = options;
+
+        if (options?.type === 'text/html') {
+            capturedHtml = parts.map((part) => {
+                if (typeof part === 'string') {
+                    return part;
+                }
+                return String(part ?? '');
+            }).join('');
+        }
+    }
+
+    const context = {
+        document: documentMock,
+        alert(message) {
+            throw new Error(message);
+        },
+        Blob: BlobMock,
+        URL: {
+            createObjectURL() {
+                return 'blob:captured-test';
+            }
+        },
+        setTimeout() {},
+        console,
+        Math: createDeterministicMath(seedValue),
+        btoa(value) {
+            return Buffer.from(String(value), 'binary').toString('base64');
+        },
+        atob(value) {
+            return Buffer.from(String(value), 'base64').toString('binary');
+        },
+        unescape,
+        encodeURIComponent,
+        fullAudioData: globals?.fullAudioData ?? null,
+        audioParts: globals?.audioParts ?? [null, null, null, null]
+    };
+
+    vm.createContext(context);
+    vm.runInContext(`${extractGenerateFileSource(type)}; generateFile();`, context, { timeout: 2000 });
+
+    if (!capturedHtml || !capturedHtml.trim()) {
+        throw new Error(`Builder did not produce HTML for ${type}`);
+    }
+
+    return capturedHtml.trim();
 }
 
 function base64FromBinary(binaryString) {
@@ -250,66 +394,71 @@ function injectListeningR2Support(template) {
 }
 
 function generateReadingHtml(testDoc, parsedContent) {
-    const template = readBuilderFinalTemplate('reading');
     const content = normalizeReadingContent(parsedContent, testDoc);
-    const encodedKey = encodeReadingAnswerKey(content.answerKey);
-    const sessionId = createStableSessionId(testDoc, 'test_');
+    const stableSessionId = createStableSessionId(testDoc, 'test_');
 
-    return applyLiteralReplacements(template, [
-        ['${escape(p1t)}', escapeForBuilderValue(content.p1.title)],
-        ['${p1b}', content.p1.text],
-        ['${escape(p2t)}', escapeForBuilderValue(content.p2.title)],
-        ['${p2b}', content.p2.text],
-        ['${escape(p3t)}', escapeForBuilderValue(content.p3.title)],
-        ['${p3b}', content.p3.text],
-        ['${escape(q1b)}', escapeForBuilderValue(content.p1.questions)],
-        ['${escape(q2b)}', escapeForBuilderValue(content.p2.questions)],
-        ['${escape(q3b)}', escapeForBuilderValue(content.p3.questions)],
-        ['${encodedKey}', encodedKey],
-        ['${uniqueId}', sessionId]
-    ]).trim();
+    return runBuilderGenerateFile('reading', {
+        p1_title: { value: content.p1.title },
+        p1_text: { value: content.p1.text },
+        p2_title: { value: content.p2.title },
+        p2_text: { value: content.p2.text },
+        p3_title: { value: content.p3.title },
+        p3_text: { value: content.p3.text },
+        q1_text: { value: content.p1.questions },
+        q2_text: { value: content.p2.questions },
+        q3_text: { value: content.p3.questions },
+        answer_key_json: { value: content.answerKey },
+        downloadBtn: { innerText: 'Download Final Test HTML', style: {} }
+    }, {}, stableSessionId).replace(
+        /const SESSION_KEY = 'ielts_state_test_\d+';/,
+        `const SESSION_KEY = 'ielts_state_${stableSessionId}';`
+    );
 }
 
 function generateListeningHtml(testDoc, parsedContent) {
-    const rawTemplate = readBuilderFinalTemplate('listening');
-    const template = injectListeningR2Support(rawTemplate);
     const content = normalizeListeningContent(parsedContent);
-    const encodedKey = encodeListeningAnswerKey(content.answerKey);
-    const sessionId = createStableSessionId(testDoc, 'ielts_listening_');
+    const stableSessionId = createStableSessionId(testDoc, 'ielts_listening_');
+    const generatedHtml = runBuilderGenerateFile('listening', {
+        q1_text: { value: content.p1 },
+        q2_text: { value: content.p2 },
+        q3_text: { value: content.p3 },
+        q4_text: { value: content.p4 },
+        answer_key_json: { value: content.answerKey },
+        add_pause_cb: { checked: content.includePause },
+        downloadBtn: { innerText: 'Download Final Listening Test', style: {} }
+    }, {
+        audioParts: content.audioParts,
+        fullAudioData: content.fullAudio
+    }, stableSessionId).replace(
+        /const SESSION_KEY = 'ielts_listening_\d+';/,
+        `const SESSION_KEY = '${stableSessionId}';`
+    );
 
-    return applyLiteralReplacements(template, [
-        ['${escape(q1b)}', escapeForBuilderValue(content.p1)],
-        ['${escape(q2b)}', escapeForBuilderValue(content.p2)],
-        ['${escape(q3b)}', escapeForBuilderValue(content.p3)],
-        ['${escape(q4b)}', escapeForBuilderValue(content.p4)],
-        ['${encodedAnsKey}', encodedKey],
-        ['${uniqueId}', sessionId],
-        ['${audios}', JSON.stringify(content.audioParts)],
-        ['${fullAudioStr}', JSON.stringify(content.fullAudio)],
-        ['${includePause}', content.includePause ? 'true' : 'false']
-    ]).trim();
+    return injectListeningR2Support(generatedHtml);
 }
 
 function generateWritingHtml(testDoc, parsedContent, options = {}) {
-    const template = readBuilderFinalTemplate('writing');
     const content = normalizeWritingContent(parsedContent);
-    const pdfScript = '<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"><' + '/script>';
-    const sessionId = createStableSessionId(testDoc, 'ielts_writing_');
-    const task1ImageHtml = content.task1.image
-        ? `<img src="${escapeForBuilderValue(content.task1.image)}" class="task-img" alt="Task 1 Chart">`
-        : '';
+    const stableSessionId = createStableSessionId(testDoc, 'ielts_writing_');
+    const generatedHtml = runBuilderGenerateFile('writing', {
+        t1_img: { value: content.task1.image || '' },
+        t1_prompt: { value: content.task1.prompt || '' },
+        t1_model: { value: content.task1.modelAnswer || '' },
+        t2_prompt: { value: content.task2.prompt || '' },
+        t2_model: { value: content.task2.modelAnswer || '' },
+        time_limit: { value: String(content.timeLimit) }
+    }, {}, stableSessionId);
 
-    return applyLiteralReplacements(template, [
-        ['${pdfScript}', pdfScript],
-        ['${t1img ? `<img src="${escape(t1img)}" class="task-img" alt="Task 1 Chart">` : \'\'}', task1ImageHtml],
-        ['${escape(t1p)}', escapeForBuilderValue(content.task1.prompt)],
-        ['${escape(t2p)}', escapeForBuilderValue(content.task2.prompt)],
-        ['${escape(t1m) || "No model answer provided."}', escapeForBuilderValue(content.task1.modelAnswer || 'No model answer provided.')],
-        ['${escape(t2m) || "No model answer provided."}', escapeForBuilderValue(content.task2.modelAnswer || 'No model answer provided.')],
-        ['${timeLimit * 60}', String(content.timeLimit * 60)],
-        ['${uniqueId}', sessionId],
-        ['${API_KEY_PLACEHOLDER}', escapeForBuilderValue(options.groqApiKey || '')]
-    ]).replace(/\\\s*$/, '').trim();
+    return generatedHtml
+        .replace(
+            /const SESSION_ID = "ielts_writing_\d+";/,
+            `const SESSION_ID = "${stableSessionId}";`
+        )
+        .replace(
+            /const GROQ_API_KEY = ".*?";/,
+            `const GROQ_API_KEY = "${escapeForBuilderValue(options.groqApiKey || '')}";`
+        )
+        .trim();
 }
 
 function generateHTMLFromTest(testDoc, options = {}) {

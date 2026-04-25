@@ -1,63 +1,183 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login | Test Platform</title>
     <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
         body { 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-            display: flex; 
-            justify-content: center; 
-            align-items: center; 
-            height: 100vh; 
-            margin: 0; 
-            background: #f0f2f5; 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            overflow: hidden;
         }
-        .login-card { 
-            background: white; 
-            padding: 40px; 
-            border-radius: 12px; 
-            box-shadow: 0 8px 24px rgba(0,0,0,0.1); 
-            width: 100%; 
-            max-width: 400px; 
+        
+        @keyframes slideUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes float { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-10px); } }
+        
+        .login-container {
+            width: 100%;
+            max-width: 450px;
+            padding: 20px;
+            animation: slideUp 0.6s ease-out;
+        }
+        
+        .login-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            padding: 48px;
+            border-radius: 24px;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.2);
             text-align: center;
         }
-        h2 { color: #1c1e21; margin-bottom: 20px; }
-        input { 
-            width: 100%; 
-            padding: 12px; 
-            margin: 10px 0; 
-            border: 1px solid #ddd; 
-            border-radius: 6px; 
-            box-sizing: border-box; 
-            font-size: 16px;
+        
+        .logo {
+            font-size: 2.5rem;
+            margin-bottom: 16px;
+            animation: float 3s ease-in-out infinite;
         }
-        button { 
-            width: 100%; 
-            padding: 12px; 
-            background: #007bff; 
-            color: white; 
-            border: none; 
-            border-radius: 6px; 
-            font-size: 16px; 
-            font-weight: bold; 
-            cursor: pointer; 
-            transition: background 0.3s;
-            margin-top: 10px;
+        
+        h1 {
+            font-size: 2rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 8px;
+            letter-spacing: -0.02em;
         }
-        button:hover { background: #0056b3; }
-        .back-link { display: block; margin-top: 20px; color: #65676b; text-decoration: none; font-size: 14px; }
+        
+        .subtitle {
+            color: #9ca3af;
+            font-size: 0.95rem;
+            margin-bottom: 36px;
+            font-weight: 500;
+        }
+        
+        .form-group {
+            margin-bottom: 16px;
+        }
+        
+        label {
+            display: block;
+            font-weight: 700;
+            color: #374151;
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+        }
+        
+        input {
+            width: 100%;
+            padding: 14px 16px;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            font-family: inherit;
+            background: white;
+        }
+        
+        input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+        }
+        
+        input::placeholder {
+            color: #d1d5db;
+        }
+        
+        button {
+            width: 100%;
+            padding: 14px 24px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 8px;
+            box-shadow: 0 10px 24px rgba(102, 126, 234, 0.3);
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 32px rgba(102, 126, 234, 0.4);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
+        .back-link {
+            display: block;
+            margin-top: 24px;
+            color: rgba(255, 255, 255, 0.8);
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+        }
+        
+        .back-link:hover {
+            color: white;
+            transform: translateX(-4px);
+        }
+        
+        .divider {
+            margin: 24px 0;
+            text-align: center;
+            color: #d1d5db;
+            font-size: 0.9rem;
+        }
+        
+        .features {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-top: 24px;
+            padding-top: 24px;
+            border-top: 1px solid rgba(0, 0, 0, 0.05);
+        }
+        
+        .feature {
+            font-size: 0.85rem;
+            color: #6b7280;
+            font-weight: 500;
+        }
     </style>
 </head>
 <body>
-    <div class="login-card">
-        <h2>Sign In</h2>
-        <form action="/login" method="POST">
-            <input type="text" name="username" placeholder="Username" required>
-            <input type="password" name="password" placeholder="Password" required>
-            <button type="submit">Login</button>
-        </form>
-        <a href="/" class="back-link">← Back to Home</a>
+    <div class="login-container">
+        <div class="login-card">
+            <div class="logo">📚</div>
+            <h1>IELTS TestPro</h1>
+            <p class="subtitle">Professional Writing Assessment Platform</p>
+            
+            <form action="/login" method="POST">
+                <div class="form-group">
+                    <label for="username">Username</label>
+                    <input type="text" id="username" name="username" placeholder="Enter your username" required autofocus>
+                </div>
+                
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" placeholder="Enter your password" required>
+                </div>
+                
+                <button type="submit">Sign In</button>
+            </form>
+            
+            <a href="/" class="back-link">← Back to Home</a>
+        </div>
     </div>
 </body>
 </html>

@@ -376,7 +376,8 @@ app.get('/view-test/:id', async (req, res) => {
                     title: test.title,
                     timeLimit: writingData.timeLimit || 60,
                     task1: writingData.task1,
-                    task2: writingData.task2
+                    task2: writingData.task2,
+                    groqApiKey: process.env.GROQ_API_KEY || ''
                 });
             } catch (err) {
                 console.error('Writing test render error:', err);

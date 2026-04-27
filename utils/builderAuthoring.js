@@ -1,5 +1,14 @@
 const { readBuilderSource } = require('./builderAssets');
 
+function replaceLastLiteral(template, searchValue, replacementValue) {
+    const lastIndex = template.lastIndexOf(searchValue);
+    if (lastIndex === -1) {
+        return template;
+    }
+
+    return `${template.slice(0, lastIndex)}${replacementValue}${template.slice(lastIndex + searchValue.length)}`;
+}
+
 function commonInjectionStyles() {
     return `
 <style>
@@ -359,7 +368,7 @@ function getAuthoringPageHtml(type) {
         throw new Error(`Unsupported builder type: ${type}`);
     }
 
-    return source.replace('</body>', `${injection}\n</body>`);
+    return replaceLastLiteral(source, '</body>', `${injection}\n</body>`);
 }
 
 module.exports = {

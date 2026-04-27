@@ -51,6 +51,15 @@ function replaceAllLiteral(template, searchValue, replacementValue) {
     return template.split(searchValue).join(replacementValue);
 }
 
+function replaceLastLiteral(template, searchValue, replacementValue) {
+    const lastIndex = template.lastIndexOf(searchValue);
+    if (lastIndex === -1) {
+        return template;
+    }
+
+    return `${template.slice(0, lastIndex)}${replacementValue}${template.slice(lastIndex + searchValue.length)}`;
+}
+
 function applyLiteralReplacements(template, replacements) {
     return replacements.reduce(
         (currentTemplate, [searchValue, replacementValue]) => replaceAllLiteral(currentTemplate, searchValue, replacementValue),
@@ -511,9 +520,11 @@ function injectThemeStyles(html) {
     .platform-theme .main-container {
         background: transparent !important;
         margin-top: 0 !important;
+        height: 100vh !important;
         padding: 118px 18px 112px !important;
         gap: 18px !important;
         box-sizing: border-box;
+        overflow: hidden !important;
     }
     .platform-theme .passage-panel,
     .platform-theme .questions-panel,
@@ -523,6 +534,8 @@ function injectThemeStyles(html) {
         border-width: 1px !important;
         padding: 30px !important;
         position: relative;
+        min-height: 0 !important;
+        height: 100% !important;
     }
     .platform-theme .passage-panel::before,
     .platform-theme .questions-panel::before,
@@ -675,7 +688,7 @@ function injectThemeStyles(html) {
     }
 </style>`;
 
-    return html.replace('</head>', `${themeStyles}\n</head>`);
+    return replaceLastLiteral(html, '</head>', `${themeStyles}\n</head>`);
 }
 
 function injectWebsiteThemeButton(html, type) {
@@ -764,7 +777,7 @@ function injectThemeController(html, type) {
 })();
 </script>`;
 
-    return html.replace('</body>', `${snippet}\n</body>`);
+    return replaceLastLiteral(html, '</body>', `${snippet}\n</body>`);
 }
 
 function injectReadingHighlightFix(html) {
@@ -985,7 +998,7 @@ function injectReadingHighlightFix(html) {
 })();
 </script>`;
 
-    return html.replace('</body>', `${snippet}\n</body>`);
+    return replaceLastLiteral(html, '</body>', `${snippet}\n</body>`);
 }
 
 function injectListeningHighlightFix(html) {
@@ -1151,7 +1164,7 @@ function injectListeningHighlightFix(html) {
 })();
 </script>`;
 
-    return html.replace('</body>', `${snippet}\n</body>`);
+    return replaceLastLiteral(html, '</body>', `${snippet}\n</body>`);
 }
 
 function injectReadingSubmissionHook(html, testDoc) {
@@ -1251,7 +1264,7 @@ function injectReadingSubmissionHook(html, testDoc) {
 })();
 </script>`;
 
-    return html.replace('</body>', `${snippet}\n</body>`);
+    return replaceLastLiteral(html, '</body>', `${snippet}\n</body>`);
 }
 
 function injectListeningSubmissionHook(html, testDoc) {
@@ -1351,7 +1364,7 @@ function injectListeningSubmissionHook(html, testDoc) {
 })();
 </script>`;
 
-    return html.replace('</body>', `${snippet}\n</body>`);
+    return replaceLastLiteral(html, '</body>', `${snippet}\n</body>`);
 }
 
 function injectWritingSubmissionHook(html, testDoc) {
@@ -1459,7 +1472,7 @@ function injectWritingSubmissionHook(html, testDoc) {
 })();
 </script>`;
 
-    return html.replace('</body>', `${snippet}\n</body>`);
+    return replaceLastLiteral(html, '</body>', `${snippet}\n</body>`);
 }
 
 function generateReadingHtml(testDoc, parsedContent) {

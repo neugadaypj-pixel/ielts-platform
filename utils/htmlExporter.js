@@ -520,11 +520,13 @@ function injectThemeStyles(html) {
     .platform-theme .main-container {
         background: transparent !important;
         margin-top: 0 !important;
-        height: 100vh !important;
+        height: auto !important;
+        min-height: 100vh !important;
         padding: 118px 18px 112px !important;
         gap: 18px !important;
         box-sizing: border-box;
-        overflow: hidden !important;
+        overflow-y: auto !important;
+        overflow-x: hidden !important;
     }
     .platform-theme .passage-panel,
     .platform-theme .questions-panel,
@@ -692,16 +694,19 @@ function injectThemeStyles(html) {
 }
 
 function injectWebsiteThemeButton(html, type) {
+    const platformBtn = `<button class="part-btn site-theme-btn" data-off-label="Platform Theme" data-on-label="Builder Theme" onclick="toggleSiteTheme()" style="margin-right:10px;">Platform Theme</button>`;
+    
     if (type === 'writing') {
+        // Find the theme button and add platform theme button after it
         return html.replace(
-            /(<button class="part-btn theme-btn"[^>]*>.*?<\/button>)/,
-            `$1\n            <button class="part-btn site-theme-btn" data-off-label="Platform Theme" data-on-label="Builder Theme" onclick="toggleSiteTheme()" style="margin-right:10px;">Platform Theme</button>`
+            /(<button[^>]*onclick="toggleDarkMode[^>]*>.*?<\/button>)/,
+            `$1\n            ${platformBtn}`
         );
     }
 
     return html.replace(
         /(<button class="theme-btn"[^>]*>.*?<\/button>)/,
-        `$1\n            <button class="site-theme-btn" data-off-label="Platform Theme" data-on-label="Builder Theme" onclick="toggleSiteTheme()" style="margin-right:10px;">Platform Theme</button>`
+        `$1\n            ${platformBtn}`
     );
 }
 
@@ -1521,6 +1526,19 @@ function generateListeningHtml(testDoc, parsedContent) {
     }, stableSessionId).replace(
         /const SESSION_KEY = 'ielts_listening_\d+';/,
         `const SESSION_KEY = '${stableSessionId}';`
+    );
+    
+    // Ensure R2 audio URLs are properly injected as JSON strings in the template
+    const audioPartsJson = JSON.stringify(content.audioParts || [null, null, null, null]);
+    const fullAudioJson = JSON.stringify(content.fullAudio || null);
+    // More flexible pattern that handles multiline JSON
+    generatedHtml = generatedHtml.replace(
+        /const rawAudioDataList = (?:\[[\s\S]*?\]|null);/,
+        `const rawAudioDataList = ${audioPartsJson};`
+    );
+    generatedHtml = generatedHtml.replace(
+        /const rawFullAudioData = (?:[\s\S]*?);(?=\n|$)/,
+        `const rawFullAudioData = ${fullAudioJson};`
     );
 
     generatedHtml = injectListeningR2Support(generatedHtml);

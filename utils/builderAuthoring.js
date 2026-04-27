@@ -147,6 +147,12 @@ ${commonInjectionStyles()}
 function buildListeningInjection() {
     return `
 ${commonInjectionStyles()}
+<style>
+    .file-upload-progress { margin-top: 10px; padding: 8px 12px; border-radius: 8px; background: #e3f2fd; color: #1976d2; font-size: 12px; display: none; }
+    .file-upload-progress.show { display: block; }
+    .file-status { color: #4caf50; font-weight: 600; }
+    .file-status.error { color: #f44336; }
+</style>
 <script>
 (function () {
     const actionArea = document.querySelector('.action-area');
@@ -155,7 +161,7 @@ ${commonInjectionStyles()}
     const controls = document.createElement('div');
     controls.className = 'platform-save-box';
     controls.innerHTML = \`
-        <div class="platform-save-title">Save This Builder Test to the Platform</div>
+        <div class="platform-save-title">🎧 Save This Builder Test to the Platform (R2 Audio)</div>
         <div class="platform-save-row">
             <div class="platform-save-field">
                 <label for="platformTestTitle">Platform Test Title</label>
@@ -166,21 +172,39 @@ ${commonInjectionStyles()}
             </div>
         </div>
         <div id="platformSaveStatus" class="platform-save-status"></div>
+        <div id="fileUploadProgress" class="file-upload-progress"></div>
     \`;
 
     actionArea.insertBefore(controls, actionArea.firstChild);
 
     const getVal = (id) => (document.getElementById(id) ? document.getElementById(id).value : '');
+    const statusEl = document.getElementById('platformSaveStatus');
+    const progressEl = document.getElementById('fileUploadProgress');
+
+    function updateStatus(msg, isError = false) {
+        statusEl.textContent = msg;
+        statusEl.style.color = isError ? '#f44336' : '#34495e';
+    }
+
+    function updateProgress(msg) {
+        progressEl.innerHTML = msg;
+        progressEl.classList.add('show');
+    }
 
     async function saveToPlatform() {
-        const status = document.getElementById('platformSaveStatus');
+        updateStatus('Preparing upload...');
+        
         const title = getVal('platformTestTitle').trim() || 'Listening Test';
+        if (!title) {
+            updateStatus('Please enter a test title', true);
+            return;
+        }
 
         let answerKey;
         try {
             answerKey = JSON.parse(getVal('answer_key_json'));
         } catch (error) {
-            alert('Invalid Answer Key JSON');
+            updateStatus('Invalid Answer Key JSON', true);
             return;
         }
 
@@ -188,6 +212,28 @@ ${commonInjectionStyles()}
         const fullAudioInput = fileInputs[0];
         const partAudioInputs = Array.from(fileInputs).slice(1, 5);
         const formData = new FormData();
+
+        // Check for at least one audio file
+        let hasAudio = false;
+        if (fullAudioInput && fullAudioInput.files && fullAudioInput.files[0]) {
+            hasAudio = true;
+            formData.append('audioFile', fullAudioInput.files[0]);
+            updateProgress('📤 Uploading full audio to Cloudflare R2...');
+        } else {
+            for (let i = 0; i < partAudioInputs.length; i++) {
+                const input = partAudioInputs[i];
+                if (input && input.files && input.files[0]) {
+                    hasAudio = true;
+                    formData.append('part' + (i + 1), input.files[0]);
+                    updateProgress('📤 Uploading Part ' + (i + 1) + ' to Cloudflare R2...');
+                }
+            }
+        }
+
+        if (!hasAudio) {
+            updateStatus('Please upload at least one audio file', true);
+            return;
+        }
 
         formData.append('title', title);
         formData.append('answerKey', JSON.stringify(answerKey));
@@ -199,17 +245,7 @@ ${commonInjectionStyles()}
             4: { finalHtml: getVal('q4_text') }
         }));
 
-        if (fullAudioInput && fullAudioInput.files && fullAudioInput.files[0]) {
-            formData.append('audioFile', fullAudioInput.files[0]);
-        } else {
-            partAudioInputs.forEach((input, index) => {
-                if (input && input.files && input.files[0]) {
-                    formData.append('part' + (index + 1), input.files[0]);
-                }
-            });
-        }
-
-        status.textContent = 'Saving and uploading audio...';
+        updateStatus('Uploading to server and processing...');
 
         try {
             const response = await fetch('/create-test/listening', {
@@ -222,11 +258,12 @@ ${commonInjectionStyles()}
                 throw new Error(data.error || data.message || 'Unable to save listening test');
             }
 
-            status.textContent = 'Saved successfully. Redirecting...';
-            setTimeout(() => { window.location.href = '/admin'; }, 900);
+            updateStatus('✅ Test saved successfully with R2 audio URLs!');
+            progressEl.classList.remove('show');
+            setTimeout(() => { window.location.href = '/admin'; }, 1200);
         } catch (error) {
-            status.textContent = 'Save failed.';
-            alert('Error saving listening test: ' + error.message);
+            updateStatus('Save failed: ' + error.message, true);
+            progressEl.classList.remove('show');
         }
     }
 

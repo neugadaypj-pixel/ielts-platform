@@ -917,7 +917,8 @@ app.post('/delete-test/:id', async (req, res) => {
 
 // Delete a student account
 app.post('/delete-student/:id', async (req, res) => {
-    if(!req.session.userId) return res.redire
+    if(!req.session.userId) return res.redire        await User.updateMany({ assignedTests: test._id }, { $pull: { assignedTests: test._id } });
+
         await Submission.deleteMany({ testId: test._id });
         
         // Delete the test
@@ -990,6 +991,7 @@ app.post('/delete-teacher/:id', async (req, res) => {
         // Remove tests from all groups
         if (testIds.length > 0) {
             await Group.updateMany({ assignedTests: { $in: testIds } }, { $pull: { assignedTests: { $in: testIds } } });
+            await User.updateMany({ assignedTests: { $in: testIds } }, { $pull: { assignedTests: { $in: testIds } } });
 redirect || '/admin-dashboard' });
     } catch (err) {
         console.error('Delete teacher error:', err);
@@ -1001,7 +1003,7 @@ redirect || '/admin-dashboard' });
 app.post('/remove-student-from-group/:groupId/:studentId', async (req, res) => {
     if(!req.session.userId) return res.redirect('/login');
     try {
-        const group = await        res.json({ success: true, message: "Teacher account and associated tests deleted successfully", redirect: req.body.redirect || '/admin-dashboard' });
+        const group = await        res.json({ success: true, message: "Teacher account and associated tests deleted successfully", redirect: req.body.redirect || '/admin' });
 ser = await User.findById(req.session.userId);
         
         // Check authorization: only teacher who owns the group can remove students

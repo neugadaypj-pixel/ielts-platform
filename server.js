@@ -20,6 +20,7 @@ mongoose.connect(process.env.MONGO_URI)
 const User = require('./models/User');
 const Test = require('./models/Test');
 const Group = require('./models/Group');
+const Submission = require('./models/Submission');
 
 // --- 3. MIDDLEWARE & SETTINGS ---
 app.set('view engine', 'ejs');
@@ -73,6 +74,152 @@ function isTeacher(req, res, next) {
         return next();
     }
     res.redirect('/login');
+}
+
+function groupTestsByType(tests = []) {
+    const grouped = {
+        reading: [],
+        listening: [],
+        writing: []
+    };
+
+    tests.forEach((test) => {
+        const normalizedType = String(test.type || 'reading').toLowerCase();
+        if (!grouped[normalizedType]) {
+            grouped[normalizedType] = [];
+        }
+        grouped[normalizedType].push(test);
+    });
+
+    return grouped;
+}
+
+function roundPercentage(score, totalQuestions) {
+    if (!Number.isFinite(score) || !Number.isFinite(totalQuestions) || totalQuestions <= 0) {
+        return null;
+    }
+
+    return Math.round((score / totalQuestions) * 100);
+}
+
+async function getAccessibleTest(req, testId) {
+    const [user, test] = await Promise.all([
+        User.findById(req.session.userId).select('role assignedTests groupId teacherId username'),
+        Test.findById(testId)
+    ]);
+
+    if (!user || !test) {
+        return { user, test: null, isAllowed: false };
+    }
+
+    if (user.role === 'admin') {
+        return { user, test, isAllowed: true };
+    }
+
+    if (user.role === 'teacher') {
+        const ownsTest = test.createdBy && String(test.createdBy) === String(user._id);
+        const hasDirectAssignment = Array.isArray(user.assignedTests)
+            && user.assignedTests.some((assignedTestId) => String(assignedTestId) === String(test._id));
+
+        let hasGroupAssignment = false;
+        if (!ownsTest && !hasDirectAssignment) {
+            hasGroupAssignment = Boolean(await Group.exists({
+                teacherId: user._id,
+                assignedTests: test._id
+            }));
+        }
+
+        return {
+            user,
+            test,
+            isAllowed: ownsTest || hasDirectAssignment || hasGroupAssignment
+        };
+    }
+
+    if (user.role === 'student' && user.groupId) {
+        const hasGroupAccess = Boolean(await Group.exists({
+            _id: user.groupId,
+            assignedTests: test._id
+        }));
+
+        return { user, test, isAllowed: hasGroupAccess };
+    }
+
+    return { user, test, isAllowed: false };
+}
+
+async function saveStudentSubmission({ req, payload }) {
+    const student = await User.findById(req.session.userId).select('role username teacherId groupId');
+    if (!student || student.role !== 'student') {
+        return { ignored: true };
+    }
+
+    const access = await getAccessibleTest(req, payload.testId);
+    if (!access.test || !access.isAllowed) {
+        throw new Error('You are not allowed to submit this test.');
+    }
+
+    const normalizedType = String(payload.type || access.test.type || '').toLowerCase();
+    const resultSignature = String(payload.resultSignature || '').trim();
+    const existing = await Submission.findOne({
+        testId: access.test._id,
+        studentId: student._id
+    });
+
+    const details = {
+        ...(existing?.details || {}),
+        ...(payload.details || {}),
+        resultSignature,
+        testTitle: access.test.title
+    };
+
+    if (normalizedType === 'reading' || normalizedType === 'listening') {
+        details.incorrectSummary = payload.incorrectSummary || '';
+        details.summaryText = payload.summaryText || '';
+    }
+
+    if (normalizedType === 'writing') {
+        details.task1 = payload.task1 || '';
+        details.task2 = payload.task2 || '';
+    }
+
+    const nextAttemptCount = existing
+        ? (existing.details?.resultSignature === resultSignature ? existing.attemptCount : existing.attemptCount + 1)
+        : 1;
+
+    const submissionPayload = {
+        teacherId: student.teacherId || null,
+        groupId: student.groupId || null,
+        type: normalizedType,
+        studentName: String(payload.studentName || student.username || 'Student').trim(),
+        status: 'completed',
+        attemptCount: nextAttemptCount,
+        score: Number.isFinite(Number(payload.score)) ? Number(payload.score) : null,
+        totalQuestions: Number.isFinite(Number(payload.totalQuestions)) ? Number(payload.totalQuestions) : null,
+        percentage: Number.isFinite(Number(payload.percentage))
+            ? Number(payload.percentage)
+            : roundPercentage(Number(payload.score), Number(payload.totalQuestions)),
+        band: payload.band ? String(payload.band) : null,
+        wordCount1: Number.isFinite(Number(payload.wordCount1)) ? Number(payload.wordCount1) : null,
+        wordCount2: Number.isFinite(Number(payload.wordCount2)) ? Number(payload.wordCount2) : null,
+        timeRemainingText: String(payload.timeRemainingText || '').trim(),
+        details
+    };
+
+    if (existing) {
+        Object.assign(existing, submissionPayload);
+        await existing.save();
+        return { ignored: false, submission: existing };
+    }
+
+    const submission = new Submission({
+        testId: access.test._id,
+        studentId: student._id,
+        ...submissionPayload
+    });
+
+    await submission.save();
+    return { ignored: false, submission };
 }
 
 async function saveValidatedTest({ title, type, content, req }) {
@@ -143,9 +290,13 @@ app.get('/logout', (req, res) => {
 
 app.get('/admin', isAdmin, async (req, res) => {
     try {
-        const tests = await Test.find({});
+        const tests = await Test.find({}).sort({ type: 1, title: 1 });
         const teachers = await User.find({ role: 'teacher' });
-        res.render('admin', { tests: tests, teachers: teachers }); 
+        res.render('admin', {
+            tests,
+            teachers,
+            testsByType: groupTestsByType(tests)
+        });
     } catch (err) {
         res.status(500).send("Error loading dashboard data.");
     }
@@ -338,15 +489,86 @@ app.post('/admin/assign-test', isAdmin, async (req, res) => {
 
 app.get('/teacher-dashboard', isTeacher, async (req, res) => {
     try {
-        const teacher = await User.findById(req.session.userId).populate('assignedTests');
-        const groups = await Group.find({ teacherId: req.session.userId }).populate('students assignedTests');
-        const allStudents = await User.find({ teacherId: req.session.userId, role: 'student' });
-        
-        res.render('teacher-dashboard', { 
-            teacher: teacher, 
-            tests: teacher.assignedTests, 
-            allStudents: allStudents, 
-            groups: groups 
+        const [teacher, groups, allStudents, submissions] = await Promise.all([
+            User.findById(req.session.userId).populate({
+                path: 'assignedTests',
+                options: { sort: { type: 1, title: 1 } }
+            }),
+            Group.find({ teacherId: req.session.userId })
+                .populate('students assignedTests')
+                .sort({ name: 1 }),
+            User.find({ teacherId: req.session.userId, role: 'student' }).sort({ username: 1 }),
+            Submission.find({ teacherId: req.session.userId }).select('testId studentId lastSubmittedAt')
+        ]);
+
+        const groupStatsByTestId = new Map();
+        groups.forEach((group) => {
+            const uniqueStudentIds = [...new Set((group.students || []).map((student) => String(student._id)))];
+            (group.assignedTests || []).forEach((test) => {
+                const key = String(test._id);
+                if (!groupStatsByTestId.has(key)) {
+                    groupStatsByTestId.set(key, {
+                        groupCount: 0,
+                        studentIds: new Set()
+                    });
+                }
+
+                const current = groupStatsByTestId.get(key);
+                current.groupCount += 1;
+                uniqueStudentIds.forEach((studentId) => current.studentIds.add(studentId));
+            });
+        });
+
+        const submissionStatsByTestId = new Map();
+        submissions.forEach((submission) => {
+            const key = String(submission.testId);
+            if (!submissionStatsByTestId.has(key)) {
+                submissionStatsByTestId.set(key, {
+                    completedCount: 0,
+                    studentIds: new Set(),
+                    latestSubmissionAt: null
+                });
+            }
+
+            const current = submissionStatsByTestId.get(key);
+            const studentKey = String(submission.studentId);
+            if (!current.studentIds.has(studentKey)) {
+                current.studentIds.add(studentKey);
+                current.completedCount += 1;
+            }
+
+            if (!current.latestSubmissionAt || submission.lastSubmittedAt > current.latestSubmissionAt) {
+                current.latestSubmissionAt = submission.lastSubmittedAt;
+            }
+        });
+
+        const tests = (teacher?.assignedTests || [])
+            .map((testDoc) => {
+                const test = typeof testDoc.toObject === 'function' ? testDoc.toObject() : { ...testDoc };
+                const groupStats = groupStatsByTestId.get(String(test._id));
+                const submissionStats = submissionStatsByTestId.get(String(test._id));
+
+                return {
+                    ...test,
+                    assignedGroupCount: groupStats ? groupStats.groupCount : 0,
+                    assignedStudentCount: groupStats ? groupStats.studentIds.size : 0,
+                    completedStudentCount: submissionStats ? submissionStats.completedCount : 0,
+                    latestSubmissionAt: submissionStats ? submissionStats.latestSubmissionAt : null
+                };
+            })
+            .sort((left, right) => left.title.localeCompare(right.title));
+
+        res.render('teacher-dashboard', {
+            teacher,
+            tests,
+            testsByType: groupTestsByType(tests),
+            allStudents,
+            groups,
+            stats: {
+                testsCount: tests.length,
+                groupsCount: groups.length,
+                studentsCount: allStudents.length
+            }
         });
     } catch (err) {
         res.status(500).send("Error loading dashboard.");
@@ -388,6 +610,31 @@ app.post('/teacher/create-group', isTeacher, async (req, res) => {
 app.post('/teacher/assign-to-group', isTeacher, async (req, res) => {
     const { studentId, groupId } = req.body;
     try {
+        const [student, group] = await Promise.all([
+            User.findById(studentId),
+            Group.findById(groupId)
+        ]);
+
+        if (!student || student.role !== 'student') {
+            return res.status(404).send("Student not found.");
+        }
+
+        if (!group) {
+            return res.status(404).send("Group not found.");
+        }
+
+        if (req.session.userRole !== 'admin' && String(group.teacherId) !== String(req.session.userId)) {
+            return res.status(403).send("Not authorized to manage this group.");
+        }
+
+        if (req.session.userRole !== 'admin' && String(student.teacherId) !== String(req.session.userId)) {
+            return res.status(403).send("Not authorized to move this student.");
+        }
+
+        if (student.groupId && String(student.groupId) !== String(group._id)) {
+            await Group.findByIdAndUpdate(student.groupId, { $pull: { students: student._id } });
+        }
+
         await Group.findByIdAndUpdate(groupId, { $addToSet: { students: studentId } });
         await User.findByIdAndUpdate(studentId, { groupId: groupId });
         res.redirect('/teacher-dashboard');
@@ -399,6 +646,20 @@ app.post('/teacher/assign-to-group', isTeacher, async (req, res) => {
 app.post('/teacher/assign-test-group', isTeacher, async (req, res) => {
     const { testId, groupId } = req.body;
     try {
+        const group = await Group.findById(groupId);
+        if (!group) {
+            return res.status(404).send("Group not found.");
+        }
+
+        if (req.session.userRole !== 'admin' && String(group.teacherId) !== String(req.session.userId)) {
+            return res.status(403).send("Not authorized to assign tests to this group.");
+        }
+
+        const access = await getAccessibleTest(req, testId);
+        if (!access.test || !access.isAllowed) {
+            return res.status(403).send("You do not have access to this test.");
+        }
+
         await Group.findByIdAndUpdate(groupId, { $addToSet: { assignedTests: testId } });
         res.redirect('/teacher-dashboard');
     } catch (err) {
@@ -406,21 +667,117 @@ app.post('/teacher/assign-test-group', isTeacher, async (req, res) => {
     }
 });
 
+app.get('/teacher/progress/:id', isTeacher, async (req, res) => {
+    try {
+        const access = await getAccessibleTest(req, req.params.id);
+        if (!access.test) {
+            return res.status(404).send("Test not found.");
+        }
+
+        if (!access.isAllowed) {
+            return res.status(403).send("Not authorized to view this test.");
+        }
+
+        const groupQuery = { assignedTests: access.test._id };
+        if (req.session.userRole === 'teacher') {
+            groupQuery.teacherId = req.session.userId;
+        }
+
+        const submissionQuery = { testId: access.test._id };
+        if (req.session.userRole === 'teacher') {
+            submissionQuery.teacherId = req.session.userId;
+        }
+
+        const [groups, submissions] = await Promise.all([
+            Group.find(groupQuery).populate('students').sort({ name: 1 }),
+            Submission.find(submissionQuery)
+                .populate('studentId groupId')
+                .sort({ lastSubmittedAt: -1 })
+        ]);
+
+        const studentRows = new Map();
+        groups.forEach((group) => {
+            (group.students || []).forEach((student) => {
+                const key = String(student._id);
+                if (!studentRows.has(key)) {
+                    studentRows.set(key, {
+                        studentId: student._id,
+                        studentName: student.username,
+                        groupName: group.name,
+                        submission: null,
+                        isAssigned: true
+                    });
+                }
+            });
+        });
+
+        submissions.forEach((submission) => {
+            const key = String(submission.studentId?._id || submission.studentId);
+            const existing = studentRows.get(key) || {
+                studentId: submission.studentId?._id || submission.studentId,
+                studentName: submission.studentName,
+                groupName: submission.groupId?.name || 'Ungrouped',
+                submission: null,
+                isAssigned: false
+            };
+
+            existing.studentName = existing.studentName || submission.studentName;
+            existing.groupName = existing.groupName || submission.groupId?.name || 'Ungrouped';
+            existing.submission = submission;
+            studentRows.set(key, existing);
+        });
+
+        const rows = [...studentRows.values()].sort((left, right) => {
+            if (left.groupName !== right.groupName) {
+                return left.groupName.localeCompare(right.groupName);
+            }
+            return left.studentName.localeCompare(right.studentName);
+        });
+
+        const scoredSubmissions = submissions.filter((submission) => Number.isFinite(submission.score));
+        const averageScore = scoredSubmissions.length
+            ? (scoredSubmissions.reduce((sum, submission) => sum + submission.score, 0) / scoredSubmissions.length)
+            : null;
+        const averagePercentage = scoredSubmissions.length
+            ? Math.round(scoredSubmissions.reduce((sum, submission) => sum + (submission.percentage || 0), 0) / scoredSubmissions.length)
+            : null;
+
+        res.render('teacher-progress', {
+            currentUser: req.session.username,
+            currentRole: req.session.userRole,
+            test: access.test,
+            groups,
+            rows,
+            summary: {
+                assignedStudents: rows.filter((row) => row.isAssigned).length,
+                completedStudents: rows.filter((row) => row.submission).length,
+                pendingStudents: rows.filter((row) => row.isAssigned && !row.submission).length,
+                averageScore,
+                averagePercentage
+            }
+        });
+    } catch (err) {
+        console.error('Teacher progress error:', err);
+        res.status(500).send("Error loading test progress.");
+    }
+});
+
 // --- THE ULTIMATE STUDENT VIEWER (BUILDER-MATCHED HTML) ---
 app.get('/view-test/:id', async (req, res) => {
     if(!req.session.userId) return res.redirect('/login');
     try {
-        const test = await Test.findById(req.params.id);
-        if (!test) return res.status(404).send("Test not found.");
+        const access = await getAccessibleTest(req, req.params.id);
+        if (!access.test) return res.status(404).send("Test not found.");
+        if (!access.isAllowed) return res.status(403).send("Not authorized to view this test.");
 
         try {
-            const html = generateHTMLFromTest(test, {
+            const html = generateHTMLFromTest(access.test, {
                 groqApiKey: process.env.GROQ_API_KEY || ''
             });
             return res.send(html);
         } catch (generatorErr) {
             console.error('HTML generation error:', generatorErr);
-            console.error('Test data:', test);
+            console.error('Test data:', access.test);
             return res.status(500).send(`Error generating test HTML: ${generatorErr.message}`);
         }
     } catch (err) {
@@ -434,21 +791,21 @@ app.get('/view-test/:id', async (req, res) => {
 app.get('/download-test/:id', async (req, res) => {
     if(!req.session.userId) return res.redirect('/login');
     try {
-        const test = await Test.findById(req.params.id);
-        if (!test) return res.status(404).send("Test not found.");
+        const access = await getAccessibleTest(req, req.params.id);
+        if (!access.test) return res.status(404).send("Test not found.");
+        if (!access.isAllowed) return res.status(403).send("Not authorized to download this test.");
         
         try {
-            // Generate HTML using the exporter module
-            const html = generateHTMLFromTest(test, {
+            const html = generateHTMLFromTest(access.test, {
                 groqApiKey: process.env.GROQ_API_KEY || ''
             });
-            const safeTitle = test.title.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+            const safeTitle = access.test.title.replace(/[^a-z0-9]/gi, '_').toLowerCase();
             res.setHeader('Content-Disposition', `attachment; filename="${safeTitle}.html"`);
             res.setHeader('Content-Type', 'text/html; charset=utf-8');
             return res.send(html);
         } catch (generatorErr) {
             console.error('HTML generation error for download:', generatorErr);
-            console.error('Test data:', test);
+            console.error('Test data:', access.test);
             return res.status(500).send(`Error generating test HTML: ${generatorErr.message}`);
         }
     } catch (err) {
@@ -457,21 +814,54 @@ app.get('/download-test/:id', async (req, res) => {
     }
 });
 
-// --- SUBMIT WRITING TEST ---
+// --- SUBMISSION CAPTURE ---
+app.post('/api/test-submissions', async (req, res) => {
+    if(!req.session.userId) return res.status(401).json({ success: false, message: "Not logged in" });
+    try {
+        const result = await saveStudentSubmission({
+            req,
+            payload: req.body || {}
+        });
+
+        res.json({
+            success: true,
+            ignored: Boolean(result.ignored),
+            submissionId: result.submission?._id || null
+        });
+    } catch (err) {
+        console.error('Submission error:', err);
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
 app.post('/submit-writing-test', async (req, res) => {
     if(!req.session.userId) return res.status(401).json({ success: false, message: "Not logged in" });
     try {
         const { testId, studentName, task1, task2, wordCount1, wordCount2, timeTaken } = req.body;
-        
-        // Save submission data (optional: you can store this in a submissions collection)
-        console.log(`Writing test submission from ${studentName}:`, {
-            testId,
-            wordCounts: { task1: wordCount1, task2: wordCount2 },
-            timeTaken
+        const result = await saveStudentSubmission({
+            req,
+            payload: {
+                testId,
+                type: 'writing',
+                studentName,
+                wordCount1,
+                wordCount2,
+                timeRemainingText: timeTaken,
+                task1,
+                task2,
+                resultSignature: ['writing', testId, studentName, wordCount1, wordCount2, (task1 || '').length, (task2 || '').length].join(':'),
+                details: {
+                    task1,
+                    task2
+                }
+            }
         });
 
-        // For now, just acknowledge the submission
-        res.json({ success: true, message: "Writing test submitted successfully" });
+        res.json({
+            success: true,
+            ignored: Boolean(result.ignored),
+            message: "Writing test submitted successfully"
+        });
     } catch (err) {
         console.error('Submission error:', err);
         res.status(500).json({ success: false, message: err.message });
@@ -483,13 +873,32 @@ app.post('/submit-writing-test', async (req, res) => {
 app.get('/student-dashboard', async (req, res) => {
     if(!req.session.userId) return res.redirect('/login');
     try {
-        const student = await User.findById(req.session.userId).populate({
-            path: 'groupId',
-            populate: { path: 'assignedTests' }
+        const [student, submissions] = await Promise.all([
+            User.findById(req.session.userId).populate({
+                path: 'groupId',
+                populate: { path: 'assignedTests', options: { sort: { type: 1, title: 1 } } }
+            }),
+            Submission.find({ studentId: req.session.userId }).select('testId score totalQuestions band percentage lastSubmittedAt')
+        ]);
+
+        const submissionsByTestId = new Map(
+            submissions.map((submission) => [String(submission.testId), submission])
+        );
+
+        const tests = (student.groupId ? student.groupId.assignedTests : []).map((testDoc) => {
+            const test = typeof testDoc.toObject === 'function' ? testDoc.toObject() : { ...testDoc };
+            return {
+                ...test,
+                submission: submissionsByTestId.get(String(test._id)) || null
+            };
         });
-        const tests = student.groupId ? student.groupId.assignedTests : [];
         const groupName = student.groupId ? student.groupId.name : "No Group Assigned";
-        res.render('student-dashboard', { student, tests, groupName });
+        res.render('student-dashboard', {
+            student,
+            tests,
+            testsByType: groupTestsByType(tests),
+            groupName
+        });
     } catch (err) {
         res.status(500).send("Error loading student dashboard.");
     }
@@ -513,6 +922,9 @@ app.post('/delete-test/:id', async (req, res) => {
         
         // Remove test from all groups
         await Group.updateMany({ assignedTests: test._id }, { $pull: { assignedTests: test._id } });
+        await User.updateMany({ assignedTests: test._id }, { $pull: { assignedTests: test._id } });
+
+        await Submission.deleteMany({ testId: test._id });
         
         // Delete the test
         await Test.findByIdAndDelete(req.params.id);
@@ -533,13 +945,13 @@ app.post('/delete-student/:id', async (req, res) => {
         
         const user = await User.findById(req.session.userId);
         
-        // Check authorization: only admin or teacher in the same group can delete a student
+        // Check authorization: only admin or the student's teacher can delete a student
         if (user.role !== 'admin') {
-            if (user.role !== 'teacher' || !user.groupId) {
+            if (user.role !== 'teacher') {
                 return res.status(403).json({ success: false, message: "Not authorized to delete this student" });
             }
-            if (student.groupId.toString() !== user.groupId.toString()) {
-                return res.status(403).json({ success: false, message: "Cannot delete students from other groups" });
+            if (!student.teacherId || String(student.teacherId) !== String(user._id)) {
+                return res.status(403).json({ success: false, message: "Cannot delete students from other teachers" });
             }
         }
         
@@ -549,6 +961,7 @@ app.post('/delete-student/:id', async (req, res) => {
         }
         
         // Delete the student account
+        await Submission.deleteMany({ studentId: student._id });
         await User.findByIdAndDelete(req.params.id);
         
         res.json({ success: true, message: "Student account deleted successfully", redirect: req.body.redirect || '/teacher-dashboard' });
@@ -583,10 +996,12 @@ app.post('/delete-teacher/:id', async (req, res) => {
         // Remove tests from all groups
         if (testIds.length > 0) {
             await Group.updateMany({ assignedTests: { $in: testIds } }, { $pull: { assignedTests: { $in: testIds } } });
+            await User.updateMany({ assignedTests: { $in: testIds } }, { $pull: { assignedTests: { $in: testIds } } });
         }
         
         // Delete all tests created by this teacher
         await Test.deleteMany({ createdBy: teacher._id });
+        await Submission.deleteMany({ teacherId: teacher._id });
         
         // Find group managed by this teacher and remove reference
         await Group.updateOne({ teacherId: teacher._id }, { $unset: { teacherId: 1 } });
@@ -594,7 +1009,7 @@ app.post('/delete-teacher/:id', async (req, res) => {
         // Delete the teacher account
         await User.findByIdAndDelete(req.params.id);
         
-        res.json({ success: true, message: "Teacher account and associated tests deleted successfully", redirect: req.body.redirect || '/admin-dashboard' });
+        res.json({ success: true, message: "Teacher account and associated tests deleted successfully", redirect: req.body.redirect || '/admin' });
     } catch (err) {
         console.error('Delete teacher error:', err);
         res.status(500).json({ success: false, message: "Error deleting teacher: " + err.message });
@@ -626,7 +1041,7 @@ app.post('/remove-student-from-group/:groupId/:studentId', async (req, res) => {
     }
 });
 
-// Delete a group (admin only)
+// Delete a group
 app.post('/delete-group/:id', async (req, res) => {
     if(!req.session.userId) return res.redirect('/login');
     try {
@@ -635,9 +1050,8 @@ app.post('/delete-group/:id', async (req, res) => {
         
         const user = await User.findById(req.session.userId);
         
-        // Check authorization: only admin can delete groups
-        if (user.role !== 'admin') {
-            return res.status(403).json({ success: false, message: "Only admins can delete groups" });
+        if (user.role !== 'admin' && (user.role !== 'teacher' || String(group.teacherId) !== String(user._id))) {
+            return res.status(403).json({ success: false, message: "Not authorized to delete this group" });
         }
         
         // Remove group reference from all students
@@ -646,7 +1060,7 @@ app.post('/delete-group/:id', async (req, res) => {
         // Delete the group
         await Group.findByIdAndDelete(req.params.id);
         
-        res.json({ success: true, message: "Group deleted successfully", redirect: req.body.redirect || '/admin-dashboard' });
+        res.json({ success: true, message: "Group deleted successfully", redirect: req.body.redirect || '/teacher-dashboard' });
     } catch (err) {
         console.error('Delete group error:', err);
         res.status(500).json({ success: false, message: "Error deleting group: " + err.message });

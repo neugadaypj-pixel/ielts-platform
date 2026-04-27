@@ -206,7 +206,7 @@
                 <h2 style="margin-bottom: 24px; color: #1f2937;">Listen to the Audio</h2>
                 
                 <div class="audio-player">
-                    <audio controls>
+                    <audio id="testAudio" controls preload="auto" crossOrigin="anonymous">
                         <source src="<%= test.audioUrl %>" type="audio/mpeg">
                         Your browser does not support the audio element.
                     </audio>
@@ -243,5 +243,37 @@
             <button class="btn-submit">Submit Test →</button>
         </footer>
     </div>
+    <script>
+        function createBlobUrl(url) {
+            if (!url) return null;
+            if (typeof url === 'string' && (url.startsWith('http') || url.startsWith('/'))) {
+                return url;
+            }
+            if (typeof url === 'string' && url.startsWith('data:')) {
+                try {
+                    const parts = url.split(',');
+                    const mime = parts[0].match(/:(.*?);/)[1];
+                    const bstr = atob(parts[1]);
+                    let n = bstr.length;
+                    const u8arr = new Uint8Array(n);
+                    while (n--) { u8arr[n] = bstr.charCodeAt(n); }
+                    return URL.createObjectURL(new Blob([u8arr], { type: mime }));
+                } catch (error) {
+                    return null;
+                }
+            }
+            return null;
+        }
+
+        const audioEl = document.getElementById('testAudio');
+        if (audioEl) {
+            const source = audioEl.querySelector('source');
+            const resolved = createBlobUrl(source ? source.getAttribute('src') : '');
+            if (resolved && source) {
+                source.setAttribute('src', resolved);
+                audioEl.load();
+            }
+        }
+    </script>
 </body>
 </html>

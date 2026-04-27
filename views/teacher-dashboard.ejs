@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -6,274 +6,490 @@
     <title>Teacher Dashboard</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        
+
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", sans-serif;
-            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            font-family: "Segoe UI", "Trebuchet MS", sans-serif;
+            background:
+                radial-gradient(circle at top left, rgba(255,255,255,0.4), transparent 28%),
+                linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
             color: #1f2937;
             min-height: 100vh;
             display: flex;
         }
-        
-        @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes slideIn { from { opacity: 0; transform: translateX(-20px); } to { opacity: 1; transform: translateX(0); } }
-        
+
+        a { color: inherit; }
+
         .sidebar {
-            width: 280px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 32px 24px;
-            box-sizing: border-box;
-            box-shadow: 10px 0 40px rgba(0, 0, 0, 0.1);
-            animation: slideIn 0.6s ease-out;
+            width: 300px;
+            padding: 28px 24px;
+            background: linear-gradient(180deg, #1f2a44 0%, #334155 100%);
+            color: #fff;
+            box-shadow: 16px 0 40px rgba(15, 23, 42, 0.18);
         }
-        
-        .sidebar h2 {
-            font-size: 1.8rem;
-            font-weight: 800;
+
+        .brand {
+            font-size: 1.9rem;
+            font-weight: 900;
+            letter-spacing: -0.03em;
             margin-bottom: 8px;
-            letter-spacing: -0.02em;
         }
-        
-        .sidebar p {
+
+        .brand-subtitle {
+            color: rgba(255,255,255,0.78);
+            line-height: 1.6;
+            margin-bottom: 24px;
+        }
+
+        .user-chip {
+            padding: 16px 18px;
+            border-radius: 20px;
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.12);
+            margin-bottom: 24px;
+        }
+
+        .user-chip strong {
+            display: block;
+            font-size: 1.05rem;
+            margin-top: 6px;
+        }
+
+        .side-stats {
+            display: grid;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .side-stat {
+            padding: 16px 18px;
+            border-radius: 18px;
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.12);
+        }
+
+        .side-stat-value {
+            font-size: 1.7rem;
+            font-weight: 900;
+            margin-bottom: 4px;
+        }
+
+        .side-stat-label {
+            color: rgba(255,255,255,0.72);
             font-size: 0.9rem;
-            opacity: 0.9;
-            margin-bottom: 32px;
-            padding-bottom: 32px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
         }
-        
-        .logout-link {
-            color: rgba(255, 255, 255, 0.9);
+
+        .sidebar-actions {
+            display: grid;
+            gap: 10px;
+        }
+
+        .sidebar-link {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
             text-decoration: none;
+            border-radius: 16px;
+            padding: 12px 16px;
             font-weight: 700;
-            transition: all 0.3s ease;
-            display: inline-block;
+            transition: transform 0.25s ease, box-shadow 0.25s ease;
         }
-        
-        .logout-link:hover {
-            color: white;
-            transform: translateX(-4px);
+
+        .sidebar-link.primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            box-shadow: 0 12px 24px rgba(102, 126, 234, 0.28);
         }
-        
+
+        .sidebar-link.secondary {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.14);
+        }
+
+        .sidebar-link:hover { transform: translateY(-2px); }
+
         .main-content {
-            flex-grow: 1;
-            padding: 40px;
-            box-sizing: border-box;
+            flex: 1;
+            padding: 32px;
             overflow-y: auto;
         }
-        
-        h1 {
+
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            gap: 18px;
+            align-items: center;
+            padding: 28px 32px;
+            border-radius: 28px;
+            background: rgba(255,255,255,0.92);
+            backdrop-filter: blur(18px);
+            box-shadow: 0 18px 42px rgba(15, 23, 42, 0.08);
+            margin-bottom: 24px;
+        }
+
+        .page-header h1 {
             font-size: 2.2rem;
-            font-weight: 800;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            margin-bottom: 32px;
-        }
-        
-        .section {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(20px);
-            padding: 32px;
-            border-radius: 24px;
-            margin-bottom: 32px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
-            animation: slideUp 0.6s ease-out;
-        }
-        
-        h2 {
-            font-size: 1.4rem;
-            font-weight: 800;
+            font-weight: 900;
+            letter-spacing: -0.04em;
             color: #1f2937;
-            margin-bottom: 20px;
-            padding-bottom: 12px;
-            border-bottom: 3px solid #667eea;
-            display: inline-block;
+            margin-bottom: 8px;
         }
-        
-        .form-row {
-            display: grid;
-            grid-template-columns: 1fr auto;
-            gap: 12px;
-            align-items: flex-end;
+
+        .page-header p {
+            color: #64748b;
+            line-height: 1.6;
         }
-        
-        input[type="text"], select {
-            padding: 12px 16px;
-            border: 2px solid #e5e7eb;
-            border-radius: 12px;
-            font-size: 0.95rem;
-            font-family: inherit;
-            background: white;
-            transition: all 0.3s ease;
+
+        .header-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
         }
-        
-        input[type="text"]:focus, select:focus {
-            outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
-        }
-        
+
         .btn {
-            padding: 12px 24px;
             border: none;
-            border-radius: 12px;
-            font-weight: 700;
+            border-radius: 999px;
+            padding: 12px 18px;
+            font-weight: 800;
             cursor: pointer;
-            transition: all 0.3s ease;
             text-decoration: none;
             display: inline-flex;
             align-items: center;
+            justify-content: center;
             gap: 8px;
-            font-size: 0.95rem;
+            transition: transform 0.25s ease, box-shadow 0.25s ease, filter 0.25s ease;
         }
-        
+
+        .btn:hover { transform: translateY(-2px); }
+
         .btn-primary {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
-            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+            box-shadow: 0 12px 26px rgba(102, 126, 234, 0.26);
         }
-        
-        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 12px 28px rgba(102, 126, 234, 0.4); }
-        
+
+        .btn-secondary {
+            background: white;
+            color: #334155;
+            border: 1px solid #dbe3f1;
+            box-shadow: 0 8px 18px rgba(15, 23, 42, 0.05);
+        }
+
         .btn-success {
             background: linear-gradient(135deg, #10b981 0%, #059669 100%);
             color: white;
-            box-shadow: 0 8px 20px rgba(16, 185, 129, 0.3);
+            box-shadow: 0 12px 26px rgba(16, 185, 129, 0.24);
         }
-        
-        .btn-success:hover { transform: translateY(-2px); box-shadow: 0 12px 28px rgba(16, 185, 129, 0.4); }
-        
+
         .btn-danger {
             background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
             color: white;
-            padding: 8px 16px;
-            font-size: 0.85rem;
-            box-shadow: 0 6px 16px rgba(239, 68, 68, 0.3);
+            box-shadow: 0 10px 20px rgba(239, 68, 68, 0.24);
         }
-        
-        .btn-danger:hover { transform: translateY(-2px); box-shadow: 0 10px 24px rgba(239, 68, 68, 0.4); }
-        
-        .group-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-            gap: 20px;
-            margin-top: 24px;
+
+        .section {
+            background: rgba(255,255,255,0.92);
+            backdrop-filter: blur(16px);
+            border-radius: 28px;
+            padding: 28px;
+            box-shadow: 0 18px 42px rgba(15, 23, 42, 0.08);
+            margin-bottom: 24px;
         }
-        
-        .group-card {
-            background: linear-gradient(135deg, rgba(255, 255, 255, 0.8) 0%, rgba(102, 126, 234, 0.05) 100%);
-            border: 2px solid #e5e7eb;
-            border-radius: 16px;
-            padding: 24px;
-            position: relative;
-            transition: all 0.3s ease;
-        }
-        
-        .group-card:hover {
-            border-color: #667eea;
-            box-shadow: 0 12px 32px rgba(102, 126, 234, 0.15);
-            transform: translateY(-4px);
-        }
-        
-        .group-name {
-            font-size: 1.2rem;
-            font-weight: 800;
-            color: #667eea;
-            margin-bottom: 12px;
+
+        .section-header {
             display: flex;
-            align-items: center;
-            gap: 8px;
+            justify-content: space-between;
+            gap: 16px;
+            align-items: flex-start;
+            margin-bottom: 20px;
         }
-        
-        .group-stats {
+
+        .section-header h2 {
+            font-size: 1.5rem;
+            font-weight: 900;
+            color: #1f2937;
+            margin-bottom: 6px;
+        }
+
+        .section-header p {
+            color: #64748b;
+            line-height: 1.6;
+        }
+
+        .library-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 18px;
+        }
+
+        .library-column {
+            border-radius: 24px;
+            padding: 18px;
+            background: linear-gradient(180deg, rgba(248,250,252,0.92) 0%, rgba(241,245,249,0.78) 100%);
+            border: 1px solid #e2e8f0;
+        }
+
+        .type-reading { border-top: 6px solid #3b82f6; }
+        .type-listening { border-top: 6px solid #10b981; }
+        .type-writing { border-top: 6px solid #f97316; }
+
+        .type-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 14px;
+        }
+
+        .type-header h3 {
+            font-size: 1.15rem;
+            font-weight: 900;
+            color: #1f2937;
+        }
+
+        .type-badge {
+            padding: 6px 10px;
+            border-radius: 999px;
+            font-size: 0.8rem;
+            font-weight: 800;
+            color: #334155;
+            background: rgba(255,255,255,0.92);
+            border: 1px solid #dbe3f1;
+        }
+
+        .test-list {
+            display: grid;
+            gap: 14px;
+        }
+
+        .test-card {
+            padding: 18px;
+            border-radius: 22px;
+            background: white;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+        }
+
+        .test-card h4 {
+            font-size: 1.08rem;
+            font-weight: 900;
+            color: #1f2937;
+            margin-bottom: 8px;
+        }
+
+        .test-card p {
+            color: #64748b;
+            line-height: 1.55;
+            font-size: 0.92rem;
+        }
+
+        .test-metrics {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 10px;
+            margin: 14px 0 16px;
+        }
+
+        .metric {
+            padding: 10px 12px;
+            border-radius: 16px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+        }
+
+        .metric strong {
+            display: block;
+            font-size: 1rem;
+            color: #1f2937;
+            margin-bottom: 2px;
+        }
+
+        .metric span {
+            font-size: 0.8rem;
+            color: #64748b;
+        }
+
+        .progress-track {
+            height: 10px;
+            border-radius: 999px;
+            background: #e5e7eb;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            border-radius: inherit;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .test-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 12px;
+        }
+
+        .ghost-note {
+            color: #94a3b8;
+            font-size: 0.9rem;
+            padding: 12px;
+            border-radius: 16px;
+            background: rgba(255,255,255,0.78);
+            border: 1px dashed #cbd5e1;
+        }
+
+        .form-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
+            gap: 18px;
+        }
+
+        .panel-card {
+            padding: 20px;
+            border-radius: 22px;
+            background: linear-gradient(180deg, rgba(248,250,252,0.9) 0%, rgba(241,245,249,0.8) 100%);
+            border: 1px solid #e2e8f0;
+        }
+
+        .panel-card h3 {
+            font-size: 1.05rem;
+            font-weight: 900;
+            color: #334155;
+            margin-bottom: 12px;
+        }
+
+        .field-stack {
+            display: grid;
             gap: 12px;
-            margin: 16px 0;
-            padding: 16px 0;
-            border-top: 1px solid #e5e7eb;
-            border-bottom: 1px solid #e5e7eb;
         }
-        
-        .stat {
-            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.05) 100%);
-            padding: 12px;
-            border-radius: 12px;
-            text-align: center;
-            font-size: 0.9rem;
+
+        input[type="text"], select {
+            width: 100%;
+            padding: 12px 14px;
+            border-radius: 16px;
+            border: 1px solid #cbd5e1;
+            background: white;
+            font-size: 0.95rem;
+            font-family: inherit;
         }
-        
-        .stat-value {
+
+        input[type="text"]:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.12);
+        }
+
+        .group-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 18px;
+        }
+
+        .group-card {
+            padding: 22px;
+            border-radius: 24px;
+            background: linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(248,250,252,0.92) 100%);
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 12px 26px rgba(15, 23, 42, 0.06);
+        }
+
+        .group-title-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            align-items: center;
+            margin-bottom: 14px;
+        }
+
+        .group-title {
+            font-size: 1.1rem;
+            font-weight: 900;
+            color: #1f2937;
+        }
+
+        .pill-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .pill {
+            padding: 7px 11px;
+            border-radius: 999px;
+            background: #eef2ff;
+            color: #4338ca;
+            font-size: 0.82rem;
             font-weight: 800;
-            font-size: 1.4rem;
-            color: #667eea;
         }
-        
-        .stat-label {
-            color: #9ca3af;
-            font-size: 0.8rem;
-            margin-top: 4px;
+
+        .pill.neutral {
+            background: #f1f5f9;
+            color: #475569;
         }
-        
-        .group-actions {
-            position: absolute;
-            top: 16px;
-            right: 16px;
+
+        .table-wrap {
+            overflow-x: auto;
+            margin-top: 16px;
         }
-        
+
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 24px;
         }
-        
-        th {
-            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.05) 100%);
-            padding: 16px;
+
+        th, td {
             text-align: left;
-            font-weight: 700;
-            color: #374151;
-            border-bottom: 2px solid #e5e7eb;
-            font-size: 0.9rem;
+            padding: 16px 14px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        th {
+            font-size: 0.84rem;
+            letter-spacing: 0.04em;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
+            color: #64748b;
         }
-        
+
         td {
-            padding: 16px;
-            border-bottom: 1px solid #e5e7eb;
-            color: #6b7280;
+            color: #475569;
+            vertical-align: middle;
         }
-        
-        tr:hover { background: rgba(102, 126, 234, 0.02); }
-        
-        .action-cell { display: flex; gap: 8px; }
-        
-        .badge {
-            display: inline-block;
-            padding: 6px 12px;
-            border-radius: 8px;
-            font-size: 0.8rem;
-            font-weight: 700;
+
+        .action-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
         }
-        
-        .badge-primary {
-            background: linear-gradient(135deg, rgba(102, 126, 234, 0.15) 0%, rgba(118, 75, 162, 0.1) 100%);
-            color: #667eea;
+
+        .tag {
+            display: inline-flex;
+            align-items: center;
+            padding: 7px 11px;
+            border-radius: 999px;
+            font-size: 0.82rem;
+            font-weight: 800;
+            background: #eef2ff;
+            color: #4338ca;
         }
-        
-        .empty-state {
-            text-align: center;
-            padding: 40px;
-            color: #9ca3af;
+
+        .tag.muted {
+            background: #fee2e2;
+            color: #b91c1c;
         }
-        
-        .empty-state svg {
-            font-size: 3rem;
-            margin-bottom: 16px;
+
+        @media (max-width: 1280px) {
+            .library-grid { grid-template-columns: 1fr; }
+        }
+
+        @media (max-width: 1080px) {
+            body { display: block; }
+            .sidebar { width: 100%; }
+            .form-grid { grid-template-columns: 1fr; }
+        }
+
+        @media (max-width: 760px) {
+            .main-content { padding: 18px; }
+            .page-header { padding: 22px; flex-direction: column; align-items: flex-start; }
+            .test-metrics { grid-template-columns: 1fr; }
+            .group-grid { grid-template-columns: 1fr; }
         }
     </style>
     <script>
@@ -283,169 +499,313 @@
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ redirect: '/teacher-dashboard' })
-            }).then(r => r.json()).then(d => {
-                if (d.success) { alert(d.message); location.href = '/teacher-dashboard'; }
-                else alert('Error: ' + d.message);
-            }).catch(e => alert('Error: ' + e.message));
+            })
+                .then((response) => response.json())
+                .then((data) => {
+                    if (data.success) {
+                        alert(data.message);
+                        window.location.href = data.redirect || '/teacher-dashboard';
+                    } else {
+                        alert('Error: ' + data.message);
+                    }
+                })
+                .catch((error) => alert('Error: ' + error.message));
         }
 
         function removeStudentFromGroup(groupId, studentId, studentName) {
-            if (!confirm(`Remove ${studentName}?`)) return;
+            if (!confirm(`Remove ${studentName} from this group?`)) return;
             fetch(`/remove-student-from-group/${groupId}/${studentId}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ redirect: '/teacher-dashboard' })
-            }).then(r => r.json()).then(d => {
-                if (d.success) { alert(d.message); location.href = '/teacher-dashboard'; }
-                else alert('Error: ' + d.message);
-            }).catch(e => alert('Error: ' + e.message));
+            })
+                .then((response) => response.json())
+                .then((data) => {
+                    if (data.success) {
+                        alert(data.message);
+                        window.location.href = data.redirect || '/teacher-dashboard';
+                    } else {
+                        alert('Error: ' + data.message);
+                    }
+                })
+                .catch((error) => alert('Error: ' + error.message));
         }
     </script>
 </head>
 <body>
+    <aside class="sidebar">
+        <div class="brand">ExamApp</div>
+        <div class="brand-subtitle">Teacher review, group delivery, and student progress in one place.</div>
 
-    <div class="sidebar">
-        <h2>📚 ExamApp</h2>
-        <p>Teacher: <strong><%= teacher.username %></strong></p>
-        <a href="/logout" class="logout-link">🚪 Logout</a>
-    </div>
-
-    <div class="main-content">
-        <h1>👨‍🏫 Teacher Management</h1>
-
-        <div class="section">
-            <h2>Create New Group</h2>
-            <form action="/teacher/create-group" method="POST">
-                <div class="form-row">
-                    <input type="text" name="groupName" placeholder="e.g., IELTS Morning Batch" required>
-                    <button type="submit" class="btn btn-success">+ Create</button>
-                </div>
-            </form>
+        <div class="user-chip">
+            Signed in as
+            <strong><%= teacher.username %></strong>
         </div>
 
-        <div class="section">
-            <h2>Assignment Controls</h2>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 32px;">
-                
-                <form action="/teacher/assign-to-group" method="POST">
-                    <label style="font-weight: 700; color: #374151; display: block; margin-bottom: 12px;">📌 Add Student to Group</label>
-                    <div style="display: grid; gap: 12px;">
-                        <select name="studentId" required>
-                            <option value="">Select Student</option>
-                            <% allStudents.forEach(s => { %>
-                                <option value="<%= s._id %>"><%= s.username %></option>
-                            <% }) %>
-                        </select>
-                        <select name="groupId" required>
-                            <option value="">Select Group</option>
-                            <% groups.forEach(g => { %>
-                                <option value="<%= g._id %>"><%= g.name %></option>
-                            <% }) %>
-                        </select>
-                        <button type="submit" class="btn btn-primary">Add Student</button>
-                    </div>
-                </form>
-
-                <form action="/teacher/assign-test-group" method="POST">
-                    <label style="font-weight: 700; color: #374151; display: block; margin-bottom: 12px;">📝 Assign Test to Group</label>
-                    <div style="display: grid; gap: 12px;">
-                        <select name="testId" required>
-                            <option value="">Select Test</option>
-                            <% tests.forEach(t => { %>
-                                <option value="<%= t._id %>"><%= t.title %></option>
-                            <% }) %>
-                        </select>
-                        <select name="groupId" required>
-                            <option value="">Select Group</option>
-                            <% groups.forEach(g => { %>
-                                <option value="<%= g._id %>"><%= g.name %></option>
-                            <% }) %>
-                        </select>
-                        <button type="submit" class="btn btn-primary">Assign Test</button>
-                    </div>
-                </form>
-
+        <div class="side-stats">
+            <div class="side-stat">
+                <div class="side-stat-value"><%= stats.testsCount %></div>
+                <div class="side-stat-label">Assigned tests ready to preview</div>
+            </div>
+            <div class="side-stat">
+                <div class="side-stat-value"><%= stats.groupsCount %></div>
+                <div class="side-stat-label">Active groups</div>
+            </div>
+            <div class="side-stat">
+                <div class="side-stat-value"><%= stats.studentsCount %></div>
+                <div class="side-stat-label">Registered students</div>
             </div>
         </div>
 
-        <div class="section">
-            <h2>Active Groups</h2>
+        <div class="sidebar-actions">
+            <a href="/teacher/add-student" class="sidebar-link primary">Register Student</a>
+            <a href="/logout" class="sidebar-link secondary">Logout</a>
+        </div>
+    </aside>
+
+    <main class="main-content">
+        <section class="page-header">
+            <div>
+                <h1>Teacher Test Library</h1>
+                <p>Preview tests exactly as students will see them, download the same HTML version, and track who has completed each assignment.</p>
+            </div>
+            <div class="header-actions">
+                <a href="/teacher/add-student" class="btn btn-success">+ Register Student</a>
+            </div>
+        </section>
+
+        <section class="section">
+            <div class="section-header">
+                <div>
+                    <h2>Tests By Type</h2>
+                    <p>Each preview opens the exact student-facing test shell, and each download uses the same HTML renderer.</p>
+                </div>
+            </div>
+
+            <div class="library-grid">
+                <% const typeConfig = [
+                    { key: 'reading', label: 'Reading', className: 'type-reading' },
+                    { key: 'listening', label: 'Listening', className: 'type-listening' },
+                    { key: 'writing', label: 'Writing', className: 'type-writing' }
+                ]; %>
+                <% typeConfig.forEach(type => { const typeTests = testsByType[type.key] || []; %>
+                    <div class="library-column <%= type.className %>">
+                        <div class="type-header">
+                            <h3><%= type.label %></h3>
+                            <div class="type-badge"><%= typeTests.length %> tests</div>
+                        </div>
+
+                        <% if (typeTests.length > 0) { %>
+                            <div class="test-list">
+                                <% typeTests.forEach(test => { const completionRate = test.assignedStudentCount ? Math.round((test.completedStudentCount / test.assignedStudentCount) * 100) : 0; %>
+                                    <article class="test-card">
+                                        <h4><%= test.title %></h4>
+                                        <p>Review before assigning, download as standalone HTML, or open progress to track student completions.</p>
+
+                                        <div class="test-metrics">
+                                            <div class="metric">
+                                                <strong><%= test.assignedGroupCount %></strong>
+                                                <span>Groups</span>
+                                            </div>
+                                            <div class="metric">
+                                                <strong><%= test.assignedStudentCount %></strong>
+                                                <span>Students</span>
+                                            </div>
+                                            <div class="metric">
+                                                <strong><%= test.completedStudentCount %></strong>
+                                                <span>Completed</span>
+                                            </div>
+                                        </div>
+
+                                        <div class="progress-track">
+                                            <div class="progress-fill" style="width: <%= completionRate %>%"></div>
+                                        </div>
+                                        <p><strong><%= completionRate %>%</strong> of assigned students completed this test.</p>
+
+                                        <% if (test.latestSubmissionAt) { %>
+                                            <p style="margin-top: 8px;">Latest result: <strong><%= new Date(test.latestSubmissionAt).toLocaleString() %></strong></p>
+                                        <% } %>
+
+                                        <div class="test-actions">
+                                            <a href="/view-test/<%= test._id %>" target="_blank" class="btn btn-secondary">Preview</a>
+                                            <a href="/download-test/<%= test._id %>" class="btn btn-secondary">Download HTML</a>
+                                            <a href="/teacher/progress/<%= test._id %>" class="btn btn-primary">View Progress</a>
+                                        </div>
+                                    </article>
+                                <% }) %>
+                            </div>
+                        <% } else { %>
+                            <div class="ghost-note">No <%= type.label.toLowerCase() %> tests have been assigned to this teacher yet.</div>
+                        <% } %>
+                    </div>
+                <% }) %>
+            </div>
+        </section>
+
+        <section class="section">
+            <div class="section-header">
+                <div>
+                    <h2>Group Setup</h2>
+                    <p>Create groups, place students, and assign the right tests without leaving the dashboard.</p>
+                </div>
+            </div>
+
+            <div class="form-grid">
+                <div class="panel-card">
+                    <h3>Create New Group</h3>
+                    <form action="/teacher/create-group" method="POST" class="field-stack">
+                        <input type="text" name="groupName" placeholder="e.g. IELTS Evening Group" required>
+                        <button type="submit" class="btn btn-success">Create Group</button>
+                    </form>
+                </div>
+
+                <div class="panel-card">
+                    <h3>Add Student To Group</h3>
+                    <form action="/teacher/assign-to-group" method="POST" class="field-stack">
+                        <select name="studentId" required>
+                            <option value="">Select Student</option>
+                            <% allStudents.forEach(student => { %>
+                                <option value="<%= student._id %>"><%= student.username %></option>
+                            <% }) %>
+                        </select>
+                        <select name="groupId" required>
+                            <option value="">Select Group</option>
+                            <% groups.forEach(group => { %>
+                                <option value="<%= group._id %>"><%= group.name %></option>
+                            <% }) %>
+                        </select>
+                        <button type="submit" class="btn btn-primary">Assign Student</button>
+                    </form>
+                </div>
+
+                <div class="panel-card">
+                    <h3>Assign Test To Group</h3>
+                    <form action="/teacher/assign-test-group" method="POST" class="field-stack">
+                        <select name="testId" required>
+                            <option value="">Select Test</option>
+                            <% tests.forEach(test => { %>
+                                <option value="<%= test._id %>"><%= test.title %> (<%= test.type %>)</option>
+                            <% }) %>
+                        </select>
+                        <select name="groupId" required>
+                            <option value="">Select Group</option>
+                            <% groups.forEach(group => { %>
+                                <option value="<%= group._id %>"><%= group.name %></option>
+                            <% }) %>
+                        </select>
+                        <button type="submit" class="btn btn-primary">Assign Test</button>
+                    </form>
+                </div>
+
+                <div class="panel-card">
+                    <h3>Quick Notes</h3>
+                    <div class="field-stack">
+                        <div class="ghost-note">Preview uses the exact student renderer, so anything you verify there will match the student version.</div>
+                        <div class="ghost-note">Downloaded HTML keeps the same layout, theme options, and interaction logic as the platform view.</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="section">
+            <div class="section-header">
+                <div>
+                    <h2>Active Groups</h2>
+                    <p>See each group’s roster and currently assigned tests.</p>
+                </div>
+            </div>
+
             <% if (groups.length > 0) { %>
                 <div class="group-grid">
                     <% groups.forEach(group => { %>
-                        <div class="group-card">
-                            <div class="group-actions">
+                        <article class="group-card">
+                            <div class="group-title-row">
+                                <div class="group-title"><%= group.name %></div>
                                 <button class="btn btn-danger" onclick="deleteItem('group', '<%= group._id %>', '<%= group.name %>')">Delete</button>
                             </div>
-                            <div class="group-name">📌 <%= group.name %></div>
-                            <div class="group-stats">
-                                <div class="stat">
-                                    <div class="stat-value"><%= group.students.length %></div>
-                                    <div class="stat-label">Students</div>
-                                </div>
-                                <div class="stat">
-                                    <div class="stat-value"><%= group.assignedTests.length %></div>
-                                    <div class="stat-label">Tests</div>
-                                </div>
+
+                            <div class="pill-row" style="margin-bottom: 14px;">
+                                <div class="pill neutral"><%= group.students.length %> students</div>
+                                <div class="pill neutral"><%= group.assignedTests.length %> tests</div>
                             </div>
-                            <hr style="border: 1px solid #e5e7eb; margin: 16px 0;">
-                            <div style="font-size: 0.9rem; margin-bottom: 12px;">
-                                <strong style="color: #374151;">Assigned Tests:</strong>
-                                <ul style="list-style: none; padding: 8px 0 0 0; margin: 0;">
-                                    <% group.assignedTests.forEach(t => { %>
-                                        <li style="padding: 4px 0; color: #6b7280;">✓ <%= t.title %></li>
+
+                            <p style="font-weight: 800; color: #334155; margin-bottom: 8px;">Assigned Tests</p>
+                            <div class="pill-row" style="margin-bottom: 16px;">
+                                <% if (group.assignedTests.length > 0) { %>
+                                    <% group.assignedTests.forEach(test => { %>
+                                        <div class="pill"><%= test.title %></div>
                                     <% }) %>
-                                </ul>
+                                <% } else { %>
+                                    <div class="ghost-note" style="width: 100%;">No tests assigned yet.</div>
+                                <% } %>
                             </div>
-                        </div>
+
+                            <p style="font-weight: 800; color: #334155; margin-bottom: 8px;">Students</p>
+                            <div class="pill-row">
+                                <% if (group.students.length > 0) { %>
+                                    <% group.students.forEach(student => { %>
+                                        <div class="pill neutral">
+                                            <%= student.username %>
+                                            <button type="button" onclick="removeStudentFromGroup('<%= group._id %>', '<%= student._id %>', '<%= student.username %>')" style="margin-left:8px; border:none; background:none; color:#b91c1c; font-weight:900; cursor:pointer;">×</button>
+                                        </div>
+                                    <% }) %>
+                                <% } else { %>
+                                    <div class="ghost-note" style="width: 100%;">No students in this group yet.</div>
+                                <% } %>
+                            </div>
+                        </article>
                     <% }) %>
                 </div>
             <% } else { %>
-                <div class="empty-state">
-                    <div style="font-size: 2rem;">📭</div>
-                    <p>No groups yet. Create one above!</p>
-                </div>
+                <div class="ghost-note">No groups yet. Create one above to start assigning students and tests.</div>
             <% } %>
-        </div>
+        </section>
 
-        <div class="section">
-            <h2>All Students</h2>
-            <a href="/teacher/add-student" class="btn btn-success">+ Register Student</a>
+        <section class="section">
+            <div class="section-header">
+                <div>
+                    <h2>All Students</h2>
+                    <p>Keep track of current group placement and remove student accounts when needed.</p>
+                </div>
+                <a href="/teacher/add-student" class="btn btn-success">+ Register Student</a>
+            </div>
+
             <% if (allStudents.length > 0) { %>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Username</th>
-                            <th>Current Group</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <% allStudents.forEach(student => { %>
+                <div class="table-wrap">
+                    <table>
+                        <thead>
                             <tr>
-                                <td style="font-weight: 600;"><%= student.username %></td>
-                                <td>
-                                    <% if(student.groupId) { %>
-                                        <span class="badge badge-primary"><%= groups.find(g => g._id.toString() == student.groupId.toString())?.name %></span>
-                                    <% } else { %>
-                                        <span class="badge" style="background: #fee2e2; color: #dc2626;">Unassigned</span>
-                                    <% } %>
-                                </td>
-                                <td class="action-cell">
-                                    <button class="btn btn-danger" onclick="deleteItem('student', '<%= student._id %>', '<%= student.username %>')">Delete</button>
-                                </td>
+                                <th>Student</th>
+                                <th>Current Group</th>
+                                <th>Actions</th>
                             </tr>
-                        <% }) %>
-                    </tbody>
-                </table>
-            <% } else { %>
-                <div class="empty-state" style="margin-top: 20px;">
-                    <div style="font-size: 2rem;">👥</div>
-                    <p>No students registered. <a href="/teacher/add-student" style="color: #667eea; font-weight: 700;">Register one now</a></p>
+                        </thead>
+                        <tbody>
+                            <% allStudents.forEach(student => { %>
+                                <% const activeGroup = groups.find(group => String(group._id) === String(student.groupId)); %>
+                                <tr>
+                                    <td style="font-weight: 800; color: #1f2937;"><%= student.username %></td>
+                                    <td>
+                                        <% if (activeGroup) { %>
+                                            <span class="tag"><%= activeGroup.name %></span>
+                                        <% } else { %>
+                                            <span class="tag muted">Unassigned</span>
+                                        <% } %>
+                                    </td>
+                                    <td>
+                                        <div class="action-row">
+                                            <button class="btn btn-danger" onclick="deleteItem('student', '<%= student._id %>', '<%= student.username %>')">Delete</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            <% }) %>
+                        </tbody>
+                    </table>
                 </div>
+            <% } else { %>
+                <div class="ghost-note">No students registered yet. Use the register button to create the first student account.</div>
             <% } %>
-        </div>
-    </div>
-
+        </section>
+    </main>
 </body>
 </html>

@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Progress</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: "Segoe UI", "Trebuchet MS", sans-serif;
+            min-height: 100vh;
+            color: #1f2937;
+            background:
+                radial-gradient(circle at top left, rgba(255,255,255,0.45), transparent 30%),
+                linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            padding: 28px;
+        }
+
+        .container {
+            max-width: 1280px;
+            margin: 0 auto;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            gap: 18px;
+            align-items: flex-start;
+            padding: 28px 30px;
+            border-radius: 28px;
+            background: rgba(255,255,255,0.92);
+            backdrop-filter: blur(18px);
+            box-shadow: 0 20px 40px rgba(15, 23, 42, 0.08);
+            margin-bottom: 22px;
+        }
+
+        .header h1 {
+            font-size: 2.2rem;
+            font-weight: 900;
+            letter-spacing: -0.04em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #64748b;
+            line-height: 1.6;
+        }
+
+        .actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            text-decoration: none;
+            border: none;
+            border-radius: 999px;
+            padding: 12px 18px;
+            font-weight: 800;
+            cursor: pointer;
+            transition: transform 0.25s ease, box-shadow 0.25s ease;
+        }
+
+        .btn:hover { transform: translateY(-2px); }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+            box-shadow: 0 12px 26px rgba(102, 126, 234, 0.26);
+        }
+
+        .btn-secondary {
+            background: white;
+            color: #334155;
+            border: 1px solid #dbe3f1;
+            box-shadow: 0 8px 18px rgba(15, 23, 42, 0.05);
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 16px;
+            margin-bottom: 22px;
+        }
+
+        .stat-card {
+            padding: 20px;
+            border-radius: 24px;
+            background: rgba(255,255,255,0.92);
+            backdrop-filter: blur(14px);
+            box-shadow: 0 16px 34px rgba(15, 23, 42, 0.08);
+        }
+
+        .stat-card strong {
+            display: block;
+            font-size: 2rem;
+            font-weight: 900;
+            margin-bottom: 4px;
+            color: #1f2937;
+        }
+
+        .stat-card span {
+            color: #64748b;
+            line-height: 1.5;
+            font-size: 0.92rem;
+        }
+
+        .section {
+            padding: 26px;
+            border-radius: 28px;
+            background: rgba(255,255,255,0.92);
+            backdrop-filter: blur(16px);
+            box-shadow: 0 18px 38px rgba(15, 23, 42, 0.08);
+        }
+
+        .section h2 {
+            font-size: 1.4rem;
+            font-weight: 900;
+            margin-bottom: 8px;
+        }
+
+        .section p {
+            color: #64748b;
+            line-height: 1.6;
+            margin-bottom: 18px;
+        }
+
+        .group-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 18px;
+        }
+
+        .pill {
+            padding: 8px 12px;
+            border-radius: 999px;
+            background: #eef2ff;
+            color: #4338ca;
+            font-size: 0.82rem;
+            font-weight: 800;
+        }
+
+        .table-wrap {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            text-align: left;
+            padding: 16px 14px;
+            border-bottom: 1px solid #e2e8f0;
+            vertical-align: top;
+        }
+
+        th {
+            font-size: 0.84rem;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            color: #64748b;
+        }
+
+        td {
+            color: #475569;
+            line-height: 1.55;
+        }
+
+        .student-name {
+            font-weight: 900;
+            color: #1f2937;
+        }
+
+        .tag {
+            display: inline-flex;
+            align-items: center;
+            padding: 7px 11px;
+            border-radius: 999px;
+            font-size: 0.82rem;
+            font-weight: 800;
+            background: #f1f5f9;
+            color: #475569;
+        }
+
+        .tag.success {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .tag.warning {
+            background: #fee2e2;
+            color: #b91c1c;
+        }
+
+        .snippet {
+            max-width: 340px;
+            color: #64748b;
+            font-size: 0.9rem;
+        }
+
+        .empty {
+            padding: 18px;
+            border-radius: 18px;
+            background: #f8fafc;
+            border: 1px dashed #cbd5e1;
+            color: #64748b;
+        }
+
+        @media (max-width: 1100px) {
+            .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        }
+
+        @media (max-width: 760px) {
+            body { padding: 16px; }
+            .header { flex-direction: column; }
+            .stats { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <div>
+                <h1><%= test.title %></h1>
+                <p><strong><%= test.type %></strong> progress for <%= currentUser %>. Preview and download stay tied to the same student-facing renderer.</p>
+            </div>
+            <div class="actions">
+                <a href="/teacher-dashboard" class="btn btn-secondary">Back To Dashboard</a>
+                <a href="/view-test/<%= test._id %>" target="_blank" class="btn btn-secondary">Preview Test</a>
+                <a href="/download-test/<%= test._id %>" class="btn btn-primary">Download HTML</a>
+            </div>
+        </header>
+
+        <section class="stats">
+            <div class="stat-card">
+                <strong><%= summary.assignedStudents %></strong>
+                <span>Assigned students across the linked groups</span>
+            </div>
+            <div class="stat-card">
+                <strong><%= summary.completedStudents %></strong>
+                <span>Students with a saved submission</span>
+            </div>
+            <div class="stat-card">
+                <strong><%= summary.pendingStudents %></strong>
+                <span>Assigned students who have not submitted yet</span>
+            </div>
+            <div class="stat-card">
+                <strong>
+                    <% if (summary.averageScore !== null) { %>
+                        <%= summary.averageScore.toFixed(1) %>
+                    <% } else { %>
+                        --
+                    <% } %>
+                </strong>
+                <span>
+                    <% if (summary.averagePercentage !== null) { %>
+                        Average score, <%= summary.averagePercentage %>% overall
+                    <% } else { %>
+                        Score average is only shown for graded reading/listening attempts
+                    <% } %>
+                </span>
+            </div>
+        </section>
+
+        <section class="section">
+            <h2>Assigned Groups</h2>
+            <p>The rows below include currently assigned students plus any saved submissions already linked to this test.</p>
+
+            <div class="group-row">
+                <% if (groups.length > 0) { %>
+                    <% groups.forEach(group => { %>
+                        <div class="pill"><%= group.name %> • <%= group.students.length %> students</div>
+                    <% }) %>
+                <% } else { %>
+                    <div class="pill">No active groups currently linked</div>
+                <% } %>
+            </div>
+
+            <% if (rows.length > 0) { %>
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Student</th>
+                                <th>Group</th>
+                                <th>Status</th>
+                                <th>Result</th>
+                                <th>Details</th>
+                                <th>Last Saved</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% rows.forEach(row => { const submission = row.submission; %>
+                                <tr>
+                                    <td>
+                                        <div class="student-name"><%= row.studentName %></div>
+                                        <% if (submission) { %>
+                                            <div style="margin-top: 6px; color: #94a3b8; font-size: 0.86rem;">Attempts saved: <%= submission.attemptCount %></div>
+                                        <% } %>
+                                    </td>
+                                    <td><span class="tag"><%= row.groupName || 'Ungrouped' %></span></td>
+                                    <td>
+                                        <% if (submission) { %>
+                                            <span class="tag success">Completed</span>
+                                        <% } else { %>
+                                            <span class="tag warning">Pending</span>
+                                        <% } %>
+                                    </td>
+                                    <td>
+                                        <% if (submission) { %>
+                                            <% if (test.type === 'writing') { %>
+                                                Task 1: <strong><%= submission.wordCount1 || 0 %></strong> words<br>
+                                                Task 2: <strong><%= submission.wordCount2 || 0 %></strong> words
+                                            <% } else { %>
+                                                <strong><%= submission.score %>/<%= submission.totalQuestions %></strong>
+                                                <% if (submission.band) { %>
+                                                    <br>Band <%= submission.band %>
+                                                <% } %>
+                                                <% if (submission.percentage !== null) { %>
+                                                    <br><%= submission.percentage %>%
+                                                <% } %>
+                                            <% } %>
+                                        <% } else { %>
+                                            --
+                                        <% } %>
+                                    </td>
+                                    <td>
+                                        <% if (submission) { %>
+                                            <% if (test.type === 'writing') { %>
+                                                <div class="snippet">
+                                                    T1: <%= (submission.details?.task1Preview || submission.details?.task1 || '').slice(0, 140) || 'No response stored.' %>
+                                                </div>
+                                                <div class="snippet" style="margin-top: 8px;">
+                                                    T2: <%= (submission.details?.task2Preview || submission.details?.task2 || '').slice(0, 140) || 'No response stored.' %>
+                                                </div>
+                                            <% } else { %>
+                                                <div class="snippet"><%= submission.details?.summaryText || 'Auto-graded result saved.' %></div>
+                                            <% } %>
+                                        <% } else { %>
+                                            <div class="snippet">No submission has been recorded yet.</div>
+                                        <% } %>
+                                    </td>
+                                    <td>
+                                        <% if (submission) { %>
+                                            <%= new Date(submission.lastSubmittedAt).toLocaleString() %>
+                                        <% } else { %>
+                                            --
+                                        <% } %>
+                                    </td>
+                                </tr>
+                            <% }) %>
+                        </tbody>
+                    </table>
+                </div>
+            <% } else { %>
+                <div class="empty">No student submissions have been recorded for this test yet.</div>
+            <% } %>
+        </section>
+    </div>
+</body>
+</html>

@@ -397,32 +397,88 @@ function injectThemeStyles(html) {
     const themeStyles = `
 <style id="platform-theme-overrides">
     .site-theme-btn {
-        position: relative;
-        overflow: hidden;
-    }
-    .theme-btn.site-theme-btn {
+        border: none !important;
+        border-radius: 999px !important;
+        padding: 9px 16px !important;
+        min-height: 38px;
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
         color: #fff !important;
-        border: 1px solid rgba(255,255,255,0.35) !important;
-        box-shadow: 0 10px 24px rgba(102, 126, 234, 0.28) !important;
+        font-size: 12px !important;
+        font-weight: 800 !important;
+        letter-spacing: 0.02em;
+        cursor: pointer;
+        box-shadow: 0 12px 28px rgba(102, 126, 234, 0.28) !important;
+        transition: transform 0.25s ease, box-shadow 0.25s ease, filter 0.25s ease;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        white-space: nowrap;
     }
-    .part-btn.site-theme-btn {
-        background: linear-gradient(135deg, rgba(102, 126, 234, 0.14) 0%, rgba(118, 75, 162, 0.1) 100%) !important;
-        border-color: rgba(102, 126, 234, 0.28) !important;
-        color: #4338ca !important;
-        box-shadow: 0 10px 24px rgba(102, 126, 234, 0.14) !important;
+    .site-theme-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 16px 32px rgba(102, 126, 234, 0.32) !important;
     }
     .site-theme-btn.active-site-theme {
-        filter: brightness(1.04);
-        transform: translateY(-1px);
-        box-shadow: 0 14px 28px rgba(102, 126, 234, 0.34) !important;
+        background: linear-gradient(135deg, #1f2937 0%, #334155 100%) !important;
+        box-shadow: 0 16px 34px rgba(15, 23, 42, 0.35) !important;
     }
     body.platform-theme {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+        background:
+            radial-gradient(circle at top left, rgba(255,255,255,0.22), transparent 28%),
+            radial-gradient(circle at right 18%, rgba(191, 219, 254, 0.28), transparent 24%),
+            linear-gradient(135deg, #5f6ee9 0%, #7144a9 48%, #95d1ff 100%) !important;
         color: #1f2937 !important;
+        font-family: "Trebuchet MS", "Segoe UI", sans-serif;
     }
     body.platform-theme::before {
         opacity: 0 !important;
+    }
+    body.platform-theme::after {
+        content: '';
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        background-image:
+            linear-gradient(rgba(255,255,255,0.06) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(255,255,255,0.06) 1px, transparent 1px);
+        background-size: 28px 28px;
+        opacity: 0.14;
+        z-index: 0;
+    }
+    .platform-theme .header {
+        top: 16px !important;
+        left: 18px;
+        width: calc(100% - 36px) !important;
+        min-height: 82px;
+        height: auto !important;
+        border-radius: 30px !important;
+        border: 1px solid rgba(255,255,255,0.44) !important;
+        background: linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(244,247,255,0.94) 100%) !important;
+        box-shadow: 0 20px 44px rgba(15, 23, 42, 0.16) !important;
+        backdrop-filter: blur(20px);
+        padding: 18px 24px !important;
+    }
+    .platform-theme .footer {
+        bottom: 18px !important;
+        left: 50% !important;
+        transform: translateX(-50%) !important;
+        width: min(1180px, calc(100% - 36px)) !important;
+        border-radius: 28px !important;
+        border: 1px solid rgba(255,255,255,0.44) !important;
+        background: linear-gradient(180deg, rgba(255,255,255,0.97) 0%, rgba(246,248,255,0.94) 100%) !important;
+        box-shadow: 0 22px 44px rgba(15, 23, 42, 0.18) !important;
+        backdrop-filter: blur(18px);
+    }
+    .platform-theme .header-right,
+    .platform-theme .part-nav {
+        gap: 10px !important;
+    }
+    .platform-theme .part-nav,
+    .platform-theme #subNav {
+        background: rgba(102, 126, 234, 0.08);
+        border-radius: 999px;
+        padding: 6px;
     }
     .platform-theme .header,
     .platform-theme .footer,
@@ -446,14 +502,49 @@ function injectThemeStyles(html) {
     .platform-theme .audio-player,
     .platform-theme .notes-panel,
     .platform-theme .writing-panel {
-        background: rgba(255, 255, 255, 0.94) !important;
-        border-color: rgba(255, 255, 255, 0.32) !important;
+        background: linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(245,248,255,0.92) 100%) !important;
+        border-color: rgba(255, 255, 255, 0.38) !important;
         color: #1f2937 !important;
         box-shadow: 0 18px 38px rgba(31, 41, 55, 0.16) !important;
         backdrop-filter: blur(18px);
     }
     .platform-theme .main-container {
         background: transparent !important;
+        margin-top: 0 !important;
+        padding: 118px 18px 112px !important;
+        gap: 18px !important;
+        box-sizing: border-box;
+    }
+    .platform-theme .passage-panel,
+    .platform-theme .questions-panel,
+    .platform-theme .prompt-panel,
+    .platform-theme .writing-panel {
+        border-radius: 32px !important;
+        border-width: 1px !important;
+        padding: 30px !important;
+        position: relative;
+    }
+    .platform-theme .passage-panel::before,
+    .platform-theme .questions-panel::before,
+    .platform-theme .prompt-panel::before,
+    .platform-theme .writing-panel::before {
+        content: '';
+        position: sticky;
+        top: 0;
+        display: block;
+        height: 6px;
+        width: 96px;
+        border-radius: 999px;
+        margin-bottom: 18px;
+        background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+        opacity: 0.85;
+        z-index: 1;
+    }
+    .platform-theme .resizer {
+        width: 12px !important;
+        border-radius: 999px;
+        background: rgba(255,255,255,0.52) !important;
+        box-shadow: inset 0 0 0 1px rgba(102, 126, 234, 0.16);
     }
     .platform-theme .logo,
     .platform-theme h1,
@@ -467,6 +558,11 @@ function injectThemeStyles(html) {
     .platform-theme .modern-modal-title {
         color: #1f2937 !important;
     }
+    .platform-theme .logo {
+        gap: 18px !important;
+        font-weight: 900 !important;
+        letter-spacing: -0.02em;
+    }
     .platform-theme .timer,
     .platform-theme .part-btn.active,
     .platform-theme .check-btn,
@@ -477,6 +573,19 @@ function injectThemeStyles(html) {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
         color: #fff !important;
         border-color: transparent !important;
+    }
+    .platform-theme .timer {
+        box-shadow: 0 10px 22px rgba(102, 126, 234, 0.24) !important;
+        border-radius: 999px !important;
+        padding: 8px 16px !important;
+    }
+    .platform-theme .part-btn,
+    .platform-theme .theme-btn,
+    .platform-theme .help-btn,
+    .platform-theme .admin-btn,
+    .platform-theme .download-btn,
+    .platform-theme .check-btn {
+        border-radius: 999px !important;
     }
     .platform-theme .theme-btn,
     .platform-theme .help-btn,
@@ -499,6 +608,14 @@ function injectThemeStyles(html) {
         color: #1f2937 !important;
         border-color: rgba(102, 126, 234, 0.28) !important;
     }
+    .platform-theme .nav-circle {
+        box-shadow: 0 8px 18px rgba(102, 126, 234, 0.14);
+    }
+    .platform-theme .nav-circle.flagged {
+        background: linear-gradient(135deg, #f97316 0%, #ef4444 100%) !important;
+        border-color: transparent !important;
+        color: #fff !important;
+    }
     .platform-theme #contextMenu,
     .platform-theme .variant-popup,
     .platform-theme .custom-select-options {
@@ -514,12 +631,47 @@ function injectThemeStyles(html) {
         color: #4338ca !important;
     }
     .platform-theme .start-overlay {
-        background: rgba(245, 247, 250, 0.94) !important;
+        background:
+            radial-gradient(circle at top left, rgba(255,255,255,0.65), transparent 30%),
+            linear-gradient(135deg, rgba(245,247,255,0.98) 0%, rgba(232,239,255,0.94) 100%) !important;
         backdrop-filter: blur(18px);
     }
     .platform-theme .start-overlay h1,
     .platform-theme .start-overlay p {
         color: #1f2937 !important;
+    }
+    .platform-theme .start-btn-big {
+        padding: 16px 32px !important;
+        border-radius: 999px !important;
+        box-shadow: 0 18px 34px rgba(102, 126, 234, 0.28) !important;
+    }
+    .platform-theme .task-card,
+    .platform-theme .tf-question,
+    .platform-theme .multi-choice-question,
+    .platform-theme .short-answer-question,
+    .platform-theme .drag-wrapper,
+    .platform-theme .gap-fill-text,
+    .platform-theme .pick-n-question,
+    .platform-theme .matching-group-block,
+    .platform-theme .diagram-container,
+    .platform-theme .flow-question-block,
+    .platform-theme .map-question-block {
+        border-radius: 24px !important;
+        border: 1px solid rgba(102, 126, 234, 0.12) !important;
+        box-shadow: 0 14px 28px rgba(15, 23, 42, 0.08) !important;
+    }
+    .platform-theme .notes-panel {
+        border-radius: 28px !important;
+    }
+    .platform-theme .notes-area,
+    .platform-theme textarea.student-input {
+        border-radius: 24px !important;
+        box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.04);
+    }
+    .platform-theme span[data-platform-highlight="1"] {
+        box-decoration-break: clone;
+        -webkit-box-decoration-break: clone;
+        border-bottom: 2px solid rgba(15, 23, 42, 0.08);
     }
 </style>`;
 
@@ -530,13 +682,13 @@ function injectWebsiteThemeButton(html, type) {
     if (type === 'writing') {
         return html.replace(
             /(<button class="part-btn theme-btn"[^>]*>.*?<\/button>)/,
-            `$1\n            <button class="part-btn site-theme-btn" data-mode-label="text" onclick="toggleSiteTheme()" style="margin-right:10px; padding:5px 15px; font-size:12px;">Site Theme</button>`
+            `$1\n            <button class="part-btn site-theme-btn" data-off-label="Platform Theme" data-on-label="Builder Theme" onclick="toggleSiteTheme()" style="margin-right:10px;">Platform Theme</button>`
         );
     }
 
     return html.replace(
         /(<button class="theme-btn"[^>]*>.*?<\/button>)/,
-        `$1\n            <button class="theme-btn site-theme-btn" data-tooltip="Website Theme" onclick="toggleSiteTheme()">S</button>`
+        `$1\n            <button class="site-theme-btn" data-off-label="Platform Theme" data-on-label="Builder Theme" onclick="toggleSiteTheme()" style="margin-right:10px;">Platform Theme</button>`
     );
 }
 
@@ -544,16 +696,25 @@ function injectThemeController(html, type) {
     const snippet = `
 <script>
 (function() {
-    const storageKey = 'platform_site_theme_' + (location.pathname || document.title || '${type}');
+    const storageBase = (typeof SESSION_KEY !== 'undefined' && SESSION_KEY)
+        || (typeof SESSION_ID !== 'undefined' && SESSION_ID)
+        || location.pathname
+        || document.title
+        || '${type}';
+    const storageKey = 'platform_site_theme_' + storageBase;
     const siteThemeButton = document.querySelector('.site-theme-btn');
 
     function syncSiteThemeButton() {
         if (!siteThemeButton) return;
         const isActive = document.body.classList.contains('platform-theme');
         siteThemeButton.classList.toggle('active-site-theme', isActive);
-        if (siteThemeButton.dataset.modeLabel === 'text') {
-            siteThemeButton.innerText = isActive ? 'Site On' : 'Site Theme';
-        }
+        siteThemeButton.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+        siteThemeButton.innerText = isActive
+            ? (siteThemeButton.dataset.onLabel || 'Builder Theme')
+            : (siteThemeButton.dataset.offLabel || 'Platform Theme');
+        siteThemeButton.title = isActive
+            ? 'Switch back to the original builder look'
+            : 'Match the test to the platform design';
     }
 
     const originalToggleTheme = typeof toggleTheme === 'function' ? toggleTheme : null;
@@ -610,29 +771,142 @@ function injectReadingHighlightFix(html) {
     const snippet = `
 <script>
 (function() {
-    if (!document.getElementById('contextMenu')) return;
-
     const ctxMenu = document.getElementById('contextMenu');
     const panels = [document.getElementById('passagePanel'), document.getElementById('questionsPanel')].filter(Boolean);
+    if (!ctxMenu || panels.length === 0) return;
+
     let stickyRange = null;
     let stickyOwner = null;
 
-    function captureSelection(owner) {
-        const sel = window.getSelection();
-        if (!sel || sel.rangeCount === 0 || sel.isCollapsed) return false;
-
-        const range = sel.getRangeAt(0).cloneRange();
-        const container = range.commonAncestorContainer.nodeType === 1
+    function getRangeContainer(range) {
+        return range.commonAncestorContainer.nodeType === 1
             ? range.commonAncestorContainer
-            : range.commonAncestorContainer.parentElement;
+            : range.commonAncestorContainer.parentNode;
+    }
 
-        if (owner && container && !owner.contains(container)) return false;
+    function captureSelection(owner) {
+        const selection = window.getSelection();
+        if (!selection || selection.rangeCount === 0 || selection.isCollapsed) return false;
+        const range = selection.getRangeAt(0).cloneRange();
+        const container = getRangeContainer(range);
+        if (!owner || !container || !owner.contains(container)) return false;
 
         stickyRange = range;
-        stickyOwner = owner || stickyOwner;
+        stickyOwner = owner;
         savedRange = range.cloneRange();
-        activeHighlightPanel = stickyOwner;
+        activeHighlightPanel = owner;
         return true;
+    }
+
+    function closeMenu() {
+        ctxMenu.style.display = 'none';
+    }
+
+    function getWorkingRange() {
+        if (stickyRange && typeof stickyRange.cloneRange === 'function') return stickyRange.cloneRange();
+        if (savedRange && typeof savedRange.cloneRange === 'function') return savedRange.cloneRange();
+        return null;
+    }
+
+    function isHighlightNode(node) {
+        return Boolean(node && node.nodeType === 1 && node.matches && node.matches('span[data-platform-highlight="1"]'));
+    }
+
+    function rangeIntersectsNode(range, node) {
+        try {
+            return range.intersectsNode(node);
+        } catch (error) {
+            const nodeRange = document.createRange();
+            nodeRange.selectNodeContents(node);
+            return range.compareBoundaryPoints(Range.END_TO_START, nodeRange) < 0
+                && range.compareBoundaryPoints(Range.START_TO_END, nodeRange) > 0;
+        }
+    }
+
+    function unwrapHighlight(node) {
+        const parent = node.parentNode;
+        if (!parent) return;
+        while (node.firstChild) {
+            parent.insertBefore(node.firstChild, node);
+        }
+        parent.removeChild(node);
+        parent.normalize();
+    }
+
+    function collectHighlights(range) {
+        const items = [];
+        const container = getRangeContainer(range);
+        if (isHighlightNode(container)) items.push(container);
+
+        const root = container && container.nodeType === 1 ? container : container && container.parentNode;
+        if (!root) return items;
+
+        const walker = document.createTreeWalker(root, NodeFilter.SHOW_ELEMENT, {
+            acceptNode(node) {
+                return isHighlightNode(node) && rangeIntersectsNode(range, node)
+                    ? NodeFilter.FILTER_ACCEPT
+                    : NodeFilter.FILTER_SKIP;
+            }
+        });
+
+        let node;
+        while ((node = walker.nextNode())) {
+            items.push(node);
+        }
+
+        if (!items.length && root.closest) {
+            const closest = root.closest('span[data-platform-highlight="1"]');
+            if (closest) items.push(closest);
+        }
+
+        return [...new Set(items)];
+    }
+
+    function resetSelection() {
+        stickyRange = null;
+        stickyOwner = null;
+        savedRange = null;
+        activeHighlightPanel = null;
+        const selection = window.getSelection();
+        if (selection) selection.removeAllRanges();
+        closeMenu();
+    }
+
+    function applyHighlight(colorCode) {
+        const range = getWorkingRange();
+        if (!range || range.collapsed) {
+            closeMenu();
+            return;
+        }
+
+        const span = document.createElement('span');
+        span.dataset.platformHighlight = '1';
+        span.style.backgroundColor = colorCode;
+        span.style.borderRadius = '4px';
+        span.style.padding = '1px 0';
+
+        try {
+            range.surroundContents(span);
+        } catch (error) {
+            const fragment = range.extractContents();
+            span.appendChild(fragment);
+            range.insertNode(span);
+        }
+
+        if (typeof saveState === 'function') saveState();
+        resetSelection();
+    }
+
+    function clearHighlights() {
+        const range = getWorkingRange();
+        if (!range) {
+            closeMenu();
+            return;
+        }
+
+        collectHighlights(range).forEach(unwrapHighlight);
+        if (typeof saveState === 'function') saveState();
+        resetSelection();
     }
 
     panels.forEach((panel) => {
@@ -640,85 +914,72 @@ function injectReadingHighlightFix(html) {
             panel.addEventListener(eventName, () => setTimeout(() => captureSelection(panel), 0), true);
         });
 
+        panel.addEventListener('scroll', closeMenu, { passive: true });
         panel.addEventListener('contextmenu', (event) => {
             const hasSelection = captureSelection(panel) || (stickyRange && stickyOwner === panel);
-            if (hasSelection) {
-                event.preventDefault();
-                savedRange = (stickyRange || savedRange).cloneRange();
-                activeHighlightPanel = stickyOwner || panel;
-                ctxMenu.style.display = 'block';
-                ctxMenu.style.left = event.clientX + 'px';
-                ctxMenu.style.top = event.clientY + 'px';
-            }
+            if (!hasSelection) return;
+
+            event.preventDefault();
+            ctxMenu.style.display = 'block';
+            ctxMenu.style.left = event.clientX + 'px';
+            ctxMenu.style.top = event.clientY + 'px';
         }, true);
     });
 
-    function getWorkingRange() {
-        if (savedRange && typeof savedRange.cloneRange === 'function') return savedRange.cloneRange();
-        if (stickyRange && typeof stickyRange.cloneRange === 'function') return stickyRange.cloneRange();
-        return null;
+    document.addEventListener('click', (event) => {
+        if (!ctxMenu.contains(event.target)) closeMenu();
+    });
+
+    const originalSaveState = typeof saveState === 'function' ? saveState : null;
+    if (originalSaveState && !window.__platformReadingStatePatched) {
+        const patchedSaveState = function(...args) {
+            const result = originalSaveState.apply(this, args);
+            try {
+                if (typeof SESSION_KEY !== 'undefined') {
+                    const rawState = localStorage.getItem(SESSION_KEY);
+                    const questionsPanel = document.getElementById('questionsPanel');
+                    if (rawState && questionsPanel) {
+                        const state = JSON.parse(rawState);
+                        state.questionsHTML = questionsPanel.innerHTML;
+                        localStorage.setItem(SESSION_KEY, JSON.stringify(state));
+                    }
+                }
+            } catch (error) {}
+            return result;
+        };
+
+        saveState = patchedSaveState;
+        window.saveState = patchedSaveState;
+
+        const originalRestoreState = typeof restoreState === 'function' ? restoreState : null;
+        if (originalRestoreState) {
+            const patchedRestoreState = function(...args) {
+                let questionsHTML = null;
+                try {
+                    if (typeof SESSION_KEY !== 'undefined') {
+                        const rawState = localStorage.getItem(SESSION_KEY);
+                        if (rawState) {
+                            questionsHTML = JSON.parse(rawState).questionsHTML || null;
+                        }
+                    }
+                } catch (error) {}
+
+                const result = originalRestoreState.apply(this, args);
+                if (questionsHTML && document.getElementById('questionsPanel')) {
+                    document.getElementById('questionsPanel').innerHTML = questionsHTML;
+                }
+                return result;
+            };
+
+            restoreState = patchedRestoreState;
+            window.restoreState = patchedRestoreState;
+        }
+
+        window.__platformReadingStatePatched = true;
     }
 
-    function wrapRange(range, colorCode) {
-        const span = document.createElement('span');
-        span.style.backgroundColor = colorCode;
-        span.style.borderRadius = '3px';
-        try {
-            range.surroundContents(span);
-        } catch (error) {
-            const extracted = range.extractContents();
-            span.appendChild(extracted);
-            range.insertNode(span);
-        }
-    }
-
-    performHighlight = function(colorCode) {
-        const range = getWorkingRange();
-        if (!range || range.collapsed) {
-            ctxMenu.style.display = 'none';
-            return;
-        }
-
-        const selection = window.getSelection();
-        selection.removeAllRanges();
-        selection.addRange(range);
-        wrapRange(selection.getRangeAt(0), colorCode);
-        selection.removeAllRanges();
-        savedRange = null;
-        stickyRange = null;
-        stickyOwner = null;
-        activeHighlightPanel = null;
-        if (typeof saveState === 'function') saveState();
-        ctxMenu.style.display = 'none';
-    };
-
-    clearHighlight = function() {
-        const range = getWorkingRange();
-        if (!range || range.collapsed) {
-            ctxMenu.style.display = 'none';
-            return;
-        }
-
-        const selection = window.getSelection();
-        selection.removeAllRanges();
-        selection.addRange(range);
-
-        let parent = selection.getRangeAt(0).commonAncestorContainer;
-        if (parent.nodeType === 3) parent = parent.parentNode;
-        if (parent && parent.tagName && parent.tagName.toLowerCase() === 'span' && parent.style.backgroundColor) {
-            const text = document.createTextNode(parent.textContent);
-            parent.parentNode.replaceChild(text, parent);
-        }
-
-        selection.removeAllRanges();
-        savedRange = null;
-        stickyRange = null;
-        stickyOwner = null;
-        activeHighlightPanel = null;
-        if (typeof saveState === 'function') saveState();
-        ctxMenu.style.display = 'none';
-    };
-
+    performHighlight = function(colorCode) { applyHighlight(colorCode); };
+    clearHighlight = function() { clearHighlights(); };
     window.performHighlight = performHighlight;
     window.clearHighlight = clearHighlight;
 })();
@@ -731,119 +992,470 @@ function injectListeningHighlightFix(html) {
     const snippet = `
 <script>
 (function() {
-    if (!document.getElementById('contextMenu')) return;
-
     const ctxMenu = document.getElementById('contextMenu');
     const questionsPanel = document.getElementById('questionsPanel');
-    if (!questionsPanel) return;
+    if (!ctxMenu || !questionsPanel) return;
 
     let stickyRange = null;
 
-    function captureSelection() {
-        const sel = window.getSelection();
-        if (!sel || sel.rangeCount === 0 || sel.isCollapsed) return false;
-
-        const range = sel.getRangeAt(0).cloneRange();
-        const container = range.commonAncestorContainer.nodeType === 1
+    function getRangeContainer(range) {
+        return range.commonAncestorContainer.nodeType === 1
             ? range.commonAncestorContainer
-            : range.commonAncestorContainer.parentElement;
+            : range.commonAncestorContainer.parentNode;
+    }
 
-        if (container && !questionsPanel.contains(container)) return false;
+    function captureSelection() {
+        const selection = window.getSelection();
+        if (!selection || selection.rangeCount === 0 || selection.isCollapsed) return false;
+        const range = selection.getRangeAt(0).cloneRange();
+        const container = getRangeContainer(range);
+        if (!container || !questionsPanel.contains(container)) return false;
 
         stickyRange = range;
         savedRange = range.cloneRange();
         return true;
     }
 
+    function closeMenu() {
+        ctxMenu.style.display = 'none';
+    }
+
+    function getWorkingRange() {
+        if (stickyRange && typeof stickyRange.cloneRange === 'function') return stickyRange.cloneRange();
+        if (savedRange && typeof savedRange.cloneRange === 'function') return savedRange.cloneRange();
+        return null;
+    }
+
+    function isHighlightNode(node) {
+        return Boolean(node && node.nodeType === 1 && node.matches && node.matches('span[data-platform-highlight="1"]'));
+    }
+
+    function rangeIntersectsNode(range, node) {
+        try {
+            return range.intersectsNode(node);
+        } catch (error) {
+            const nodeRange = document.createRange();
+            nodeRange.selectNodeContents(node);
+            return range.compareBoundaryPoints(Range.END_TO_START, nodeRange) < 0
+                && range.compareBoundaryPoints(Range.START_TO_END, nodeRange) > 0;
+        }
+    }
+
+    function unwrapHighlight(node) {
+        const parent = node.parentNode;
+        if (!parent) return;
+        while (node.firstChild) {
+            parent.insertBefore(node.firstChild, node);
+        }
+        parent.removeChild(node);
+        parent.normalize();
+    }
+
+    function collectHighlights(range) {
+        const items = [];
+        const container = getRangeContainer(range);
+        if (isHighlightNode(container)) items.push(container);
+
+        const root = container && container.nodeType === 1 ? container : container && container.parentNode;
+        if (!root) return items;
+
+        const walker = document.createTreeWalker(root, NodeFilter.SHOW_ELEMENT, {
+            acceptNode(node) {
+                return isHighlightNode(node) && rangeIntersectsNode(range, node)
+                    ? NodeFilter.FILTER_ACCEPT
+                    : NodeFilter.FILTER_SKIP;
+            }
+        });
+
+        let node;
+        while ((node = walker.nextNode())) {
+            items.push(node);
+        }
+
+        if (!items.length && root.closest) {
+            const closest = root.closest('span[data-platform-highlight="1"]');
+            if (closest) items.push(closest);
+        }
+
+        return [...new Set(items)];
+    }
+
+    function resetSelection() {
+        stickyRange = null;
+        savedRange = null;
+        const selection = window.getSelection();
+        if (selection) selection.removeAllRanges();
+        closeMenu();
+    }
+
+    function applyHighlight(colorCode) {
+        const range = getWorkingRange();
+        if (!range || range.collapsed) {
+            closeMenu();
+            return;
+        }
+
+        const span = document.createElement('span');
+        span.dataset.platformHighlight = '1';
+        span.style.backgroundColor = colorCode;
+        span.style.borderRadius = '4px';
+        span.style.padding = '1px 0';
+
+        try {
+            range.surroundContents(span);
+        } catch (error) {
+            const fragment = range.extractContents();
+            span.appendChild(fragment);
+            range.insertNode(span);
+        }
+
+        if (typeof saveState === 'function') saveState();
+        resetSelection();
+    }
+
+    function clearHighlights() {
+        const range = getWorkingRange();
+        if (!range) {
+            closeMenu();
+            return;
+        }
+
+        collectHighlights(range).forEach(unwrapHighlight);
+        if (typeof saveState === 'function') saveState();
+        resetSelection();
+    }
+
     ['mouseup', 'keyup', 'touchend'].forEach((eventName) => {
         questionsPanel.addEventListener(eventName, () => setTimeout(captureSelection, 0), true);
     });
 
+    questionsPanel.addEventListener('scroll', closeMenu, { passive: true });
     questionsPanel.addEventListener('contextmenu', (event) => {
         const hasSelection = captureSelection() || stickyRange;
-        if (hasSelection) {
-            event.preventDefault();
-            savedRange = (stickyRange || savedRange).cloneRange();
-            ctxMenu.style.display = 'block';
-            ctxMenu.style.left = event.clientX + 'px';
-            ctxMenu.style.top = event.clientY + 'px';
-        }
+        if (!hasSelection) return;
+
+        event.preventDefault();
+        ctxMenu.style.display = 'block';
+        ctxMenu.style.left = event.clientX + 'px';
+        ctxMenu.style.top = event.clientY + 'px';
     }, true);
 
-    function getWorkingRange() {
-        if (savedRange && typeof savedRange.cloneRange === 'function') return savedRange.cloneRange();
-        if (stickyRange && typeof stickyRange.cloneRange === 'function') return stickyRange.cloneRange();
-        return null;
-    }
+    document.addEventListener('click', (event) => {
+        if (!ctxMenu.contains(event.target)) closeMenu();
+    });
 
-    function wrapRange(range, colorCode) {
-        const span = document.createElement('span');
-        span.style.backgroundColor = colorCode;
-        span.style.borderRadius = '3px';
-        try {
-            range.surroundContents(span);
-        } catch (error) {
-            if (document.queryCommandSupported && document.queryCommandSupported('BackColor')) {
-                document.body.contentEditable = 'true';
-                document.execCommand('BackColor', false, colorCode);
-                document.body.contentEditable = 'false';
-                return;
-            }
-            const extracted = range.extractContents();
-            span.appendChild(extracted);
-            range.insertNode(span);
-        }
-    }
-
-    performHighlight = function(colorCode) {
-        const range = getWorkingRange();
-        if (!range || range.collapsed) {
-            ctxMenu.style.display = 'none';
-            return;
-        }
-
-        const selection = window.getSelection();
-        selection.removeAllRanges();
-        selection.addRange(range);
-        wrapRange(selection.getRangeAt(0), colorCode);
-        selection.removeAllRanges();
-        savedRange = null;
-        stickyRange = null;
-        if (typeof saveState === 'function') saveState();
-        ctxMenu.style.display = 'none';
-    };
-
-    clearHighlight = function() {
-        const range = getWorkingRange();
-        if (!range || range.collapsed) {
-            ctxMenu.style.display = 'none';
-            return;
-        }
-
-        const selection = window.getSelection();
-        selection.removeAllRanges();
-        selection.addRange(range);
-        let parent = selection.getRangeAt(0).commonAncestorContainer;
-        if (parent.nodeType === 3) parent = parent.parentNode;
-
-        if (parent && parent.tagName && parent.tagName.toLowerCase() === 'span' && parent.style.backgroundColor) {
-            const text = document.createTextNode(parent.textContent);
-            parent.parentNode.replaceChild(text, parent);
-        } else if (document.queryCommandSupported && document.queryCommandSupported('BackColor')) {
-            document.body.contentEditable = 'true';
-            document.execCommand('BackColor', false, 'transparent');
-            document.body.contentEditable = 'false';
-        }
-
-        selection.removeAllRanges();
-        savedRange = null;
-        stickyRange = null;
-        if (typeof saveState === 'function') saveState();
-        ctxMenu.style.display = 'none';
-    };
-
+    performHighlight = function(colorCode) { applyHighlight(colorCode); };
+    clearHighlight = function() { clearHighlights(); };
     window.performHighlight = performHighlight;
     window.clearHighlight = clearHighlight;
+})();
+</script>`;
+
+    return html.replace('</body>', `${snippet}\n</body>`);
+}
+
+function injectReadingSubmissionHook(html, testDoc) {
+    const safeTestId = escapeForBuilderValue(testDoc._id);
+    const snippet = `
+<script>
+(function() {
+    const syncKey = 'platform_submission_sync_' + ((typeof SESSION_KEY !== 'undefined' && SESSION_KEY) || 'reading_${safeTestId}');
+
+    function canSync() {
+        return typeof fetch === 'function'
+            && typeof location !== 'undefined'
+            && /^https?:$/i.test(location.protocol || '');
+    }
+
+    function wasSynced(signature) {
+        try {
+            return localStorage.getItem(syncKey) === signature;
+        } catch (error) {
+            return false;
+        }
+    }
+
+    function rememberSync(signature) {
+        try {
+            localStorage.setItem(syncKey, signature);
+        } catch (error) {}
+    }
+
+    function buildPayload() {
+        const scoreText = (document.getElementById('scoreValue')?.innerText || '').trim();
+        const match = scoreText.match(/(\\d+)\\s*\\/\\s*(\\d+)/);
+        if (!match) return null;
+
+        const score = Number(match[1]);
+        const totalQuestions = Number(match[2]);
+        const band = (document.getElementById('bandValue')?.innerText || '').replace(/^Band:\\s*/i, '').trim();
+        const studentName = (document.getElementById('studentName')?.value || '').trim() || 'Student';
+        const timeRemainingText = (document.getElementById('timerDisplay')?.innerText || '').trim();
+        const summaryText = (document.getElementById('modalTitle')?.innerText || '').trim();
+        const resultSignature = ['reading', '${safeTestId}', studentName, score, totalQuestions, band, timeRemainingText].join(':');
+
+        return {
+            testId: '${safeTestId}',
+            type: 'reading',
+            studentName,
+            score,
+            totalQuestions,
+            percentage: totalQuestions > 0 ? Math.round((score / totalQuestions) * 100) : null,
+            band,
+            timeRemainingText,
+            summaryText,
+            incorrectSummary: '',
+            resultSignature,
+            details: {
+                scoreText,
+                summaryText
+            }
+        };
+    }
+
+    function syncSubmission() {
+        if (!canSync()) return;
+        const payload = buildPayload();
+        if (!payload || !payload.resultSignature || wasSynced(payload.resultSignature)) return;
+
+        fetch('/api/test-submissions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'same-origin',
+            body: JSON.stringify(payload)
+        })
+            .then((response) => response.ok ? response.json() : null)
+            .then((data) => {
+                if (data && data.success) {
+                    rememberSync(payload.resultSignature);
+                }
+            })
+            .catch(() => {});
+    }
+
+    const originalCheckAnswers = typeof checkAnswers === 'function' ? checkAnswers : null;
+    if (originalCheckAnswers) {
+        const wrappedCheckAnswers = function(...args) {
+            const result = originalCheckAnswers.apply(this, args);
+            setTimeout(syncSubmission, 350);
+            return result;
+        };
+
+        checkAnswers = wrappedCheckAnswers;
+        window.checkAnswers = wrappedCheckAnswers;
+    }
+
+    window.addEventListener('load', () => {
+        setTimeout(syncSubmission, 1200);
+    });
+})();
+</script>`;
+
+    return html.replace('</body>', `${snippet}\n</body>`);
+}
+
+function injectListeningSubmissionHook(html, testDoc) {
+    const safeTestId = escapeForBuilderValue(testDoc._id);
+    const snippet = `
+<script>
+(function() {
+    const syncKey = 'platform_submission_sync_' + ((typeof SESSION_KEY !== 'undefined' && SESSION_KEY) || 'listening_${safeTestId}');
+
+    function canSync() {
+        return typeof fetch === 'function'
+            && typeof location !== 'undefined'
+            && /^https?:$/i.test(location.protocol || '');
+    }
+
+    function wasSynced(signature) {
+        try {
+            return localStorage.getItem(syncKey) === signature;
+        } catch (error) {
+            return false;
+        }
+    }
+
+    function rememberSync(signature) {
+        try {
+            localStorage.setItem(syncKey, signature);
+        } catch (error) {}
+    }
+
+    function buildPayload() {
+        const scoreText = (document.getElementById('scoreValue')?.innerText || '').trim();
+        const match = scoreText.match(/(\\d+)\\s*\\/\\s*(\\d+)/);
+        if (!match) return null;
+
+        const score = Number(match[1]);
+        const totalQuestions = Number(match[2]);
+        const band = (document.getElementById('bandValue')?.innerText || '').replace(/^Band:\\s*/i, '').trim();
+        const studentName = (document.getElementById('studentName')?.value || '').trim() || 'Student';
+        const timeRemainingText = (document.getElementById('timerDisplay')?.innerText || '').trim();
+        const summaryText = (document.getElementById('modalTitle')?.innerText || '').trim();
+        const resultSignature = ['listening', '${safeTestId}', studentName, score, totalQuestions, band, timeRemainingText].join(':');
+
+        return {
+            testId: '${safeTestId}',
+            type: 'listening',
+            studentName,
+            score,
+            totalQuestions,
+            percentage: totalQuestions > 0 ? Math.round((score / totalQuestions) * 100) : null,
+            band,
+            timeRemainingText,
+            summaryText,
+            incorrectSummary: '',
+            resultSignature,
+            details: {
+                scoreText,
+                summaryText
+            }
+        };
+    }
+
+    function syncSubmission() {
+        if (!canSync()) return;
+        const payload = buildPayload();
+        if (!payload || !payload.resultSignature || wasSynced(payload.resultSignature)) return;
+
+        fetch('/api/test-submissions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'same-origin',
+            body: JSON.stringify(payload)
+        })
+            .then((response) => response.ok ? response.json() : null)
+            .then((data) => {
+                if (data && data.success) {
+                    rememberSync(payload.resultSignature);
+                }
+            })
+            .catch(() => {});
+    }
+
+    const originalCheckAnswers = typeof checkAnswers === 'function' ? checkAnswers : null;
+    if (originalCheckAnswers) {
+        const wrappedCheckAnswers = function(...args) {
+            const result = originalCheckAnswers.apply(this, args);
+            setTimeout(syncSubmission, 350);
+            return result;
+        };
+
+        checkAnswers = wrappedCheckAnswers;
+        window.checkAnswers = wrappedCheckAnswers;
+    }
+
+    window.addEventListener('load', () => {
+        setTimeout(syncSubmission, 1200);
+    });
+})();
+</script>`;
+
+    return html.replace('</body>', `${snippet}\n</body>`);
+}
+
+function injectWritingSubmissionHook(html, testDoc) {
+    const safeTestId = escapeForBuilderValue(testDoc._id);
+    const snippet = `
+<script>
+(function() {
+    const syncKey = 'platform_submission_sync_' + ((typeof SESSION_ID !== 'undefined' && SESSION_ID) || 'writing_${safeTestId}');
+
+    function canSync() {
+        return typeof fetch === 'function'
+            && typeof location !== 'undefined'
+            && /^https?:$/i.test(location.protocol || '');
+    }
+
+    function wasSynced(signature) {
+        try {
+            return localStorage.getItem(syncKey) === signature;
+        } catch (error) {
+            return false;
+        }
+    }
+
+    function rememberSync(signature) {
+        try {
+            localStorage.setItem(syncKey, signature);
+        } catch (error) {}
+    }
+
+    function parseCount(id, fallbackId) {
+        const primary = document.getElementById(id);
+        const fallback = document.getElementById(fallbackId);
+        const source = (primary?.innerText || fallback?.innerText || '0').trim();
+        const value = Number(source);
+        return Number.isFinite(value) ? value : 0;
+    }
+
+    function buildPayload() {
+        const submitted = typeof isSubmitted !== 'undefined' ? isSubmitted : false;
+        const modalVisible = document.getElementById('resultModal')?.style.display === 'flex';
+        if (!submitted && !modalVisible) return null;
+
+        const studentName = (document.getElementById('studentName')?.value || '').trim() || 'Student';
+        const task1 = document.getElementById('view_t1')?.innerText || document.getElementById('input_task1')?.value || '';
+        const task2 = document.getElementById('view_t2')?.innerText || document.getElementById('input_task2')?.value || '';
+        const wordCount1 = parseCount('final_wc1', 'wc_1');
+        const wordCount2 = parseCount('final_wc2', 'wc_2');
+        const timeRemainingText = (document.getElementById('timerDisplay')?.innerText || '').trim();
+        const resultSignature = ['writing', '${safeTestId}', studentName, wordCount1, wordCount2, task1.length, task2.length].join(':');
+
+        return {
+            testId: '${safeTestId}',
+            type: 'writing',
+            studentName,
+            wordCount1,
+            wordCount2,
+            timeRemainingText,
+            task1,
+            task2,
+            resultSignature,
+            details: {
+                wordCount1,
+                wordCount2,
+                task1Preview: task1.slice(0, 200),
+                task2Preview: task2.slice(0, 200)
+            }
+        };
+    }
+
+    function syncSubmission() {
+        if (!canSync()) return;
+        const payload = buildPayload();
+        if (!payload || !payload.resultSignature || wasSynced(payload.resultSignature)) return;
+
+        fetch('/api/test-submissions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'same-origin',
+            body: JSON.stringify(payload)
+        })
+            .then((response) => response.ok ? response.json() : null)
+            .then((data) => {
+                if (data && data.success) {
+                    rememberSync(payload.resultSignature);
+                }
+            })
+            .catch(() => {});
+    }
+
+    const originalSubmitTest = typeof submitTest === 'function' ? submitTest : null;
+    if (originalSubmitTest) {
+        const wrappedSubmitTest = function(...args) {
+            const result = originalSubmitTest.apply(this, args);
+            setTimeout(syncSubmission, 500);
+            return result;
+        };
+
+        submitTest = wrappedSubmitTest;
+        window.submitTest = wrappedSubmitTest;
+    }
+
+    window.addEventListener('load', () => {
+        setTimeout(syncSubmission, 1200);
+    });
 })();
 </script>`;
 
@@ -875,7 +1487,8 @@ function generateReadingHtml(testDoc, parsedContent) {
     html = injectWebsiteThemeButton(html, 'reading');
     html = injectThemeController(html, 'reading');
     html = injectReadingHighlightFix(html);
-    return html;
+    html = injectReadingSubmissionHook(html, testDoc);
+    return html.trim();
 }
 
 function generateListeningHtml(testDoc, parsedContent) {
@@ -902,7 +1515,8 @@ function generateListeningHtml(testDoc, parsedContent) {
     generatedHtml = injectWebsiteThemeButton(generatedHtml, 'listening');
     generatedHtml = injectThemeController(generatedHtml, 'listening');
     generatedHtml = injectListeningHighlightFix(generatedHtml);
-    return generatedHtml;
+    generatedHtml = injectListeningSubmissionHook(generatedHtml, testDoc);
+    return generatedHtml.trim();
 }
 
 function generateWritingHtml(testDoc, parsedContent, options = {}) {
@@ -930,6 +1544,7 @@ function generateWritingHtml(testDoc, parsedContent, options = {}) {
     generatedHtml = injectThemeStyles(generatedHtml);
     generatedHtml = injectWebsiteThemeButton(generatedHtml, 'writing');
     generatedHtml = injectThemeController(generatedHtml, 'writing');
+    generatedHtml = injectWritingSubmissionHook(generatedHtml, testDoc);
     return generatedHtml.trim();
 }
 function generateHTMLFromTest(testDoc, options = {}) {

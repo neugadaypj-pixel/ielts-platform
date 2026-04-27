@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -6,288 +6,403 @@
     <title>Admin Dashboard</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        
+
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", sans-serif;
-            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            font-family: "Segoe UI", "Trebuchet MS", sans-serif;
+            min-height: 100vh;
             color: #1f2937;
-            padding: 20px;
+            background:
+                radial-gradient(circle at top left, rgba(255,255,255,0.45), transparent 30%),
+                linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            padding: 24px;
         }
-        
-        @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        
-        .container { max-width: 1400px; margin: 0 auto; }
-        
+
+        .container {
+            max-width: 1360px;
+            margin: 0 auto;
+        }
+
         .header {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(20px);
-            padding: 32px;
-            border-radius: 24px;
-            margin-bottom: 32px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
             display: flex;
             justify-content: space-between;
+            gap: 18px;
             align-items: center;
+            padding: 30px;
+            border-radius: 30px;
+            background: rgba(255,255,255,0.92);
+            backdrop-filter: blur(18px);
+            box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
+            margin-bottom: 24px;
         }
-        
-        h1 {
-            font-size: 2rem;
-            font-weight: 800;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            margin: 0;
+
+        .header h1 {
+            font-size: 2.3rem;
+            font-weight: 900;
+            letter-spacing: -0.04em;
+            margin-bottom: 10px;
         }
-        
-        .header-actions { display: flex; gap: 12px; align-items: center; }
-        
+
+        .header p {
+            color: #64748b;
+            line-height: 1.6;
+        }
+
+        .header-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
         .btn {
-            padding: 12px 24px;
-            border: none;
-            border-radius: 12px;
-            font-weight: 700;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            text-decoration: none;
             display: inline-flex;
             align-items: center;
+            justify-content: center;
             gap: 8px;
-            font-size: 0.95rem;
+            text-decoration: none;
+            border: none;
+            border-radius: 999px;
+            padding: 12px 18px;
+            font-weight: 800;
+            cursor: pointer;
+            transition: transform 0.25s ease, box-shadow 0.25s ease;
         }
-        
+
+        .btn:hover { transform: translateY(-2px); }
+
         .btn-primary {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
-            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+            box-shadow: 0 12px 26px rgba(102, 126, 234, 0.26);
         }
-        
-        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 12px 28px rgba(102, 126, 234, 0.4); }
-        
+
         .btn-success {
             background: linear-gradient(135deg, #10b981 0%, #059669 100%);
             color: white;
-            box-shadow: 0 8px 20px rgba(16, 185, 129, 0.3);
+            box-shadow: 0 12px 26px rgba(16, 185, 129, 0.24);
         }
-        
-        .btn-success:hover { transform: translateY(-2px); box-shadow: 0 12px 28px rgba(16, 185, 129, 0.4); }
-        
+
+        .btn-secondary {
+            background: white;
+            color: #334155;
+            border: 1px solid #dbe3f1;
+            box-shadow: 0 8px 18px rgba(15, 23, 42, 0.05);
+        }
+
         .btn-danger {
             background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
             color: white;
-            padding: 8px 16px;
-            font-size: 0.85rem;
-            box-shadow: 0 6px 16px rgba(239, 68, 68, 0.3);
+            box-shadow: 0 10px 20px rgba(239, 68, 68, 0.24);
         }
-        
-        .btn-danger:hover { transform: translateY(-2px); box-shadow: 0 10px 24px rgba(239, 68, 68, 0.4); }
-        
-        .logout-link {
-            color: #ef4444;
-            text-decoration: none;
-            font-weight: 700;
-            font-size: 0.95rem;
-            transition: all 0.3s ease;
-        }
-        
-        .logout-link:hover { transform: translateX(-4px); }
-        
+
         .section {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(20px);
-            padding: 32px;
-            border-radius: 24px;
-            margin-bottom: 32px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
-            animation: slideUp 0.6s ease-out;
+            padding: 26px;
+            border-radius: 28px;
+            background: rgba(255,255,255,0.92);
+            backdrop-filter: blur(16px);
+            box-shadow: 0 18px 38px rgba(15, 23, 42, 0.08);
+            margin-bottom: 22px;
         }
-        
-        h2 {
-            font-size: 1.5rem;
-            font-weight: 800;
-            color: #1f2937;
-            margin-bottom: 24px;
-            padding-bottom: 12px;
-            border-bottom: 3px solid #667eea;
-            display: inline-block;
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            gap: 16px;
+            align-items: flex-start;
+            margin-bottom: 18px;
         }
-        
-        .form-row { display: grid; grid-template-columns: 1fr 1fr auto; gap: 12px; margin-bottom: 16px; }
-        
-        select, input[type="text"] {
-            padding: 12px 16px;
-            border: 2px solid #e5e7eb;
-            border-radius: 12px;
-            font-size: 0.95rem;
-            transition: all 0.3s ease;
-            font-family: inherit;
+
+        .section-header h2 {
+            font-size: 1.45rem;
+            font-weight: 900;
+            margin-bottom: 8px;
+        }
+
+        .section-header p {
+            color: #64748b;
+            line-height: 1.6;
+        }
+
+        .assign-form {
+            display: grid;
+            grid-template-columns: 1fr 1fr auto;
+            gap: 12px;
+        }
+
+        input[type="text"], select {
+            width: 100%;
+            padding: 12px 14px;
+            border-radius: 16px;
+            border: 1px solid #cbd5e1;
             background: white;
+            font-size: 0.95rem;
+            font-family: inherit;
         }
-        
+
         select:focus, input:focus {
             outline: none;
             border-color: #667eea;
-            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.12);
         }
-        
+
+        .library-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 18px;
+        }
+
+        .library-column {
+            padding: 18px;
+            border-radius: 24px;
+            border: 1px solid #e2e8f0;
+            background: linear-gradient(180deg, rgba(248,250,252,0.92) 0%, rgba(241,245,249,0.78) 100%);
+        }
+
+        .reading { border-top: 6px solid #3b82f6; }
+        .listening { border-top: 6px solid #10b981; }
+        .writing { border-top: 6px solid #f97316; }
+
+        .type-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 14px;
+        }
+
+        .type-header h3 {
+            font-size: 1.12rem;
+            font-weight: 900;
+        }
+
+        .badge {
+            padding: 6px 10px;
+            border-radius: 999px;
+            font-size: 0.8rem;
+            font-weight: 800;
+            background: white;
+            border: 1px solid #dbe3f1;
+            color: #334155;
+        }
+
+        .test-list {
+            display: grid;
+            gap: 14px;
+        }
+
+        .test-card {
+            padding: 18px;
+            border-radius: 22px;
+            background: white;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+        }
+
+        .test-card h4 {
+            font-size: 1.06rem;
+            font-weight: 900;
+            margin-bottom: 6px;
+        }
+
+        .test-card p {
+            color: #64748b;
+            line-height: 1.55;
+            font-size: 0.92rem;
+        }
+
+        .action-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 14px;
+        }
+
+        .table-wrap {
+            overflow-x: auto;
+        }
+
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 20px;
         }
-        
-        th {
-            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.05) 100%);
-            padding: 16px;
+
+        th, td {
             text-align: left;
-            font-weight: 700;
-            color: #374151;
-            border-bottom: 2px solid #e5e7eb;
-            font-size: 0.9rem;
+            padding: 16px 14px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        th {
+            font-size: 0.84rem;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
+            letter-spacing: 0.04em;
+            color: #64748b;
         }
-        
+
         td {
-            padding: 16px;
-            border-bottom: 1px solid #e5e7eb;
-            color: #6b7280;
+            color: #475569;
+            vertical-align: middle;
         }
-        
-        tr:hover { background: rgba(102, 126, 234, 0.02); }
-        
-        .action-cell { display: flex; gap: 8px; }
-        
-        .empty-state {
-            text-align: center;
-            padding: 40px;
-            color: #9ca3af;
+
+        .empty {
+            padding: 18px;
+            border-radius: 18px;
+            background: rgba(255,255,255,0.75);
+            border: 1px dashed #cbd5e1;
+            color: #64748b;
         }
-        
-        .empty-state svg {
-            font-size: 3rem;
-            margin-bottom: 16px;
+
+        @media (max-width: 1180px) {
+            .library-grid { grid-template-columns: 1fr; }
+        }
+
+        @media (max-width: 860px) {
+            .assign-form { grid-template-columns: 1fr; }
+            .header { flex-direction: column; align-items: flex-start; }
         }
     </style>
     <script>
         function deleteItem(type, id, name) {
-            if (!confirm(`Are you sure you want to delete ${type} "${name}"? This cannot be undone.`)) {
-                return;
-            }
-            
+            if (!confirm(`Are you sure you want to delete ${type} "${name}"? This cannot be undone.`)) return;
             fetch(`/delete-${type}/${id}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ redirect: '/admin' })
             })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    alert(data.message);
-                    window.location.href = '/admin';
-                } else {
-                    alert('Error: ' + data.message);
-                }
-            })
-            .catch(err => alert('Error: ' + err.message));
+                .then((response) => response.json())
+                .then((data) => {
+                    if (data.success) {
+                        alert(data.message);
+                        window.location.href = data.redirect || '/admin';
+                    } else {
+                        alert('Error: ' + data.message);
+                    }
+                })
+                .catch((error) => alert('Error: ' + error.message));
         }
     </script>
 </head>
 <body>
     <div class="container">
-        <div class="header">
-            <h1>🛡️ Admin Control Center</h1>
+        <header class="header">
+            <div>
+                <h1>Admin Control Center</h1>
+                <p>Create builder-based tests, group them by skill area, and grant teachers access to the exact student-facing versions.</p>
+            </div>
             <div class="header-actions">
                 <a href="/create-test" class="btn btn-primary">+ Create Test</a>
                 <a href="/admin/add-teacher" class="btn btn-success">+ Add Teacher</a>
-                <a href="/logout" class="logout-link">Logout →</a>
+                <a href="/logout" class="btn btn-secondary">Logout</a>
             </div>
-        </div>
+        </header>
 
-        <div class="section">
-            <h2>Assign Tests to Teachers</h2>
-            <form action="/admin/assign-test" method="POST">
-                <div class="form-row">
-                    <select name="testId" required>
-                        <option value="">Select a Test</option>
-                        <% tests.forEach(test => { %>
-                            <option value="<%= test._id %>"><%= test.title %></option>
-                        <% }) %>
-                    </select>
-                    <select name="teacherId" required>
-                        <option value="">Select a Teacher</option>
-                        <% teachers.forEach(teacher => { %>
-                            <option value="<%= teacher._id %>"><%= teacher.username %></option>
-                        <% }) %>
-                    </select>
-                    <button type="submit" class="btn btn-primary">Grant Access</button>
+        <section class="section">
+            <div class="section-header">
+                <div>
+                    <h2>Assign Tests To Teachers</h2>
+                    <p>Teachers can preview and download the same HTML their students will use once you grant access here.</p>
                 </div>
+            </div>
+            <form action="/admin/assign-test" method="POST" class="assign-form">
+                <select name="testId" required>
+                    <option value="">Select a test</option>
+                    <% tests.forEach(test => { %>
+                        <option value="<%= test._id %>"><%= test.title %> (<%= test.type %>)</option>
+                    <% }) %>
+                </select>
+                <select name="teacherId" required>
+                    <option value="">Select a teacher</option>
+                    <% teachers.forEach(teacher => { %>
+                        <option value="<%= teacher._id %>"><%= teacher.username %></option>
+                    <% }) %>
+                </select>
+                <button type="submit" class="btn btn-primary">Grant Access</button>
             </form>
-        </div>
+        </section>
 
-        <div class="section">
-            <h2>📝 Existing Tests</h2>
-            <% if(tests.length === 0) { %>
-                <div class="empty-state">
-                    <div style="font-size: 2rem;">📭</div>
-                    <p>No tests created yet. <a href="/create-test" style="color: #667eea; font-weight: 700;">Create one now</a></p>
+        <section class="section">
+            <div class="section-header">
+                <div>
+                    <h2>Tests By Type</h2>
+                    <p>The test library is grouped by reading, listening, and writing so builders and exports stay easy to manage.</p>
+                </div>
+            </div>
+
+            <% const typeConfig = [
+                { key: 'reading', label: 'Reading', className: 'reading' },
+                { key: 'listening', label: 'Listening', className: 'listening' },
+                { key: 'writing', label: 'Writing', className: 'writing' }
+            ]; %>
+
+            <% if (tests.length > 0) { %>
+                <div class="library-grid">
+                    <% typeConfig.forEach(type => { const typeTests = testsByType[type.key] || []; %>
+                        <div class="library-column <%= type.className %>">
+                            <div class="type-header">
+                                <h3><%= type.label %></h3>
+                                <div class="badge"><%= typeTests.length %> tests</div>
+                            </div>
+
+                            <% if (typeTests.length > 0) { %>
+                                <div class="test-list">
+                                    <% typeTests.forEach(test => { %>
+                                        <article class="test-card">
+                                            <h4><%= test.title %></h4>
+                                            <p>Created by <strong><%= test.teacherName || 'admin' %></strong>. Preview and download use the same renderer the platform serves to students.</p>
+                                            <div class="action-row">
+                                                <a href="/view-test/<%= test._id %>" target="_blank" class="btn btn-secondary">Preview</a>
+                                                <a href="/download-test/<%= test._id %>" class="btn btn-secondary">Download HTML</a>
+                                                <button class="btn btn-danger" onclick="deleteItem('test', '<%= test._id %>', '<%= test.title %>')">Delete</button>
+                                            </div>
+                                        </article>
+                                    <% }) %>
+                                </div>
+                            <% } else { %>
+                                <div class="empty">No <%= type.label.toLowerCase() %> tests created yet.</div>
+                            <% } %>
+                        </div>
+                    <% }) %>
                 </div>
             <% } else { %>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Title</th>
-                            <th>Type</th>
-                            <th>Created By</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <% tests.forEach(test => { %>
-                            <tr>
-                                <td style="font-weight: 600;"><%= test.title %></td>
-                                <td><span style="background: #667eea; color: white; padding: 4px 12px; border-radius: 8px; font-size: 0.8rem; font-weight: 700;"><%= test.type %></span></td>
-                                <td><%= test.teacherName %></td>
-                                <td class="action-cell">
-                                    <button class="btn btn-danger" onclick="deleteItem('test', '<%= test._id %>', '<%= test.title %>')">Delete</button>
-                                </td>
-                            </tr>
-                        <% }) %>
-                    </tbody>
-                </table>
+                <div class="empty">No tests have been created yet. Start from the builder-based creation hub.</div>
             <% } %>
-        </div>
+        </section>
 
-        <div class="section">
-            <h2>👨‍🏫 Teachers</h2>
-            <% if(teachers.length === 0) { %>
-                <div class="empty-state">
-                    <div style="font-size: 2rem;">👤</div>
-                    <p>No teachers added yet. <a href="/admin/add-teacher" style="color: #667eea; font-weight: 700;">Add a teacher</a></p>
+        <section class="section">
+            <div class="section-header">
+                <div>
+                    <h2>Teachers</h2>
+                    <p>Manage who receives tests and keep the teacher roster clean.</p>
+                </div>
+            </div>
+
+            <% if (teachers.length > 0) { %>
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Teacher</th>
+                                <th>Assigned Tests</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% teachers.forEach(teacher => { %>
+                                <tr>
+                                    <td style="font-weight: 900; color: #1f2937;"><%= teacher.username %></td>
+                                    <td><%= teacher.assignedTests ? teacher.assignedTests.length : 0 %> tests</td>
+                                    <td>
+                                        <div class="action-row">
+                                            <button class="btn btn-danger" onclick="deleteItem('teacher', '<%= teacher._id %>', '<%= teacher.username %>')">Delete</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            <% }) %>
+                        </tbody>
+                    </table>
                 </div>
             <% } else { %>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Username</th>
-                            <th>Tests Assigned</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <% teachers.forEach(teacher => { %>
-                            <tr>
-                                <td style="font-weight: 600;"><%= teacher.username %></td>
-                                <td><span style="background: #10b981; color: white; padding: 4px 12px; border-radius: 8px; font-size: 0.8rem; font-weight: 700;"><%= teacher.assignedTests ? teacher.assignedTests.length : 0 %> tests</span></td>
-                                <td class="action-cell">
-                                    <button class="btn btn-danger" onclick="deleteItem('teacher', '<%= teacher._id %>', '<%= teacher.username %>')">Delete</button>
-                                </td>
-                            </tr>
-                        <% }) %>
-                    </tbody>
-                </table>
+                <div class="empty">No teachers added yet. Use the button above to create the first teacher account.</div>
             <% } %>
-        </div>
+        </section>
     </div>
 </body>
 </html>

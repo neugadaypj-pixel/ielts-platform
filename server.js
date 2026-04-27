@@ -1001,7 +1001,7 @@ redirect || '/admin-dashboard' });
 app.post('/remove-student-from-group/:groupId/:studentId', async (req, res) => {
     if(!req.session.userId) return res.redirect('/login');
     try {
-        const group = await        res.json({ success: true, message: "Teacher account and associated tests deleted successfully", redirect: req.body.redirect || '/admin' });
+        const group = await        res.json({ success: true, message: "Teacher account and associated tests deleted successfully", redirect: req.body.redirect || '/admin-dashboard' });
 ser = await User.findById(req.session.userId);
         
         // Check authorization: only teacher who owns the group can remove students

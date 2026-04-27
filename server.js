@@ -590,27 +590,7 @@ app.post('/teacher/add-student', isTeacher, async (req, res) => {
             teacherId: req.session.userId 
         });
         await newStudent.save();
-        res.send(`<h1>Student '${username}' Created!</h1><a href='/teacher-dashboard'>Back</a>`);
-    } catch (err) {
-        res.status(500).send("Error creating student.");
-    }
-});
-
-app.post('/teacher/create-group', isTeacher, async (req, res) => {
-    try {
-        const { groupName } = req.body;
-        const newGroup = new Group({ name: groupName, teacherId: req.session.userId });
-        await newGroup.save();
-        res.redirect('/teacher-dashboard');
-    } catch (err) {
-        res.status(500).send("Error creating group.");
-    }
-});
-
-app.post('/teacher/assign-to-group', isTeacher, async (req, res) => {
-    const { studentId, groupId } = req.body;
-    try {
-        const [student, group] = await Promise.all([
+        res.send(`<h1>Student '${username}' Created!</h1><a href='/teacher-dashboard'        const [student, group] = await Promise.all([
             User.findById(studentId),
             Group.findById(groupId)
         ]);
@@ -922,8 +902,22 @@ app.post('/delete-test/:id', async (req, res) => {
         
         // Remove test from all groups
         await Group.updateMany({ assignedTests: test._id }, { $pull: { assignedTests: test._id } });
-        await User.updateMany({ assignedTests: test._id }, { $pull: { assignedTests: test._id } });
 
+        await Submission.deleteMany({ testId: test._id });
+        
+        // Delete the test
+        await Test.findByIdAndDelete(req.params.id);
+        
+        res.json({ success: true, message: "Test deleted successfully", redirect: req.body.redirect || '/teacher-dashboard' });
+    } catch (err) {
+        console.error('Delete test error:', err);
+        res.status(500).json({ success: false, message: "Error deleting test: " + err.message });
+    }
+});
+
+// Delete a student account
+app.post('/delete-student/:id', async (req, res) => {
+    if(!req.session.userId) return res.redire
         await Submission.deleteMany({ testId: test._id });
         
         // Delete the test
@@ -996,20 +990,7 @@ app.post('/delete-teacher/:id', async (req, res) => {
         // Remove tests from all groups
         if (testIds.length > 0) {
             await Group.updateMany({ assignedTests: { $in: testIds } }, { $pull: { assignedTests: { $in: testIds } } });
-            await User.updateMany({ assignedTests: { $in: testIds } }, { $pull: { assignedTests: { $in: testIds } } });
-        }
-        
-        // Delete all tests created by this teacher
-        await Test.deleteMany({ createdBy: teacher._id });
-        await Submission.deleteMany({ teacherId: teacher._id });
-        
-        // Find group managed by this teacher and remove reference
-        await Group.updateOne({ teacherId: teacher._id }, { $unset: { teacherId: 1 } });
-        
-        // Delete the teacher account
-        await User.findByIdAndDelete(req.params.id);
-        
-        res.json({ success: true, message: "Teacher account and associated tests deleted successfully", redirect: req.body.redirect || '/admin' });
+redirect || '/admin-dashboard' });
     } catch (err) {
         console.error('Delete teacher error:', err);
         res.status(500).json({ success: false, message: "Error deleting teacher: " + err.message });
@@ -1020,10 +1001,8 @@ app.post('/delete-teacher/:id', async (req, res) => {
 app.post('/remove-student-from-group/:groupId/:studentId', async (req, res) => {
     if(!req.session.userId) return res.redirect('/login');
     try {
-        const group = await Group.findById(req.params.groupId);
-        if (!group) return res.status(404).json({ success: false, message: "Group not found" });
-        
-        const user = await User.findById(req.session.userId);
+        const group = await        res.json({ success: true, message: "Teacher account and associated tests deleted successfully", redirect: req.body.redirect || '/admin' });
+ser = await User.findById(req.session.userId);
         
         // Check authorization: only teacher who owns the group can remove students
         if (user.role !== 'admin' && (user.role !== 'teacher' || group.teacherId.toString() !== req.session.userId)) {
@@ -1061,6 +1040,31 @@ app.post('/delete-group/:id', async (req, res) => {
         await Group.findByIdAndDelete(req.params.id);
         
         res.json({ success: true, message: "Group deleted successfully", redirect: req.body.redirect || '/teacher-dashboard' });
+udent: " + err.message });
+    }
+});
+
+// Delete a group (admin only)
+app.post('/delete-group/:id', async (req, res) => {
+    if(!req.session.userId) return res.redirect('/login');
+    try {
+        const group = await Group.findById(req.params.id);
+        if (!group) return res.status(404).json({ success: false, message: "Group not found" });
+        
+        const user = await User.findById(req.session.userId);
+        
+        // Check authorization: only admin can delete groups
+        if (user.role !== 'admin') {
+            return res.status(403).json({ success: false, message: "Only admins can delete groups" });
+        }
+        
+        // Remove group reference from all students
+        await User.updateMany({ groupId: group._id }, { $unset: { groupId: 1 } });
+        
+        // Delete the group
+        await Group.findByIdAndDelete(req.params.id);
+        
+        res.json({ success: true, message: "Group deleted successfully", redirect: req.body.redirect || '/admin-dashboard' });
     } catch (err) {
         console.error('Delete group error:', err);
         res.status(500).json({ success: false, message: "Error deleting group: " + err.message });

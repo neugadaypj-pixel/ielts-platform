@@ -247,6 +247,8 @@ Discuss both views and give your own opinion.</textarea>
         
         /* DARK MODE */
         body.dark-mode { background: #1a1a1a; color: #e0e0e0; }
+        body.dark-mode::-webkit-scrollbar-thumb { background: #444; }
+        body.dark-mode::-webkit-scrollbar-thumb:hover { background: #555; }
         .dark-mode .header, .dark-mode .footer { background: #252525; border-color: #333; color: #e0e0e0; }
         .dark-mode .prompt-panel { background: #2d2d2d; border-color: #444; }
         .dark-mode .writing-panel { background: #1e1e1e !important; }
@@ -778,6 +780,17 @@ Discuss both views and give your own opinion.</textarea>
             submitTest(); 
         }
     }
+
+    // Export functions to window for onclick handlers
+    window.toggleDarkMode = toggleDarkMode;
+    window.switchTask = switchTask;
+    window.updateCount = updateCount;
+    window.submitTest = submitTest;
+    window.downloadWord = downloadWord;
+    window.downloadPDFDirect = downloadPDFDirect;
+    window.copyEssays = copyEssays;
+    window.saveName = saveName;
+    window.retryAI = retryAI;
 ` + "<" + "/script>" + `
 </body>
 </html>`;

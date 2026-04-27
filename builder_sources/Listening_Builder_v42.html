@@ -1401,7 +1401,11 @@
         .dark-mode .modal-input-field { background: #333; color: #fff; border-color: #555; }
 
         /* --- DARK MODE STYLES --- */
-        body.dark-mode { background: #121212; color: #e0e0e0; }
+        body.dark-mode { background: #121212; color: #e0e0e0; overflow-y: auto !important; }
+        body.dark-mode::-webkit-scrollbar-thumb { background: #444; }
+        body.dark-mode::-webkit-scrollbar-thumb:hover { background: #555; }
+        body.dark-mode #contextMenu { background: #2a2a2a; border-color: #444; }
+        body.dark-mode .ctx-item { color: #e0e0e0; }
         .dark-mode .header, .dark-mode .footer { background: rgba(30, 30, 30, 0.95); border-color: #333; color: #e0e0e0; }
         .dark-mode .logo { color: #e0e0e0; }
         .dark-mode .tf-question, .dark-mode .multi-choice-question, .dark-mode .short-answer-question, .dark-mode .gap-fill-text, .dark-mode .pick-n-question, .dark-mode .matching-group-block, .dark-mode .flow-question-block, .dark-mode .map-question-block { background: #252525; border-color: #333; color: #e0e0e0; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }

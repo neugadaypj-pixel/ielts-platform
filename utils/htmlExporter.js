@@ -528,6 +528,23 @@ function injectThemeStyles(html) {
         overflow-y: auto !important;
         overflow-x: hidden !important;
     }
+    .platform-theme .content {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr !important;
+        gap: 24px !important;
+        margin-bottom: 32px !important;
+        height: auto !important;
+        overflow-y: visible !important;
+    }
+    .platform-theme .test-section {
+        height: auto !important;
+        overflow-y: auto !important;
+        max-height: none !important;
+    }
+    .platform-theme .passage {
+        max-height: none !important;
+        overflow-y: auto !important;
+    }
     .platform-theme .passage-panel,
     .platform-theme .questions-panel,
     .platform-theme .prompt-panel,
@@ -688,6 +705,65 @@ function injectThemeStyles(html) {
         box-decoration-break: clone;
         -webkit-box-decoration-break: clone;
         border-bottom: 2px solid rgba(15, 23, 42, 0.08);
+    }
+    .platform-theme .flag-btn,
+    .platform-theme .q-flag {
+        position: relative !important;
+        z-index: 12 !important;
+        pointer-events: auto !important;
+        cursor: pointer !important;
+        background: transparent !important;
+        border: none !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        transition: all 0.2s ease !important;
+    }
+    .platform-theme .flag-btn {
+        font-size: 24px !important;
+        color: #e0e0e0 !important;
+        position: absolute !important;
+        top: 10px !important;
+        right: 10px !important;
+    }
+    .platform-theme .flag-btn:hover {
+        color: #f39c12 !important;
+        transform: scale(1.1) !important;
+    }
+    .platform-theme .q-flag {
+        font-size: 18px !important;
+        color: #e0e0e0 !important;
+        margin-left: 5px !important;
+        vertical-align: middle !important;
+    }
+    .platform-theme .q-flag:hover {
+        color: #f39c12 !important;
+        transform: scale(1.2) !important;
+    }
+    .platform-theme .q-flag.active,
+    .platform-theme .flag-btn.active {
+        color: #e74c3c !important;
+    }
+    .platform-theme .q-flag.inline-flag {
+        color: #cbd5e1 !important;
+    }
+    .platform-theme .q-flag.inline-flag:hover {
+        color: #f39c12 !important;
+    }
+    .platform-theme .q-flag.inline-flag.active {
+        color: #e74c3c !important;
+    }
+    .platform-theme .map-drop-zone.flagged-zone {
+        border-color: #e74c3c !important;
+        background-color: #fff5f5 !important;
+    }
+    .platform-theme .gap-input.flagged-input {
+        border-color: #e74c3c !important;
+        box-shadow: 0 0 0 4px rgba(231, 76, 60, 0.15) !important;
+        background-color: #fff9f9 !important;
+    }
+    .platform-theme .flagged {
+        border: 1px solid #e74c3c !important;
+        border-left: 6px solid #e74c3c !important;
     }
 </style>`;
 

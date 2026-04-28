@@ -2206,9 +2206,9 @@ function insertTable(targetId, isContentEditable) {
     function switchPart(num) {
         currentPart = num;
         [1,2,3].forEach(i => { document.getElementById('p'+i).classList.add('hidden'); document.getElementById('panel_q'+i).classList.add('hidden'); });
-        document.querySelectorAll('.part-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.part-nav .part-btn').forEach(b => b.classList.remove('active'));
         document.getElementById('p'+num).classList.remove('hidden'); document.getElementById('panel_q'+num).classList.remove('hidden');
-        document.querySelectorAll('.part-btn')[num-1].classList.add('active');
+        document.querySelectorAll('.part-nav .part-btn')[num-1].classList.add('active');
         renderSubNav(num);
     }
 

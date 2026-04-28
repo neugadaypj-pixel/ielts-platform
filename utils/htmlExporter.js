@@ -1528,18 +1528,26 @@ function generateListeningHtml(testDoc, parsedContent) {
         `const SESSION_KEY = '${stableSessionId}';`
     );
     
-    // Ensure R2 audio URLs are properly injected as JSON strings in the template
+    // Post-process: Ensure R2 audio URLs are available in the generated HTML
+    // This reinforces the audio injection even if the builder stringified different values
     const audioPartsJson = JSON.stringify(content.audioParts || [null, null, null, null]);
     const fullAudioJson = JSON.stringify(content.fullAudio || null);
-    // More flexible pattern that handles multiline JSON
-    generatedHtml = generatedHtml.replace(
-        /const rawAudioDataList = (?:\[[\s\S]*?\]|null);/,
-        `const rawAudioDataList = ${audioPartsJson};`
-    );
-    generatedHtml = generatedHtml.replace(
-        /const rawFullAudioData = (?:[\s\S]*?);(?=\n|$)/,
-        `const rawFullAudioData = ${fullAudioJson};`
-    );
+    
+    // Force replace audio variables if they contain actual R2 URLs
+    if (content.audioParts && content.audioParts.some(url => url)) {
+        // Replace the audio data list line with our R2 URLs
+        generatedHtml = generatedHtml.replace(
+            /const rawAudioDataList = .*?;/,
+            `const rawAudioDataList = ${audioPartsJson};`
+        );
+    }
+    if (content.fullAudio) {
+        // Replace the full audio line with our R2 URL
+        generatedHtml = generatedHtml.replace(
+            /const rawFullAudioData = .*?;/,
+            `const rawFullAudioData = ${fullAudioJson};`
+        );
+    }
 
     generatedHtml = injectListeningR2Support(generatedHtml);
     generatedHtml = injectThemeStyles(generatedHtml);

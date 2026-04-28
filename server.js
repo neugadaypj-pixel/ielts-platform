@@ -7,6 +7,7 @@ const session = require('express-session');
 const { S3Client } = require("@aws-sdk/client-s3");
 const multer = require("multer");
 const multerS3 = require("multer-s3");
+const mime = require('mime-types');
 const { generateHTMLFromTest, stringifyContent } = require('./utils/htmlExporter');
 const { getAuthoringPageHtml } = require('./utils/builderAuthoring');
 const app = express();
@@ -43,11 +44,17 @@ const upload = multer({
         s3: s3,
         bucket: process.env.R2_BUCKET_NAME,
         metadata: function (req, file, cb) {
-            cb(null, { fieldName: file.fieldname });
+            const ext = path.extname(file.originalname).toLowerCase();
+            const mimeType = mime.lookup(ext) || 'application/octet-stream';
+            cb(null, { 
+                fieldName: file.fieldname,
+                'Content-Type': mimeType 
+            });
         },
         key: function (req, file, cb) {
     const ext = path.extname(file.originalname) || '.mp3';
-    // Теперь имя будет: listening-part1-1713712345678.mp3
+    // Audio files will be named like: listening-part1-1713712345678.mp3
+
     cb(null, `listening-${file.fieldname}-${Date.now()}${ext}`);
         }
     })

@@ -520,13 +520,15 @@ function injectThemeStyles(html) {
     .platform-theme .main-container {
         background: transparent !important;
         margin-top: 0 !important;
-        height: auto !important;
-        min-height: 100vh !important;
+        height: calc(100vh - 200px) !important;
+        min-height: 0 !important;
         padding: 118px 18px 112px !important;
         gap: 18px !important;
         box-sizing: border-box;
         overflow-y: auto !important;
         overflow-x: hidden !important;
+        display: flex !important;
+        flex-direction: column !important;
     }
     .platform-theme .content {
         display: grid !important;
@@ -534,7 +536,8 @@ function injectThemeStyles(html) {
         gap: 24px !important;
         margin-bottom: 32px !important;
         height: auto !important;
-        overflow-y: visible !important;
+        width: 100% !important;
+        overflow: visible !important;
     }
     .platform-theme .test-section {
         height: auto !important;

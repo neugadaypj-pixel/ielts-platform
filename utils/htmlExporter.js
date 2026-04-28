@@ -537,7 +537,8 @@ function injectThemeStyles(html) {
         padding: 30px !important;
         position: relative;
         min-height: 0 !important;
-        height: 100% !important;
+        height: auto !important;
+        overflow-y: auto !important;
     }
     .platform-theme .passage-panel::before,
     .platform-theme .questions-panel::before,

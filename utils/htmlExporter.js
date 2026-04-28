@@ -1533,18 +1533,29 @@ function generateListeningHtml(testDoc, parsedContent) {
     const audioPartsJson = JSON.stringify(content.audioParts || [null, null, null, null]);
     const fullAudioJson = JSON.stringify(content.fullAudio || null);
     
+    console.log('[Listening Generation] Audio Parts:', content.audioParts);
+    console.log('[Listening Generation] Full Audio:', content.fullAudio);
+    console.log('[Listening Generation] Audio Parts JSON:', audioPartsJson);
+    console.log('[Listening Generation] Full Audio JSON:', fullAudioJson);
+    
     // Force replace audio variables if they contain actual R2 URLs
     if (content.audioParts && content.audioParts.some(url => url)) {
-        // Replace the audio data list line with our R2 URLs
+        // Replace the audio data list line with our R2 URLs - handle multiline with greedy match
+        const before = generatedHtml.match(/const rawAudioDataList\s*=\s*[\[\s\S]*?\];/);
+        console.log('[Listening Generation] Before replacement:', before ? before[0].substring(0, 100) : 'NO MATCH');
+        
         generatedHtml = generatedHtml.replace(
-            /const rawAudioDataList = .*?;/,
+            /const rawAudioDataList\s*=\s*[\[\s\S]*?\];/,
             `const rawAudioDataList = ${audioPartsJson};`
         );
+        
+        const after = generatedHtml.match(/const rawAudioDataList\s*=\s*[\[\s\S]*?\];/);
+        console.log('[Listening Generation] After replacement:', after ? after[0].substring(0, 100) : 'NO MATCH');
     }
     if (content.fullAudio) {
-        // Replace the full audio line with our R2 URL
+        // Replace the full audio line with our R2 URL - handle multiline
         generatedHtml = generatedHtml.replace(
-            /const rawFullAudioData = .*?;/,
+            /const rawFullAudioData\s*=\s*[\s\S]*?;/,
             `const rawFullAudioData = ${fullAudioJson};`
         );
     }

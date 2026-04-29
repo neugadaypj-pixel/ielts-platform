@@ -517,6 +517,10 @@ function injectThemeStyles(html) {
     }
     .platform-theme .main-container {
         background: transparent !important;
+        margin-top: 110px !important;
+        margin-bottom: 100px !important;
+        height: auto !important;
+        max-height: none !important;
         min-height: 0 !important;
         overflow-y: auto !important;
         overflow-x: hidden !important;
@@ -1692,7 +1696,28 @@ function generateHTMLFromTest(testDoc, options = {}) {
     const parsedContent = parseStoredContent(rawContent, 'readingPassage');
 
     if (parsedContent.__rawHtml) {
-        return parsedContent.__rawHtml.trim();
+        const normalizedType = String(plainTest.type || 'reading').toLowerCase();
+        let rawHtml = parsedContent.__rawHtml.trim();
+
+        // Backward-compat: some older saved tests may contain already-rendered HTML.
+        // Still inject the Platform Theme CSS/JS/button so the toggle works.
+        if (!rawHtml.includes('platform-theme-overrides')) {
+            rawHtml = injectThemeStyles(rawHtml);
+        }
+        if (!rawHtml.includes('toggleSiteTheme') && !rawHtml.includes('Platform Theme')) {
+            rawHtml = injectWebsiteThemeButton(rawHtml, normalizedType);
+            rawHtml = injectThemeController(rawHtml, normalizedType);
+        } else {
+            // Ensure controller exists even if the button markup is already present.
+            if (!rawHtml.includes('toggleSiteTheme')) {
+                rawHtml = injectThemeController(rawHtml, normalizedType);
+            }
+            if (!rawHtml.includes('Platform Theme')) {
+                rawHtml = injectWebsiteThemeButton(rawHtml, normalizedType);
+            }
+        }
+
+        return rawHtml;
     }
 
     const normalizedType = String(plainTest.type || 'reading').toLowerCase();

@@ -517,12 +517,13 @@ function injectThemeStyles(html) {
     }
     .platform-theme .main-container {
         background: transparent !important;
-        margin-top: 110px !important;
-        margin-bottom: 100px !important;
-        height: auto !important;
-        max-height: none !important;
+        /* Preserve the Reading/Writing builders' fixed viewport layout so
+           internal panels keep their scroll behavior. */
+        margin-top: 70px !important;
+        margin-bottom: 0 !important;
+        height: calc(100vh - 140px) !important;
         min-height: 0 !important;
-        overflow-y: auto !important;
+        overflow: hidden !important;
         overflow-x: hidden !important;
     }
     .platform-theme .content {
@@ -552,7 +553,6 @@ function injectThemeStyles(html) {
         padding: 30px !important;
         position: relative;
         min-height: 0 !important;
-        height: auto !important;
         overflow-y: auto !important;
     }
     .platform-theme .passage-panel::before,

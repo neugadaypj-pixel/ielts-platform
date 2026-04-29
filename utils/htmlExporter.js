@@ -523,12 +523,9 @@ function injectThemeStyles(html) {
         height: calc(100vh - 200px) !important;
         min-height: 0 !important;
         padding: 118px 18px 112px !important;
-        gap: 18px !important;
         box-sizing: border-box;
         overflow-y: auto !important;
         overflow-x: hidden !important;
-        display: flex !important;
-        flex-direction: column !important;
     }
     .platform-theme .content {
         display: grid !important;
@@ -1380,6 +1377,10 @@ function injectListeningSubmissionHook(html, testDoc) {
     }
 
     function buildPayload() {
+        const resultModal = document.getElementById('resultModal');
+        // Only sync after the grading UI is shown (scoreValue/bandValue are populated then).
+        if (!resultModal || resultModal.style.display !== 'flex') return null;
+
         const scoreText = (document.getElementById('scoreValue')?.innerText || '').trim();
         const match = scoreText.match(/(\\d+)\\s*\\/\\s*(\\d+)/);
         if (!match) return null;
@@ -1411,10 +1412,18 @@ function injectListeningSubmissionHook(html, testDoc) {
         };
     }
 
-    function syncSubmission() {
+    function syncSubmissionWithRetry(attempt = 1) {
         if (!canSync()) return;
+        if (attempt > 8) return;
+
         const payload = buildPayload();
-        if (!payload || !payload.resultSignature || wasSynced(payload.resultSignature)) return;
+        if (!payload || !payload.resultSignature) {
+            // Scoring can be asynchronous; retry shortly until the modal/values are ready.
+            setTimeout(() => syncSubmissionWithRetry(attempt + 1), 450);
+            return;
+        }
+
+        if (wasSynced(payload.resultSignature)) return;
 
         fetch('/api/test-submissions', {
             method: 'POST',
@@ -1426,16 +1435,20 @@ function injectListeningSubmissionHook(html, testDoc) {
             .then((data) => {
                 if (data && data.success) {
                     rememberSync(payload.resultSignature);
+                } else if (attempt < 8) {
+                    setTimeout(() => syncSubmissionWithRetry(attempt + 1), 450);
                 }
             })
-            .catch(() => {});
+            .catch(() => {
+                if (attempt < 8) setTimeout(() => syncSubmissionWithRetry(attempt + 1), 450);
+            });
     }
 
     const originalCheckAnswers = typeof checkAnswers === 'function' ? checkAnswers : null;
     if (originalCheckAnswers) {
         const wrappedCheckAnswers = function(...args) {
             const result = originalCheckAnswers.apply(this, args);
-            setTimeout(syncSubmission, 350);
+            setTimeout(() => syncSubmissionWithRetry(1), 800);
             return result;
         };
 
@@ -1444,7 +1457,7 @@ function injectListeningSubmissionHook(html, testDoc) {
     }
 
     window.addEventListener('load', () => {
-        setTimeout(syncSubmission, 1200);
+        setTimeout(() => syncSubmissionWithRetry(1), 1500);
     });
 })();
 </script>`;

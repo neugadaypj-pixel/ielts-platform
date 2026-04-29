@@ -118,6 +118,8 @@ try {
         { name: 'Has Builder advanced navigator logic', test: readingHtml.includes('const scanRoot = (root) => {') },
         { name: 'Includes dark mode styles', test: readingHtml.includes('dark-mode') },
         { name: 'Has modern table styles', test: readingHtml.includes('modern-ielts-table') },
+        { name: 'Includes Platform Theme button', test: readingHtml.includes('Platform Theme') },
+        { name: 'Includes platform theme controller', test: readingHtml.includes('toggleSiteTheme') },
         { name: 'Has stable session key', test: readingHtml.includes("const SESSION_KEY = 'ielts_state_test_69dfc4326a334a9b5fc9c058';") },
         { name: 'HTML closes properly', test: readingHtml.endsWith('</html>') }
     ];
@@ -135,6 +137,9 @@ try {
         { name: 'Listening pause setting survives export', test: listeningHtml.includes('const usePause = true;') },
         { name: 'Listening includes start overlay', test: listeningHtml.includes('id="startOverlay"') },
         { name: 'Listening includes submit button', test: listeningHtml.includes('Submit & Check') },
+        { name: 'Includes Platform Theme button', test: listeningHtml.includes('Platform Theme') },
+        { name: 'Listening syncs to student dashboard API', test: listeningHtml.includes("fetch('/api/test-submissions'") },
+        { name: 'Listening payload type is set', test: listeningHtml.includes("type: 'listening'") },
         { name: 'Listening HTML closes properly', test: listeningHtml.endsWith('</html>') }
     ];
 
@@ -146,6 +151,8 @@ try {
         { name: 'Writing includes Task 1 image', test: writingHtml.includes('https://example.com/chart.png') },
         { name: 'Writing injects current Groq API key', test: writingHtml.includes('demo-key') },
         { name: 'Writing uses stable session key', test: writingHtml.includes('const SESSION_ID = "ielts_writing_69dfc4326a334a9b5fc9c111";') },
+        { name: 'Includes Platform Theme button', test: writingHtml.includes('Platform Theme') },
+        { name: 'Includes platform theme controller', test: writingHtml.includes('toggleSiteTheme') },
         { name: 'Writing HTML closes properly', test: writingHtml.endsWith('</html>') }
     ];
 

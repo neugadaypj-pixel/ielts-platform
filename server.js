@@ -44,15 +44,23 @@ const upload = multer({
         s3: s3,
         bucket: process.env.R2_BUCKET_NAME,
         metadata: function (req, file, cb) {
-            const ext = path.extname(file.originalname).toLowerCase();
-            const mimeType = mime.lookup(ext) || 'application/octet-stream';
-            cb(null, { 
+            const extFromName = path.extname(file.originalname || '').toLowerCase();
+            // Prefer multer-provided mimetype (works even if filename has no extension).
+            const mimeType = file.mimetype || mime.lookup(extFromName) || 'application/octet-stream';
+            cb(null, {
                 fieldName: file.fieldname,
-                'Content-Type': mimeType 
+                'Content-Type': mimeType
             });
         },
         key: function (req, file, cb) {
-    const ext = path.extname(file.originalname) || '.mp3';
+    const extFromName = path.extname(file.originalname || '').toLowerCase();
+    let extFromMime = '';
+    if (file.mimetype) {
+        const ext = mime.extension(file.mimetype);
+        if (ext) extFromMime = '.' + String(ext).replace(/^\./, '');
+    }
+
+    const ext = extFromName || extFromMime || '.mp3';
     // Audio files will be named like: listening-part1-1713712345678.mp3
 
     cb(null, `listening-${file.fieldname}-${Date.now()}${ext}`);

@@ -519,9 +519,9 @@ function injectThemeStyles(html) {
         background: transparent !important;
         /* Preserve the Reading/Writing builders' fixed viewport layout so
            internal panels keep their scroll behavior. */
-        margin-top: 70px !important;
-        margin-bottom: 0 !important;
-        height: calc(100vh - 140px) !important;
+        margin-top: 82px !important;
+        margin-bottom: 18px !important;
+        height: calc(100vh - 182px) !important;
         min-height: 0 !important;
         overflow: hidden !important;
         overflow-x: hidden !important;

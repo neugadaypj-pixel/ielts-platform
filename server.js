@@ -46,7 +46,22 @@ const upload = multer({
         metadata: function (req, file, cb) {
             const extFromName = path.extname(file.originalname || '').toLowerCase();
             // Prefer multer-provided mimetype (works even if filename has no extension).
-            const mimeType = file.mimetype || mime.lookup(extFromName) || 'application/octet-stream';
+            const explicitAudioMimeByExt = {
+                '.mp3': 'audio/mpeg',
+                '.m4a': 'audio/mp4',
+                '.mp4': 'audio/mp4',
+                '.aac': 'audio/aac',
+                '.wav': 'audio/wav',
+                '.flac': 'audio/flac',
+                '.ogg': 'audio/ogg',
+                '.webm': 'audio/webm'
+            };
+
+            let mimeType = file.mimetype || mime.lookup(extFromName) || 'application/octet-stream';
+            // Some environments map unknown extensions to octet-stream; override using our explicit table.
+            if (mimeType === 'application/octet-stream' && explicitAudioMimeByExt[extFromName]) {
+                mimeType = explicitAudioMimeByExt[extFromName];
+            }
             cb(null, {
                 fieldName: file.fieldname,
                 'Content-Type': mimeType

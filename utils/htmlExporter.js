@@ -351,11 +351,9 @@ function normalizeWritingContent(parsedContent = {}) {
 }
 
 function injectListeningR2Support(template) {
-    let html = replaceAllLiteral(
-        template,
-        '<audio id="testAudio" preload="auto"></audio>',
-        '<audio id="testAudio" preload="auto" crossOrigin="anonymous"></audio>'
-    );
+    // Important: do not force `crossOrigin="anonymous"` on R2 media.
+    // If the bucket CORS headers aren't configured, playback can fail and browsers show "Click to Play" text.
+    let html = template;
 
     const base64OnlyFunction = `    // Fix for mobile devices: Convert Base64 to Blob URLs to prevent memory crashes
     function createBlobUrl(base64Str) {
@@ -519,11 +517,7 @@ function injectThemeStyles(html) {
     }
     .platform-theme .main-container {
         background: transparent !important;
-        margin-top: 0 !important;
-        height: calc(100vh - 200px) !important;
         min-height: 0 !important;
-        padding: 118px 18px 112px !important;
-        box-sizing: border-box;
         overflow-y: auto !important;
         overflow-x: hidden !important;
     }
@@ -775,16 +769,13 @@ function injectWebsiteThemeButton(html, type) {
     
     if (type === 'writing') {
         // Find the theme button and add platform theme button after it
-        return html.replace(
-            /(<button[^>]*onclick="toggleDarkMode[^>]*>.*?<\/button>)/,
-            `$1\n            ${platformBtn}`
-        );
+        // Note: use [\\s\\S] so it works even if the button markup spans lines.
+        const writingRe = /(<button[\s\S]*?onclick="toggleDarkMode[^"]*"[\s\S]*?>[\s\S]*?<\/button>)/;
+        return html.replace(writingRe, `$1\n            ${platformBtn}`);
     }
 
-    return html.replace(
-        /(<button class="theme-btn"[^>]*>.*?<\/button>)/,
-        `$1\n            ${platformBtn}`
-    );
+    const genericRe = /(<button[\s\S]*?class="theme-btn"[\s\S]*?>[\s\S]*?<\/button>)/;
+    return html.replace(genericRe, `$1\n            ${platformBtn}`);
 }
 
 function injectThemeController(html, type) {

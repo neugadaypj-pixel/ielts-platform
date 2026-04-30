@@ -544,6 +544,10 @@ function injectThemeStyles(html) {
         max-height: none !important;
         overflow-y: auto !important;
     }
+    .platform-theme #questionsPanel {
+        overflow-y: auto !important;
+        height: 100% !important;
+    }
     .platform-theme .passage-panel,
     .platform-theme .questions-panel,
     .platform-theme .prompt-panel,

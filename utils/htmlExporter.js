@@ -519,9 +519,10 @@ function injectThemeStyles(html) {
         background: transparent !important;
         /* Preserve the Reading/Writing builders' fixed viewport layout so
            internal panels keep their scroll behavior. */
-        margin-top: 82px !important;
+        /* Header has top:16px + min-height:82px + padding, so we need ~116px margin */
+        margin-top: 116px !important;
         margin-bottom: 18px !important;
-        height: calc(100vh - 182px) !important;
+        height: calc(100vh - 216px) !important;
         min-height: 0 !important;
         overflow: hidden !important;
         overflow-x: hidden !important;

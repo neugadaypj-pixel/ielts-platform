@@ -272,7 +272,166 @@ Discuss both views and give your own opinion.</textarea>
         .dark-mode .err-reason { color: #aaa; }
         .dark-mode #printable-content h3, .dark-mode #printable-content h4 { color: #fff; border-bottom-color: #444; }
         .dark-mode .model-answer-block { border-bottom-color: #444; }
-        
+
+        /* PLATFORM THEME */
+        body.platform-theme {
+            background:
+                radial-gradient(circle at top left, rgba(255,255,255,0.22), transparent 28%),
+                radial-gradient(circle at right 18%, rgba(191, 219, 254, 0.28), transparent 24%),
+                linear-gradient(135deg, #5f6ee9 0%, #7144a9 48%, #95d1ff 100%) !important;
+            color: #1f2937 !important;
+            font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+        }
+        body.platform-theme::before { opacity: 0 !important; }
+        body.platform-theme::after {
+            content: '';
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            background-image:
+                linear-gradient(rgba(255,255,255,0.06) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.06) 1px, transparent 1px);
+            background-size: 28px 28px;
+            opacity: 0.14;
+            z-index: 0;
+        }
+        .platform-theme .site-theme-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+            color: #fff !important;
+            border: none !important;
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3) !important;
+        }
+        .platform-theme .site-theme-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 28px rgba(102, 126, 234, 0.35) !important;
+        }
+        .platform-theme .header {
+            top: 16px !important;
+            left: 18px;
+            width: calc(100% - 36px) !important;
+            min-height: 82px;
+            height: auto !important;
+            border-radius: 30px !important;
+            border: 1px solid rgba(255,255,255,0.44) !important;
+            background: linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(244,247,255,0.94) 100%) !important;
+            box-shadow: 0 20px 44px rgba(15, 23, 42, 0.16) !important;
+            backdrop-filter: blur(20px);
+            padding: 18px 24px !important;
+        }
+        .platform-theme .footer {
+            bottom: 18px !important;
+            left: 50% !important;
+            transform: translateX(-50%) !important;
+            width: min(900px, calc(100% - 36px)) !important;
+            border-radius: 28px !important;
+            border: 1px solid rgba(255,255,255,0.44) !important;
+            background: linear-gradient(180deg, rgba(255,255,255,0.97) 0%, rgba(246,248,255,0.94) 100%) !important;
+            box-shadow: 0 22px 44px rgba(15, 23, 42, 0.18) !important;
+            backdrop-filter: blur(18px);
+        }
+        .platform-theme .main-container {
+            background: transparent !important;
+            margin-top: 116px !important;
+            margin-bottom: 90px !important;
+            height: calc(100vh - 206px) !important;
+            min-height: 0 !important;
+            overflow: hidden !important;
+        }
+        .platform-theme .prompt-panel,
+        .platform-theme .writing-panel {
+            background: linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(245,248,255,0.92) 100%) !important;
+            border-radius: 32px !important;
+            border: 1px solid rgba(255, 255, 255, 0.38) !important;
+            color: #1f2937 !important;
+            box-shadow: 0 18px 38px rgba(31, 41, 55, 0.16) !important;
+            backdrop-filter: blur(18px);
+            margin: 0 8px !important;
+            padding: 30px !important;
+        }
+        .platform-theme .prompt-panel { margin-right: 4px !important; border-right: 1px solid rgba(255,255,255,0.3) !important; }
+        .platform-theme .writing-panel { margin-left: 4px !important; }
+        .platform-theme .task-card {
+            background: rgba(255,255,255,0.7) !important;
+            border: 1px solid rgba(255,255,255,0.5) !important;
+            border-radius: 20px !important;
+            box-shadow: 0 8px 24px rgba(31, 41, 55, 0.08) !important;
+        }
+        .platform-theme .resizer {
+            width: 14px !important;
+            border-radius: 999px;
+            background: linear-gradient(180deg, rgba(255,255,255,0.85) 0%, rgba(245,248,255,0.75) 100%) !important;
+            box-shadow:
+                inset 0 0 0 1px rgba(102, 126, 234, 0.2),
+                0 2px 8px rgba(15, 23, 42, 0.08) !important;
+            position: relative;
+        }
+        .platform-theme .resizer::before {
+            content: "";
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 4px;
+            height: 24px;
+            background-image: radial-gradient(circle, rgba(102, 126, 234, 0.6) 1.5px, transparent 1.5px);
+            background-size: 4px 4px;
+            background-position: center;
+            background-repeat: repeat-y;
+            opacity: 0.7;
+        }
+        .platform-theme .resizer:hover {
+            background: linear-gradient(180deg, rgba(255,255,255,0.95) 0%, rgba(235,240,255,0.9) 100%) !important;
+            box-shadow:
+                inset 0 0 0 1px rgba(102, 126, 234, 0.35),
+                0 4px 12px rgba(102, 126, 234, 0.15) !important;
+        }
+        .platform-theme .timer {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+            color: #fff !important;
+            box-shadow: 0 10px 22px rgba(102, 126, 234, 0.24) !important;
+        }
+        .platform-theme .part-btn {
+            border-radius: 999px !important;
+            background: rgba(255,255,255,0.8) !important;
+            border: 1px solid rgba(255,255,255,0.5) !important;
+            box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08) !important;
+        }
+        .platform-theme .part-btn.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+            color: #fff !important;
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3) !important;
+        }
+        .platform-theme .check-btn {
+            background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%) !important;
+            box-shadow: 0 8px 20px rgba(39, 174, 96, 0.3) !important;
+            border-radius: 999px !important;
+        }
+        .platform-theme .instructions { color: #1f2937 !important; }
+        .platform-theme .logo { color: #1f2937 !important; }
+        .platform-theme h2 { color: #1f2937 !important; }
+        .platform-theme textarea.student-input {
+            background: #fff !important;
+            border: 1px solid rgba(102, 126, 234, 0.2) !important;
+            border-radius: 16px !important;
+            box-shadow: inset 0 2px 8px rgba(15, 23, 42, 0.04) !important;
+        }
+        .platform-theme textarea.student-input:focus {
+            border-color: #667eea !important;
+            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.15) !important;
+        }
+        .platform-theme .notes-panel {
+            background: linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(253,255,220,0.95) 100%) !important;
+            border: 1px solid rgba(255,255,255,0.5) !important;
+            box-shadow: 0 18px 38px rgba(15, 23, 42, 0.15) !important;
+            border-radius: 24px !important;
+        }
+        .platform-theme .modal-content {
+            background: linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(248,250,255,0.95) 100%) !important;
+            border: 1px solid rgba(255,255,255,0.5) !important;
+            box-shadow: 0 25px 50px rgba(15, 23, 42, 0.2) !important;
+            border-radius: 32px !important;
+        }
+
         .notes-panel { position: fixed; top: 80px; right: 20px; width: 300px; height: 400px; background: #fff9c4; box-shadow: 0 10px 30px rgba(0,0,0,0.2); border-radius: 15px; z-index: 2000; padding: 15px; border: 1px solid #fbc02d; display: flex; flex-direction: column; transform: translateX(120%); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
         .notes-panel.open { transform: translateX(0); }
         .notes-area { flex: 1; border: none; background: transparent; resize: none; outline: none; font-family: 'Segoe UI', sans-serif; font-size: 14px; line-height: 1.5; }
@@ -336,6 +495,7 @@ Discuss both views and give your own opinion.</textarea>
         <div class="header-right">
             <button class="part-btn" onclick="document.getElementById('notesPanel').classList.toggle('open')" style="margin-right:10px; padding:5px 15px; font-size:12px; background:#f1c40f; border-color:#f39c12; color:#333;">📝 Notes</button>
             <button class="part-btn theme-btn" onclick="toggleDarkMode(this)" style="margin-right:10px; padding:5px 15px; font-size:12px;">🌙 Dark Mode</button>
+            <button class="part-btn site-theme-btn" onclick="toggleSiteTheme()" style="margin-right:10px; padding:5px 15px; font-size:12px;">🎨 Platform Theme</button>
             <div class="timer" id="timerDisplay">60:00</div>
             <a href="https://t.me/SynergyacademyBukhara" target="_blank" class="synergy-logo">
                 <svg viewBox="0 0 24 24"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221l-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.446 1.394c-.14.18-.357.223-.548.223l.188-2.85 5.18-4.68c.223-.198-.054-.306-.346-.109l-6.4 4.02-2.76-.86c-.6-.188-.612-.6.125-.892l10.782-4.156c.5-.187.943.114.785.832z"/></svg>
@@ -678,6 +838,32 @@ Discuss both views and give your own opinion.</textarea>
         }
     }
 
+    function toggleSiteTheme() {
+        document.body.classList.toggle('platform-theme');
+        const btn = document.querySelector('.site-theme-btn');
+        if(document.body.classList.contains('platform-theme')) {
+            btn.innerText = "🏗️ Builder Theme";
+            btn.style.background = "linear-gradient(135deg, #1f2937 0%, #334155 100%)";
+        } else {
+            btn.innerText = "🎨 Platform Theme";
+            btn.style.background = "";
+        }
+        localStorage.setItem('platform_site_theme_writing', document.body.classList.contains('platform-theme') ? 'on' : 'off');
+    }
+
+    // Load saved theme preference
+    (function() {
+        const savedTheme = localStorage.getItem('platform_site_theme_writing');
+        if(savedTheme === 'on') {
+            document.body.classList.add('platform-theme');
+            const btn = document.querySelector('.site-theme-btn');
+            if(btn) {
+                btn.innerText = "🏗️ Builder Theme";
+                btn.style.background = "linear-gradient(135deg, #1f2937 0%, #334155 100%)";
+            }
+        }
+    })();
+
     function downloadWord() {
         const name = document.getElementById('studentName').value || "Student";
         const t1 = document.getElementById('input_task1').value;
@@ -783,6 +969,7 @@ Discuss both views and give your own opinion.</textarea>
 
     // Export functions to window for onclick handlers
     window.toggleDarkMode = toggleDarkMode;
+    window.toggleSiteTheme = toggleSiteTheme;
     window.switchTask = switchTask;
     window.updateCount = updateCount;
     window.submitTest = submitTest;

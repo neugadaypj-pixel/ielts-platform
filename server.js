@@ -315,10 +315,14 @@ app.get('/create-test/writing', isAdmin, (req, res) => {
     res.send(getAuthoringPageHtml('writing'));
 });
 
-// --- GENERIC FILE UPLOAD ---
+// --- GENERIC FILE UPLOAD (Fixed for Local) ---
 app.post('/upload-test', isAdmin, upload.single('audioFile'), async (req, res) => {
     try {
-        const fileUrl = req.file ? req.file.location : null;
+        if (!req.file) {
+            return res.status(400).json({ success: false, error: "No file uploaded" });
+        }
+        // Формируем путь, который будет доступен через браузер
+        const fileUrl = `/uploads/${req.file.filename}`; 
         res.json({ success: true, url: fileUrl });
     } catch (err) {
         res.status(500).json({ success: false, error: err.message });
@@ -330,10 +334,9 @@ app.post('/create-test/listening', isAdmin, upload.any(), async (req, res) => {
     try {
         const audioUrls = {};
         
-        // Collect all uploaded files and map them to the public local path
         if (req.files) {
             req.files.forEach(file => {
-                // Creates a relative URL string like "/uploads/listening-part1-1700000.m4a"
+                // Сохраняем путь относительно папки public
                 audioUrls[file.fieldname] = `/uploads/${file.filename}`;
             });
         }
@@ -347,9 +350,7 @@ app.post('/create-test/listening', isAdmin, upload.any(), async (req, res) => {
                 : { ...(source || {}), finalHtml: source?.finalHtml ?? source?.html ?? '' };
         }
         
-        // Map R2 URLs to the format expected by the template
         const contentObj = {
-            // If there's a full audio file, use it; otherwise use individual parts
             fullAudio: audioUrls['audioFile'] || null,
             audioParts: [
                 audioUrls['part1'] || null,
@@ -371,7 +372,7 @@ app.post('/create-test/listening', isAdmin, upload.any(), async (req, res) => {
 
         res.json({
             success: true,
-            message: "Listening test saved successfully with Cloudflare R2 audio URLs.",
+            message: "Listening test saved successfully to local storage.",
             testId: newTest._id
         });
     } catch (err) {

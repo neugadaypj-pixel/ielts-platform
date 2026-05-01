@@ -4,9 +4,7 @@ const mongoose = require('mongoose');
 const path = require('path');
 const bcrypt = require('bcryptjs'); 
 const session = require('express-session'); 
-const { S3Client } = require("@aws-sdk/client-s3");
 const multer = require("multer");
-const multerS3 = require("multer-s3");
 const mime = require('mime-types');
 const { generateHTMLFromTest, stringifyContent } = require('./utils/htmlExporter');
 const { getAuthoringPageHtml } = require('./utils/builderAuthoring');
@@ -30,16 +28,28 @@ app.use(express.json());
 app.use(express.static('public')); 
 
 // --- STORAGE CONFIGURATION (Cloudflare R2) ---
-const s3 = new S3Client({
-    region: "auto",
-    endpoint: process.env.R2_ENDPOINT,
-    credentials: {
-        accessKeyId: process.env.R2_ACCESS_KEY_ID,
-        secretAccessKey: process.env.R2_SECRET_ACCESS_KEY,
+const fs = require('fs');
+
+// --- STORAGE CONFIGURATION (Local Disk) ---
+// 1. Create the local folder automatically if it doesn't exist
+const uploadDir = path.join(__dirname, 'public', 'uploads');
+if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true });
+}
+
+// 2. Configure Multer to save files directly to the hard drive
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        cb(null, uploadDir); 
     },
+    filename: function (req, file, cb) {
+        // This dynamically grabs the exact extension of whatever they upload (.mp3, .m4a, .wav)
+        const ext = path.extname(file.originalname || '').toLowerCase() || '.mp3';
+        cb(null, `listening-${file.fieldname}-${Date.now()}${ext}`);
+    }
 });
 
-const upload = multer({
+const upload = multer({ storage: storage });
     storage: multerS3({
         s3: s3,
         bucket: process.env.R2_BUCKET_NAME,
@@ -363,11 +373,11 @@ app.post('/create-test/listening', isAdmin, upload.any(), async (req, res) => {
     try {
         const audioUrls = {};
         
-        // Collect all uploaded files and save their R2 URLs
+        // Collect all uploaded files and map them to the public local path
         if (req.files) {
             req.files.forEach(file => {
-                // file.fieldname will be 'audioFile' or 'part1', 'part2', etc.
-                audioUrls[file.fieldname] = file.location;
+                // Creates a relative URL string like "/uploads/listening-part1-1700000.m4a"
+                audioUrls[file.fieldname] = `/uploads/${file.filename}`;
             });
         }
 

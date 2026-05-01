@@ -540,10 +540,20 @@ function injectThemeStyles(html) {
         height: auto !important;
         overflow-y: auto !important;
         max-height: none !important;
+        scrollbar-width: none !important;
+        -ms-overflow-style: none !important;
+    }
+    .platform-theme .test-section::-webkit-scrollbar {
+        display: none !important;
     }
     .platform-theme .passage {
         max-height: none !important;
         overflow-y: auto !important;
+        scrollbar-width: none !important;
+        -ms-overflow-style: none !important;
+    }
+    .platform-theme .passage::-webkit-scrollbar {
+        display: none !important;
     }
     .platform-theme #questionsPanel {
         overflow-y: auto !important;
@@ -579,44 +589,19 @@ function injectThemeStyles(html) {
         z-index: 1;
     }
     .platform-theme .resizer {
-        width: 14px !important;
-        border-radius: 999px;
-        background: linear-gradient(180deg, rgba(255,255,255,0.85) 0%, rgba(245,248,255,0.75) 100%) !important;
-        box-shadow:
-            inset 0 0 0 1px rgba(102, 126, 234, 0.2),
-            0 2px 8px rgba(15, 23, 42, 0.08) !important;
-        position: relative;
-        transition: all 0.2s ease;
-    }
-    .platform-theme .resizer::before {
-        content: "";
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        width: 4px;
-        height: 24px;
-        background-image: radial-gradient(circle, rgba(102, 126, 234, 0.6) 1.5px, transparent 1.5px);
-        background-size: 4px 4px;
-        background-position: center;
-        background-repeat: repeat-y;
-        opacity: 0.7;
-        transition: opacity 0.2s ease;
+        width: 4px !important;
+        background: rgba(102, 126, 234, 0.15) !important;
+        border-radius: 2px !important;
+        cursor: col-resize;
+        transition: background 0.2s ease, width 0.2s ease;
     }
     .platform-theme .resizer:hover {
-        background: linear-gradient(180deg, rgba(255,255,255,0.95) 0%, rgba(235,240,255,0.9) 100%) !important;
-        box-shadow:
-            inset 0 0 0 1px rgba(102, 126, 234, 0.35),
-            0 4px 12px rgba(102, 126, 234, 0.15) !important;
-        transform: scaleX(1.1);
-    }
-    .platform-theme .resizer:hover::before {
-        opacity: 1;
-        background-image: radial-gradient(circle, rgba(102, 126, 234, 0.9) 2px, transparent 2px);
+        width: 6px !important;
+        background: rgba(102, 126, 234, 0.4) !important;
     }
     .platform-theme .resizer:active {
-        background: linear-gradient(180deg, rgba(235,240,255,0.95) 0%, rgba(220,230,255,0.9) 100%) !important;
-        transform: scaleX(1.15);
+        width: 6px !important;
+        background: rgba(102, 126, 234, 0.6) !important;
     }
     .platform-theme .logo,
     .platform-theme h1,

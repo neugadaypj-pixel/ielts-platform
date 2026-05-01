@@ -91,7 +91,7 @@ const upload = multer({ storage: storage });
     cb(null, `listening-${file.fieldname}-${Date.now()}${ext}`);
         }
     })
-});
+;
 
 app.use(session({
     secret: process.env.SESSION_SECRET, 

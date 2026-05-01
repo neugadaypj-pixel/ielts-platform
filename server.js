@@ -31,8 +31,12 @@ app.use(express.static('public'));
 const fs = require('fs');
 
 // --- STORAGE CONFIGURATION (Local Disk) ---
-// 1. Create the local folder automatically if it doesn't exist
 const uploadDir = path.join(__dirname, 'public', 'uploads');
+
+console.log("=========================================");
+console.log("ТЕКУЩАЯ ДИРЕКТОРИЯ ЗАГРУЗКИ:", uploadDir);
+console.log("=========================================");
+
 if (!fs.existsSync(uploadDir)) {
     fs.mkdirSync(uploadDir, { recursive: true });
 }

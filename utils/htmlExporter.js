@@ -571,6 +571,14 @@ function injectThemeStyles(html) {
         position: relative;
         min-height: 0 !important;
         overflow-y: auto !important;
+        scrollbar-width: none !important;
+        -ms-overflow-style: none !important;
+    }
+    .platform-theme .passage-panel::-webkit-scrollbar,
+    .platform-theme .questions-panel::-webkit-scrollbar,
+    .platform-theme .prompt-panel::-webkit-scrollbar,
+    .platform-theme .writing-panel::-webkit-scrollbar {
+        display: none !important;
     }
     .platform-theme .passage-panel::before,
     .platform-theme .questions-panel::before,

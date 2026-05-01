@@ -580,6 +580,17 @@ function injectThemeStyles(html) {
     .platform-theme .writing-panel::-webkit-scrollbar {
         display: none !important;
     }
+    /* Universal scrollbar hiding for all scrollable elements in platform theme */
+    .platform-theme * {
+        scrollbar-width: none !important;
+        -ms-overflow-style: none !important;
+    }
+    .platform-theme *::-webkit-scrollbar {
+        display: none !important;
+        width: 0 !important;
+        height: 0 !important;
+        background: transparent !important;
+    }
     .platform-theme .passage-panel::before,
     .platform-theme .questions-panel::before,
     .platform-theme .prompt-panel::before,

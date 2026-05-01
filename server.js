@@ -40,58 +40,15 @@ if (!fs.existsSync(uploadDir)) {
 // 2. Configure Multer to save files directly to the hard drive
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
-        cb(null, uploadDir); 
+        cb(null, uploadDir);
     },
     filename: function (req, file, cb) {
-        // This dynamically grabs the exact extension of whatever they upload (.mp3, .m4a, .wav)
         const ext = path.extname(file.originalname || '').toLowerCase() || '.mp3';
         cb(null, `listening-${file.fieldname}-${Date.now()}${ext}`);
     }
 });
 
 const upload = multer({ storage: storage });
-    storage: multerS3({
-        s3: s3,
-        bucket: process.env.R2_BUCKET_NAME,
-        metadata: function (req, file, cb) {
-            const extFromName = path.extname(file.originalname || '').toLowerCase();
-            // Prefer multer-provided mimetype (works even if filename has no extension).
-            const explicitAudioMimeByExt = {
-                '.mp3': 'audio/mpeg',
-                '.m4a': 'audio/mp4',
-                '.mp4': 'audio/mp4',
-                '.aac': 'audio/aac',
-                '.wav': 'audio/wav',
-                '.flac': 'audio/flac',
-                '.ogg': 'audio/ogg',
-                '.webm': 'audio/webm'
-            };
-
-            let mimeType = file.mimetype || mime.lookup(extFromName) || 'application/octet-stream';
-            // Some environments map unknown extensions to octet-stream; override using our explicit table.
-            if (mimeType === 'application/octet-stream' && explicitAudioMimeByExt[extFromName]) {
-                mimeType = explicitAudioMimeByExt[extFromName];
-            }
-            cb(null, {
-                fieldName: file.fieldname,
-                'Content-Type': mimeType
-            });
-        },
-        key: function (req, file, cb) {
-    const extFromName = path.extname(file.originalname || '').toLowerCase();
-    let extFromMime = '';
-    if (file.mimetype) {
-        const ext = mime.extension(file.mimetype);
-        if (ext) extFromMime = '.' + String(ext).replace(/^\./, '');
-    }
-
-    const ext = extFromName || extFromMime || '.mp3';
-    // Audio files will be named like: listening-part1-1713712345678.mp3
-
-    cb(null, `listening-${file.fieldname}-${Date.now()}${ext}`);
-        }
-    })
-;
 
 app.use(session({
     secret: process.env.SESSION_SECRET, 

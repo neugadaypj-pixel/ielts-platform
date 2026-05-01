@@ -193,31 +193,37 @@
             </div>
             
             <div class="form-section">
-                <h2>🎵 Audio Settings</h2>
-                
-                <div class="form-group">
-                    <label for="audioUrl">Audio URL or R2 Link</label>
-                    <input type="url" id="audioUrl" name="audioUrl" placeholder="https://...">
-                    <div class="hint">Paste the URL to your audio file</div>
-                </div>
-                
-                <div class="form-group">
-                    <label for="listeningType">Listening Type</label>
-                    <select id="listeningType" name="listeningType">
-                        <option>Passage Listening</option>
-                        <option>Conversation Listening</option>
-                        <option>Lecture Listening</option>
-                        <option>Multiple Clips</option>
-                    </select>
-                </div>
-            </div>
+    <h2>🎵 Audio Settings</h2>
+    
+    <div class="form-group">
+    <label for="audioFile">Upload Audio File (Локальное сохранение)</label>
+    <input type="file" id="audioFile" name="audioFile" accept="audio/*">
+</div>
+
+    <!-- Поле для физической загрузки файла -->
+    <div class="form-group">
+        <label for="audioFile">Upload Audio File (MP3/M4A)</label>
+        <input type="file" id="audioFile" name="audioFile" accept="audio/*">
+        <div class="hint">Файл будет сохранен на сервере в папку public/uploads/</div>
+    </div>
+
+    <!-- Оставляем URL как запасной вариант -->
+    <div class="form-group">
+        <label for="audioUrl">Or use external URL</label>
+        <input type="url" id="audioUrl" name="audioUrl" placeholder="https://...">
+    </div>
+</div>
             
             <div class="form-section">
-                <div class="button-group">
-                    <a href="/create-test" class="btn-cancel" onclick="return confirm(''Are you sure? Progress will be lost.'');">Cancel</a>
-                    <button type="submit" class="btn-submit">Create Listening Test →</button>
-                </div>
-            </div>
+    <div class="button-group">
+        <a href="/create-test" 
+           class="btn-cancel" 
+           onclick="return confirm('Are you sure? Progress will be lost.');">
+           Cancel
+        </a>
+        <button type="submit" class="btn-submit">Create Listening Test →</button>
+    </div>
+</div>
         </form>
     </div>
 </body>

@@ -338,12 +338,17 @@ app.post('/create-test/listening', isAdmin, upload.any(), async (req, res) => {
     try {
         const audioUrls = {};
         
-        if (req.files) {
+        // 1. Сначала проверяем, загружены ли ФАЙЛЫ
+        if (req.files && req.files.length > 0) {
             req.files.forEach(file => {
-                // Сохраняем путь относительно папки public
+                // Сохраняем локальный путь для каждого файла
                 audioUrls[file.fieldname] = `/uploads/${file.filename}`;
             });
         }
+
+        // 2. Если файл 'audioFile' не загружен, берем ссылку из текстового поля audioUrl
+        // Это позволит работать и загрузке, и вставке ссылок
+        const finalFullAudio = audioUrls['audioFile'] || req.body.audioUrl || null;
 
         const partsPayload = JSON.parse(req.body.parts || '{}');
         const parts = {};
@@ -355,7 +360,8 @@ app.post('/create-test/listening', isAdmin, upload.any(), async (req, res) => {
         }
         
         const contentObj = {
-            fullAudio: audioUrls['audioFile'] || null,
+            // ТЕПЕРЬ ТУТ БУДЕТ ЛИБО ПУТЬ К ФАЙЛУ, ЛИБО ССЫЛКА
+            fullAudio: finalFullAudio, 
             audioParts: [
                 audioUrls['part1'] || null,
                 audioUrls['part2'] || null,
@@ -376,7 +382,7 @@ app.post('/create-test/listening', isAdmin, upload.any(), async (req, res) => {
 
         res.json({
             success: true,
-            message: "Listening test saved successfully to local storage.",
+            message: "Listening test saved successfully.",
             testId: newTest._id
         });
     } catch (err) {

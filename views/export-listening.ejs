@@ -268,15 +268,13 @@
     const audioEl = document.getElementById('testAudio');
     if (audioEl) {
         const sourceEl = audioEl.querySelector('source');
-        if (sourceEl) {
-            const originalSrc = sourceEl.getAttribute('src');
-            
-            if (originalSrc && originalSrc.startsWith('data:')) {
-                const resolved = createBlobUrl(originalSrc);
-                if (resolved && resolved !== originalSrc) {
-                    sourceEl.setAttribute('src', resolved);
-                    audioEl.load();
-                }
+        const originalSrc = sourceEl ? sourceEl.getAttribute('src') : audioEl.getAttribute('src');
+        
+        if (originalSrc && originalSrc.startsWith('data:')) {
+            const resolved = createBlobUrl(originalSrc);
+            if (resolved) {
+                audioEl.src = resolved;
+                audioEl.load();
             }
         }
     }

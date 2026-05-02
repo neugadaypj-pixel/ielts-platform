@@ -1594,11 +1594,17 @@
     let currentAudioIndex = 0;
     let isFullAudio = rawFullAudioData !== null;
 
-    // Fix for mobile devices: Convert Base64 to Blob URLs to prevent memory crashes
-    function createBlobUrl(base64Str) {
-        if (!base64Str) return null;
+    // Support both base64 data URIs and HTTP/local URL audio sources
+    function createBlobUrl(audioSource) {
+        if (!audioSource) return null;
+        if (typeof audioSource === 'string' && (audioSource.startsWith('http://') || audioSource.startsWith('https://') || audioSource.startsWith('/'))) {
+            return audioSource;
+        }
+        if (typeof audioSource !== 'string' || !audioSource.startsWith('data:')) {
+            return audioSource;
+        }
         try {
-            const parts = base64Str.split(',');
+            const parts = audioSource.split(',');
             const mime = parts[0].match(/:(.*?);/)[1];
             const bstr = atob(parts[1]);
             let n = bstr.length;
@@ -1606,7 +1612,7 @@
             while (n--) { u8arr[n] = bstr.charCodeAt(n); }
             return URL.createObjectURL(new Blob([u8arr], { type: mime }));
         } catch(e) { 
-            return base64Str; // Fallback
+            return audioSource;
         }
     }
 

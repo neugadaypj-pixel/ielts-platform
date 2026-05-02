@@ -27,7 +27,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json()); 
 app.use(express.static('public')); 
 
-// --- STORAGE CONFIGURATION (Cloudflare R2) ---
+// --- STORAGE CONFIGURATION ---
 const fs = require('fs');
 
 // --- STORAGE CONFIGURATION (Local Disk) ---
@@ -333,7 +333,7 @@ app.post('/upload-test', isAdmin, upload.single('audioFile'), async (req, res) =
     }
 });
 
-// --- LISTENING TEST UPLOAD (Direct to R2) ---
+// --- LISTENING TEST UPLOAD ---
 app.post('/create-test/listening', isAdmin, upload.any(), async (req, res) => {
     try {
         const audioUrls = {};
@@ -917,8 +917,9 @@ app.post('/delete-test/:id', async (req, res) => {
             return res.status(403).json({ success: false, message: "Not authorized to delete this test" });
         }
         
-        // Remove test from all groups
+        // Remove test from all groups and teachers' assigned lists
         await Group.updateMany({ assignedTests: test._id }, { $pull: { assignedTests: test._id } });
+        await User.updateMany({ assignedTests: test._id }, { $pull: { assignedTests: test._id } });
 
         await Submission.deleteMany({ testId: test._id });
         

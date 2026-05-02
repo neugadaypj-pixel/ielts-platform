@@ -351,38 +351,29 @@ function normalizeWritingContent(parsedContent = {}) {
 }
 
 function injectListeningR2Support(template) {
-    // Important: do not force `crossOrigin="anonymous"` on R2 media.
-    // If the bucket CORS headers aren't configured, playback can fail and browsers show "Click to Play" text.
+    // The builder template (Listening_Builder_v42.html) now natively includes
+    // an R2-aware createBlobUrl. This function handles backward-compat for any
+    // older HTML that still has the base64-only version.
     let html = template;
 
-    const base64OnlyFunction = `    // Fix for mobile devices: Convert Base64 to Blob URLs to prevent memory crashes
-    function createBlobUrl(base64Str) {
-        if (!base64Str) return null;
-        try {
-            const parts = base64Str.split(',');
-            const mime = parts[0].match(/:(.*?);/)[1];
-            const bstr = atob(parts[1]);
-            let n = bstr.length;
-            const u8arr = new Uint8Array(n);
-            while (n--) { u8arr[n] = bstr.charCodeAt(n); }
-            return URL.createObjectURL(new Blob([u8arr], { type: mime }));
-        } catch(e) { 
-            return base64Str; // Fallback
-        }
-    }`;
+    // If the HTML already has the R2-aware function, nothing to do.
+    if (html.includes('audioSource.startsWith(')) {
+        return html;
+    }
 
-    const r2AwareFunction = `    // Support both original base64 audio and Cloudflare R2 URLs.
+    // Fallback: replace old base64-only function with R2-aware version.
+    // Use regex since whitespace may vary across builder versions.
+    html = html.replace(
+        /\/\/ Fix for mobile devices: Convert Base64 to Blob URLs[\s\S]*?function createBlobUrl\s*\(\s*\w+\s*\)\s*\{[\s\S]*?return base64Str;\s*\/\/ Fallback\s*\n\s*\}\s*\n\s*\}/,
+        `    // Support both base64 data URIs and HTTP/local URL audio sources
     function createBlobUrl(audioSource) {
         if (!audioSource) return null;
-
         if (typeof audioSource === 'string' && (audioSource.startsWith('http://') || audioSource.startsWith('https://') || audioSource.startsWith('/'))) {
             return audioSource;
         }
-
         if (typeof audioSource !== 'string' || !audioSource.startsWith('data:')) {
             return audioSource;
         }
-
         try {
             const parts = audioSource.split(',');
             const mime = parts[0].match(/:(.*?);/)[1];
@@ -391,12 +382,12 @@ function injectListeningR2Support(template) {
             const u8arr = new Uint8Array(n);
             while (n--) { u8arr[n] = bstr.charCodeAt(n); }
             return URL.createObjectURL(new Blob([u8arr], { type: mime }));
-        } catch (e) {
+        } catch(e) {
             return audioSource;
         }
-    }`;
+    }`
+    );
 
-    html = replaceAllLiteral(html, base64OnlyFunction, r2AwareFunction);
     return html;
 }
 

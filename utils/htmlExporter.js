@@ -350,19 +350,18 @@ function normalizeWritingContent(parsedContent = {}) {
     };
 }
 
-function injectListeningR2Support(template) {
-    // The builder template (Listening_Builder_v42.html) now natively includes
-    // an R2-aware createBlobUrl. This function handles backward-compat for any
-    // older HTML that still has the base64-only version.
+function injectListeningUrlSupport(template) {
+    // The builder template now natively includes a URL-aware createBlobUrl.
+    // This function handles backward-compat for any older HTML that still
+    // has the base64-only version.
     let html = template;
 
-    // If the HTML already has the R2-aware function, nothing to do.
+    // If the HTML already has the URL-aware function, nothing to do.
     if (html.includes('audioSource.startsWith(')) {
         return html;
     }
 
-    // Fallback: replace old base64-only function with R2-aware version.
-    // Use regex since whitespace may vary across builder versions.
+    // Fallback: replace old base64-only function with URL-aware version.
     html = html.replace(
         /\/\/ Fix for mobile devices: Convert Base64 to Blob URLs[\s\S]*?function createBlobUrl\s*\(\s*\w+\s*\)\s*\{[\s\S]*?return base64Str;\s*\/\/ Fallback\s*\n\s*\}\s*\n\s*\}/,
         `    // Support both base64 data URIs and HTTP/local URL audio sources
@@ -1652,7 +1651,7 @@ function generateListeningHtml(testDoc, parsedContent) {
         `const SESSION_KEY = '${stableSessionId}';`
     );
     
-    // Post-process: Ensure R2 audio URLs are available in the generated HTML
+    // Post-process: Ensure audio URLs are available in the generated HTML
     // This reinforces the audio injection even if the builder stringified different values
     const audioPartsJson = JSON.stringify(content.audioParts || [null, null, null, null]);
     const fullAudioJson = JSON.stringify(content.fullAudio || null);
@@ -1662,9 +1661,9 @@ function generateListeningHtml(testDoc, parsedContent) {
     console.log('[Listening Generation] Audio Parts JSON:', audioPartsJson);
     console.log('[Listening Generation] Full Audio JSON:', fullAudioJson);
     
-    // Force replace audio variables if they contain actual R2 URLs
+    // Force replace audio variables if they contain actual URLs
     if (content.audioParts && content.audioParts.some(url => url)) {
-        // Replace the audio data list line with our R2 URLs - handle multiline with greedy match
+        // Replace the audio data list line with our URLs - handle multiline with greedy match
         const before = generatedHtml.match(/const rawAudioDataList\s*=\s*[\[\s\S]*?\];/);
         console.log('[Listening Generation] Before replacement:', before ? before[0].substring(0, 100) : 'NO MATCH');
         
@@ -1677,14 +1676,14 @@ function generateListeningHtml(testDoc, parsedContent) {
         console.log('[Listening Generation] After replacement:', after ? after[0].substring(0, 100) : 'NO MATCH');
     }
     if (content.fullAudio) {
-        // Replace the full audio line with our R2 URL - handle multiline
+        // Replace the full audio line with our URL - handle multiline
         generatedHtml = generatedHtml.replace(
             /const rawFullAudioData\s*=\s*[\s\S]*?;/,
             `const rawFullAudioData = ${fullAudioJson};`
         );
     }
 
-    generatedHtml = injectListeningR2Support(generatedHtml);
+    generatedHtml = injectListeningUrlSupport(generatedHtml);
     generatedHtml = injectThemeStyles(generatedHtml);
     generatedHtml = injectWebsiteThemeButton(generatedHtml, 'listening');
     generatedHtml = injectThemeController(generatedHtml, 'listening');

@@ -132,7 +132,7 @@ try {
         { name: 'Listening includes saved Part 1 HTML', test: listeningHtml.includes('SECTION 1') && listeningHtml.includes('Sample question') },
         { name: 'Listening answer key is encoded for Builder-style grading', test: listeningHtml.includes('const encodedKey = ') && listeningHtml.includes('JSON.parse(atob(encodedKey))') },
         { name: 'Listening audio state key is present', test: listeningHtml.includes("const AUDIO_KEY = SESSION_KEY + '_audio_state';") },
-        { name: 'Listening keeps Cloudflare R2 URL', test: listeningHtml.includes('https://example.com/part1.mp3') },
+        { name: 'Listening keeps audio URL', test: listeningHtml.includes('https://example.com/part1.mp3') },
         { name: 'Listening pause setting survives export', test: listeningHtml.includes('const usePause = true;') },
         { name: 'Listening includes start overlay', test: listeningHtml.includes('id="startOverlay"') },
         { name: 'Listening includes submit button', test: listeningHtml.includes('Submit & Check') },
@@ -166,7 +166,7 @@ try {
     }
 
     if (listeningOk) {
-        console.log('Listening export matches the builder-style student shell and keeps R2 audio support.');
+        console.log('Listening export matches the builder-style student shell and keeps audio URL support.');
     } else {
         console.log('Some listening checks failed. Please review the listening HTML output.');
     }

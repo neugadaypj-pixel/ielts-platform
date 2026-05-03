@@ -30,7 +30,6 @@ app.use(express.static('public'));
 // --- STORAGE CONFIGURATION ---
 const fs = require('fs');
 
-// --- STORAGE CONFIGURATION (Local Disk) ---
 const uploadDir = path.join(__dirname, 'public', 'uploads');
 
 console.log("=========================================");
@@ -551,6 +550,7 @@ app.get('/teacher-dashboard', isTeacher, async (req, res) => {
         });
 
         const tests = (teacher?.assignedTests || [])
+            .filter((testDoc) => testDoc != null)
             .map((testDoc) => {
                 const test = typeof testDoc.toObject === 'function' ? testDoc.toObject() : { ...testDoc };
                 const groupStats = groupStatsByTestId.get(String(test._id));

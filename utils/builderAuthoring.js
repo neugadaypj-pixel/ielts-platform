@@ -170,7 +170,7 @@ ${commonInjectionStyles()}
     const controls = document.createElement('div');
     controls.className = 'platform-save-box';
     controls.innerHTML = \`
-        <div class="platform-save-title">🎧 Save This Builder Test to the Platform (R2 Audio)</div>
+        <div class="platform-save-title">🎧 Save This Builder Test to the Platform</div>
         <div class="platform-save-row">
             <div class="platform-save-field">
                 <label for="platformTestTitle">Platform Test Title</label>
@@ -227,14 +227,14 @@ ${commonInjectionStyles()}
         if (fullAudioInput && fullAudioInput.files && fullAudioInput.files[0]) {
             hasAudio = true;
             formData.append('audioFile', fullAudioInput.files[0]);
-            updateProgress('📤 Uploading full audio to Cloudflare R2...');
+            updateProgress('📤 Uploading full audio...');
         } else {
             for (let i = 0; i < partAudioInputs.length; i++) {
                 const input = partAudioInputs[i];
                 if (input && input.files && input.files[0]) {
                     hasAudio = true;
                     formData.append('part' + (i + 1), input.files[0]);
-                    updateProgress('📤 Uploading Part ' + (i + 1) + ' to Cloudflare R2...');
+                    updateProgress('📤 Uploading Part ' + (i + 1) + '...');
                 }
             }
         }
@@ -267,7 +267,7 @@ ${commonInjectionStyles()}
                 throw new Error(data.error || data.message || 'Unable to save listening test');
             }
 
-            updateStatus('✅ Test saved successfully with R2 audio URLs!');
+            updateStatus('✅ Test saved successfully!');
             progressEl.classList.remove('show');
             setTimeout(() => { window.location.href = '/admin'; }, 1200);
         } catch (error) {

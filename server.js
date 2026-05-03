@@ -337,12 +337,16 @@ app.post('/create-test/listening', isAdmin, upload.any(), async (req, res) => {
     try {
         const audioUrls = {};
         
-        // 1. Сначала проверяем, загружены ли ФАЙЛЫ
+        // 1. Check if files were uploaded
         if (req.files && req.files.length > 0) {
+            console.log(`[Listening Upload] Received ${req.files.length} audio file(s):`);
             req.files.forEach(file => {
-                // Сохраняем локальный путь для каждого файла
-                audioUrls[file.fieldname] = `/uploads/${file.filename}`;
+                const localPath = `/uploads/${file.filename}`;
+                audioUrls[file.fieldname] = localPath;
+                console.log(`  - Field: ${file.fieldname}, Original: ${file.originalname}, Saved: ${localPath}`);
             });
+        } else {
+            console.log('[Listening Upload] WARNING: No audio files received in upload!');
         }
 
         // 2. Если файл 'audioFile' не загружен, берем ссылку из текстового поля audioUrl

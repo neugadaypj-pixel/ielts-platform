@@ -1099,6 +1099,27 @@ app.get('/student-dashboard', async (req, res) => {
     }
 });
 
+// --- RENAME / FOLDER ROUTE ---
+app.post('/teacher/update-test-meta/:id', isTeacher, async (req, res) => {
+    try {
+        const test = await Test.findById(req.params.id);
+        if (!test) return res.status(404).json({ success: false, message: 'Test not found' });
+
+        const allowed = await canEditTest(req, req.params.id);
+        if (!allowed && req.session.userRole !== 'admin') {
+            const assigned = await User.findOne({ _id: req.session.userId, assignedTests: test._id });
+            if (!assigned) return res.status(403).json({ success: false, message: 'Not authorized' });
+        }
+
+        if (req.body.customTitle !== undefined) test.customTitle = String(req.body.customTitle).trim();
+        if (req.body.folder !== undefined) test.folder = String(req.body.folder).trim();
+        await test.save();
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
 // --- DELETE ROUTES ---
 
 // Delete a test

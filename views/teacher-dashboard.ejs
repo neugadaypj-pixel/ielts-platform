@@ -564,6 +564,75 @@
             color: #b91c1c;
         }
 
+        .folder-section {
+            margin-bottom: 28px;
+        }
+
+        .folder-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 14px;
+            padding: 10px 16px;
+            border-radius: 16px;
+            background: linear-gradient(135deg, rgba(102,126,234,0.08) 0%, rgba(118,75,162,0.06) 100%);
+            border: 1px solid rgba(102,126,234,0.15);
+        }
+
+        .folder-icon { font-size: 1.2rem; }
+
+        .folder-name {
+            font-size: 1.05rem;
+            font-weight: 900;
+            color: #334155;
+            flex: 1;
+        }
+
+        .test-title-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .test-title-row h4 { margin-bottom: 0; }
+
+        .btn-icon {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 1rem;
+            padding: 4px;
+            border-radius: 8px;
+            transition: background 0.2s;
+        }
+
+        .btn-icon:hover { background: #f1f5f9; }
+
+        .meta-edit {
+            display: grid;
+            gap: 8px;
+            margin-bottom: 12px;
+            padding: 12px;
+            border-radius: 14px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+        }
+
+        .meta-input {
+            width: 100%;
+            padding: 8px 12px;
+            border-radius: 10px;
+            border: 1px solid #e2e8f0;
+            font-size: 0.9rem;
+            font-family: inherit;
+        }
+
+        .meta-input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
         @media (max-width: 1280px) {
             .library-grid { grid-template-columns: 1fr; }
         }
@@ -582,6 +651,27 @@
         }
     </style>
     <script>
+        function toggleMeta(id) {
+            const el = document.getElementById('meta-' + id);
+            el.style.display = el.style.display === 'none' ? 'grid' : 'none';
+        }
+
+        function saveMeta(id) {
+            const customTitle = document.getElementById('title-' + id).value.trim();
+            const folder = document.getElementById('folder-' + id).value.trim();
+            fetch('/teacher/update-test-meta/' + id, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ customTitle, folder })
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) window.location.reload();
+                else alert('Error: ' + data.message);
+            })
+            .catch(e => alert('Error: ' + e.message));
+        }
+
         function deleteItem(type, id, name) {
             if (!confirm(`Are you sure you want to delete ${type} "${name}"?`)) return;
             fetch(`/delete-${type}/${id}`, {
@@ -771,68 +861,86 @@
                 </div>
             </div>
 
-            <div class="library-grid">
-                <% const typeConfig = [
-                    { key: 'reading', label: 'Reading', className: 'type-reading' },
-                    { key: 'listening', label: 'Listening', className: 'type-listening' },
-                    { key: 'writing', label: 'Writing', className: 'type-writing' }
-                ]; %>
-                <% typeConfig.forEach(type => { const typeTests = testsByType[type.key] || []; %>
-                    <div class="library-column <%= type.className %>">
-                        <div class="type-header">
-                            <h3><%= type.label %></h3>
-                            <div class="type-badge"><%= typeTests.length %> tests</div>
+            <%
+                // Group tests by folder first
+                const folderMap = {};
+                tests.forEach(test => {
+                    const folder = test.folder || 'Uncategorized';
+                    if (!folderMap[folder]) folderMap[folder] = [];
+                    folderMap[folder].push(test);
+                });
+                const folderNames = Object.keys(folderMap).sort((a, b) => a === 'Uncategorized' ? 1 : b === 'Uncategorized' ? -1 : a.localeCompare(b));
+            %>
+
+            <% if (tests.length === 0) { %>
+                <div class="ghost-note">No tests assigned yet.</div>
+            <% } else { %>
+                <% folderNames.forEach(folderName => { %>
+                    <div class="folder-section">
+                        <div class="folder-header">
+                            <span class="folder-icon">📁</span>
+                            <span class="folder-name"><%= folderName %></span>
+                            <span class="type-badge"><%= folderMap[folderName].length %> tests</span>
                         </div>
+                        <div class="library-grid">
+                            <% const typeConfig = [
+                                { key: 'reading', label: 'Reading', className: 'type-reading' },
+                                { key: 'listening', label: 'Listening', className: 'type-listening' },
+                                { key: 'writing', label: 'Writing', className: 'type-writing' }
+                            ]; %>
+                            <% typeConfig.forEach(type => {
+                                const typeTests = folderMap[folderName].filter(t => t.type === type.key);
+                                if (typeTests.length === 0) return;
+                            %>
+                                <div class="library-column <%= type.className %>">
+                                    <div class="type-header">
+                                        <h3><%= type.label %></h3>
+                                        <div class="type-badge"><%= typeTests.length %></div>
+                                    </div>
+                                    <div class="test-list">
+                                        <% typeTests.forEach(test => {
+                                            const completionRate = test.assignedStudentCount ? Math.round((test.completedStudentCount / test.assignedStudentCount) * 100) : 0;
+                                            const displayTitle = test.customTitle || test.title;
+                                        %>
+                                            <article class="test-card">
+                                                <div class="test-title-row">
+                                                    <h4><%= displayTitle %></h4>
+                                                    <button class="btn-icon" onclick="toggleMeta('<%= test._id %>')" title="Rename / Move">✏️</button>
+                                                </div>
 
-                        <% if (typeTests.length > 0) { %>
-                            <div class="test-list">
-                                <% typeTests.forEach(test => { const completionRate = test.assignedStudentCount ? Math.round((test.completedStudentCount / test.assignedStudentCount) * 100) : 0; %>
-                                    <article class="test-card">
-                                        <h4><%= test.title %></h4>
-                                        <p>Review before assigning, download as standalone HTML, or open progress to track student completions.</p>
+                                                <div id="meta-<%= test._id %>" class="meta-edit" style="display:none;">
+                                                    <input type="text" class="meta-input" id="title-<%= test._id %>" value="<%= displayTitle %>" placeholder="Custom name...">
+                                                    <input type="text" class="meta-input" id="folder-<%= test._id %>" value="<%= test.folder || '' %>" placeholder="Folder name...">
+                                                    <button class="btn btn-success" style="padding:8px 14px; font-size:0.85rem;" onclick="saveMeta('<%= test._id %>')">Save</button>
+                                                </div>
 
-                                        <div class="test-metrics">
-                                            <div class="metric">
-                                                <strong><%= test.assignedGroupCount %></strong>
-                                                <span>Groups</span>
-                                            </div>
-                                            <div class="metric">
-                                                <strong><%= test.assignedStudentCount %></strong>
-                                                <span>Students</span>
-                                            </div>
-                                            <div class="metric">
-                                                <strong><%= test.completedStudentCount %></strong>
-                                                <span>Completed</span>
-                                            </div>
-                                        </div>
+                                                <div class="test-metrics">
+                                                    <div class="metric"><strong><%= test.assignedGroupCount %></strong><span>Groups</span></div>
+                                                    <div class="metric"><strong><%= test.assignedStudentCount %></strong><span>Students</span></div>
+                                                    <div class="metric"><strong><%= test.completedStudentCount %></strong><span>Completed</span></div>
+                                                </div>
+                                                <div class="progress-track">
+                                                    <div class="progress-fill" style="width: <%= completionRate %>%"></div>
+                                                </div>
 
-                                        <div class="progress-track">
-                                            <div class="progress-fill" style="width: <%= completionRate %>%"></div>
-                                        </div>
-                                        <p><strong><%= completionRate %>%</strong> of assigned students completed this test.</p>
-
-                                        <% if (test.latestSubmissionAt) { %>
-                                            <p style="margin-top: 8px;">Latest result: <strong><%= new Date(test.latestSubmissionAt).toLocaleString() %></strong></p>
-                                        <% } %>
-
-                                        <div class="test-actions">
-                                            <% const canEdit = test.createdBy && String(test.createdBy) === String(teacher._id); %>
-                                            <% if (canEdit) { %>
-                                                <a href="/edit-test/<%= test._id %>" class="btn btn-success">Edit</a>
-                                            <% } %>
-                                            <a href="/view-test/<%= test._id %>" target="_blank" class="btn btn-secondary">Preview</a>
-                                            <a href="/download-test/<%= test._id %>" class="btn btn-secondary">Download HTML</a>
-                                            <a href="/teacher/progress/<%= test._id %>" class="btn btn-primary">View Progress</a>
-                                        </div>
-                                    </article>
-                                <% }) %>
-                            </div>
-                        <% } else { %>
-                            <div class="ghost-note">No <%= type.label.toLowerCase() %> tests have been assigned to this teacher yet.</div>
-                        <% } %>
+                                                <div class="test-actions">
+                                                    <% const canEdit = test.createdBy && String(test.createdBy) === String(teacher._id); %>
+                                                    <% if (canEdit) { %>
+                                                        <a href="/edit-test/<%= test._id %>" class="btn btn-success">Edit</a>
+                                                    <% } %>
+                                                    <a href="/view-test/<%= test._id %>" target="_blank" class="btn btn-secondary">Preview</a>
+                                                    <a href="/download-test/<%= test._id %>" class="btn btn-secondary">Download</a>
+                                                    <a href="/teacher/progress/<%= test._id %>" class="btn btn-primary">Progress</a>
+                                                </div>
+                                            </article>
+                                        <% }) %>
+                                    </div>
+                                </div>
+                            <% }) %>
+                        </div>
                     </div>
                 <% }) %>
-            </div>
+            <% } %>
         </section>
 
         <section class="section">

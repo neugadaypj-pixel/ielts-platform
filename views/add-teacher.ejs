@@ -161,32 +161,15 @@
                 <p>Register a teacher to your platform</p>
             </div>
             
-            <form method="POST" action="/add-teacher">
+            <form method="POST" action="/admin/add-teacher">
                 <div class="form-group">
-                    <label for="username">Teacher Username *</label>
-                    <input type="text" id="username" name="username" required placeholder="jane_smith">
-                    <div class="hint">Unique username for the teacher</div>
-                </div>
-                
-                <div class="form-group">
-                    <label for="email">Email Address *</label>
-                    <input type="email" id="email" name="email" required placeholder="jane@example.com">
-                </div>
-                
-                <div class="form-group">
-                    <label for="fullname">Full Name</label>
-                    <input type="text" id="fullname" name="fullname" placeholder="Jane Smith">
+                    <label for="username">Username *</label>
+                    <input type="text" id="username" name="username" required placeholder="e.g. teacher_john">
                 </div>
                 
                 <div class="form-group">
                     <label for="password">Password *</label>
                     <input type="password" id="password" name="password" required placeholder="••••••••">
-                    <div class="hint">Minimum 8 characters</div>
-                </div>
-                
-                <div class="form-group">
-                    <label for="confirmPassword">Confirm Password *</label>
-                    <input type="password" id="confirmPassword" name="confirmPassword" required placeholder="••••••••">
                 </div>
                 
                 <div class="button-group">

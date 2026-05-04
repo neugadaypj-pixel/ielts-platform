@@ -362,47 +362,6 @@ ${commonInjectionStyles()}
     }
 })();
 </script>`;
-
-        if (!hasAudio) {
-            updateStatus('Please upload at least one audio file', true);
-            return;
-        }
-
-        formData.append('title', title);
-        formData.append('answerKey', JSON.stringify(answerKey));
-        formData.append('usePause', document.getElementById('add_pause_cb').checked ? 'true' : 'false');
-        formData.append('parts', JSON.stringify({
-            1: { finalHtml: getVal('q1_text') },
-            2: { finalHtml: getVal('q2_text') },
-            3: { finalHtml: getVal('q3_text') },
-            4: { finalHtml: getVal('q4_text') }
-        }));
-
-        updateStatus('Uploading to server and processing...');
-
-        try {
-            const response = await fetch('/create-test/listening', {
-                method: 'POST',
-                body: formData
-            });
-
-            const data = await response.json();
-            if (!response.ok || !data.success) {
-                throw new Error(data.error || data.message || 'Unable to save listening test');
-            }
-
-            updateStatus('✅ Test saved successfully!');
-            progressEl.classList.remove('show');
-            setTimeout(() => { window.location.href = '/admin'; }, 1200);
-        } catch (error) {
-            updateStatus('Save failed: ' + error.message, true);
-            progressEl.classList.remove('show');
-        }
-    }
-
-    document.getElementById('platformSaveButton').addEventListener('click', saveToPlatform);
-})();
-</script>`;
 }
 
 function buildWritingInjection(testData = null) {

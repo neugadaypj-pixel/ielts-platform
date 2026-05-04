@@ -10,6 +10,12 @@ const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
 const { generateHTMLFromTest, stringifyContent } = require('./utils/htmlExporter');
 const { getAuthoringPageHtml } = require('./utils/builderAuthoring');
 
+console.log('[B2 Config] ENDPOINT:', process.env.B2_ENDPOINT);
+console.log('[B2 Config] BUCKET:', process.env.B2_BUCKET);
+console.log('[B2 Config] PUBLIC_URL:', process.env.B2_PUBLIC_URL);
+console.log('[B2 Config] KEY_ID:', process.env.B2_KEY_ID ? 'SET' : 'MISSING');
+console.log('[B2 Config] APP_KEY:', process.env.B2_APP_KEY ? 'SET' : 'MISSING');
+
 const s3 = new S3Client({
     endpoint: process.env.B2_ENDPOINT,
     region: 'us-west-004',

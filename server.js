@@ -923,7 +923,8 @@ app.get('/view-test/:id', async (req, res) => {
 
         try {
             const html = generateHTMLFromTest(access.test, {
-                groqApiKey: process.env.GROQ_API_KEY || ''
+                groqApiKey: process.env.GROQ_API_KEY || '',
+                studentName: access.user ? (access.user.username || '') : ''
             });
             return res.send(html);
         } catch (generatorErr) {

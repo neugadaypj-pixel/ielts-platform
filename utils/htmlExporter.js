@@ -1603,6 +1603,23 @@ function injectWritingSubmissionHook(html, testDoc) {
     return replaceLastLiteral(html, '</body>', `${snippet}\n</body>`);
 }
 
+function injectStudentName(html, testDoc, studentName) {
+    if (!studentName) return html;
+    const snippet = `
+<script>
+(function() {
+    window.addEventListener('load', function() {
+        const nameInput = document.getElementById('studentName');
+        if (!nameInput) return;
+        nameInput.value = window.__platformStudentName || '';
+        nameInput.readOnly = true;
+        nameInput.style.display = 'none';
+    });
+})();
+</script>`;
+    return replaceLastLiteral(html, '</body>', `${snippet}\n</body>`);
+}
+
 function injectHeartbeat(html, testDoc) {
     const safeTestId = escapeForBuilderValue(testDoc._id);
     const safeType = escapeForBuilderValue(testDoc.type || 'reading');
@@ -1668,7 +1685,7 @@ function injectHeartbeat(html, testDoc) {
     return replaceLastLiteral(html, '</body>', `${snippet}\n</body>`);
 }
 
-function generateReadingHtml(testDoc, parsedContent) {
+function generateReadingHtml(testDoc, parsedContent, studentName) {
     const content = normalizeReadingContent(parsedContent, testDoc);
     const stableSessionId = createStableSessionId(testDoc, 'test_');
 
@@ -1694,11 +1711,12 @@ function generateReadingHtml(testDoc, parsedContent) {
     html = injectThemeController(html, 'reading');
     html = injectReadingHighlightFix(html);
     html = injectReadingSubmissionHook(html, testDoc);
+    html = injectStudentName(html, testDoc, studentName);
     html = injectHeartbeat(html, testDoc);
     return html.trim();
 }
 
-function generateListeningHtml(testDoc, parsedContent) {
+function generateListeningHtml(testDoc, parsedContent, studentName) {
     const content = normalizeListeningContent(parsedContent);
     const stableSessionId = createStableSessionId(testDoc, 'ielts_listening_');
     let generatedHtml = runBuilderGenerateFile('listening', {
@@ -1755,11 +1773,13 @@ function generateListeningHtml(testDoc, parsedContent) {
     generatedHtml = injectThemeController(generatedHtml, 'listening');
     generatedHtml = injectListeningHighlightFix(generatedHtml);
     generatedHtml = injectListeningSubmissionHook(generatedHtml, testDoc);
+    generatedHtml = injectStudentName(generatedHtml, testDoc, studentName);
     generatedHtml = injectHeartbeat(generatedHtml, testDoc);
     return generatedHtml.trim();
 }
 
 function generateWritingHtml(testDoc, parsedContent, options = {}) {
+    const studentName = options.studentName || '';
     const content = normalizeWritingContent(parsedContent);
     const stableSessionId = createStableSessionId(testDoc, 'ielts_writing_');
     let generatedHtml = runBuilderGenerateFile('writing', {
@@ -1785,11 +1805,18 @@ function generateWritingHtml(testDoc, parsedContent, options = {}) {
     generatedHtml = injectWebsiteThemeButton(generatedHtml, 'writing');
     generatedHtml = injectThemeController(generatedHtml, 'writing');
     generatedHtml = injectWritingSubmissionHook(generatedHtml, testDoc);
+    generatedHtml = injectStudentName(generatedHtml, testDoc, studentName);
     generatedHtml = injectHeartbeat(generatedHtml, testDoc);
     return generatedHtml.trim();
 }
 function generateHTMLFromTest(testDoc, options = {}) {
     const plainTest = toPlainObject(testDoc);
+    const studentName = escapeForBuilderValue(options.studentName || '');
+
+    function injectNameVar(html) {
+        if (!studentName) return html;
+        return html.replace('<head>', `<head>\n<script>window.__platformStudentName = "${studentName}";</script>`);
+    }
 
     if (plainTest.renderedHtml && typeof plainTest.renderedHtml === 'string' && plainTest.renderedHtml.trim()) {
         return plainTest.renderedHtml.trim();
@@ -1826,15 +1853,15 @@ function generateHTMLFromTest(testDoc, options = {}) {
     const normalizedType = String(plainTest.type || 'reading').toLowerCase();
 
     if (normalizedType === 'reading') {
-        return generateReadingHtml(plainTest, parsedContent);
+        return injectNameVar(generateReadingHtml(plainTest, parsedContent, studentName));
     }
 
     if (normalizedType === 'listening') {
-        return generateListeningHtml(plainTest, parsedContent);
+        return injectNameVar(generateListeningHtml(plainTest, parsedContent, studentName));
     }
 
     if (normalizedType === 'writing') {
-        return generateWritingHtml(plainTest, parsedContent, options);
+        return injectNameVar(generateWritingHtml(plainTest, parsedContent, options));
     }
 
     throw new Error(`Unsupported test type: ${plainTest.type}`);

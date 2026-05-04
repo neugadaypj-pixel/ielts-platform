@@ -6,8 +6,30 @@ const bcrypt = require('bcryptjs');
 const session = require('express-session'); 
 const multer = require("multer");
 const mime = require('mime-types');
+const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
 const { generateHTMLFromTest, stringifyContent } = require('./utils/htmlExporter');
 const { getAuthoringPageHtml } = require('./utils/builderAuthoring');
+
+const s3 = new S3Client({
+    endpoint: process.env.B2_ENDPOINT,
+    region: 'us-west-004',
+    credentials: {
+        accessKeyId: process.env.B2_KEY_ID,
+        secretAccessKey: process.env.B2_APP_KEY
+    },
+    forcePathStyle: true
+});
+
+async function uploadToB2(buffer, filename, mimetype) {
+    await s3.send(new PutObjectCommand({
+        Bucket: process.env.B2_BUCKET,
+        Key: filename,
+        Body: buffer,
+        ContentType: mimetype,
+        ACL: 'public-read'
+    }));
+    return `${process.env.B2_PUBLIC_URL}/${filename}`;
+}
 const app = express();
 
 // --- 1. DATABASE CONNECTION ---
@@ -30,28 +52,8 @@ app.use(express.static('public'));
 // --- STORAGE CONFIGURATION ---
 const fs = require('fs');
 
-const uploadDir = path.join(__dirname, 'public', 'uploads');
-
-console.log("=========================================");
-console.log("ТЕКУЩАЯ ДИРЕКТОРИЯ ЗАГРУЗКИ:", uploadDir);
-console.log("=========================================");
-
-if (!fs.existsSync(uploadDir)) {
-    fs.mkdirSync(uploadDir, { recursive: true });
-}
-
-// 2. Configure Multer to save files directly to the hard drive
-const storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-        cb(null, uploadDir);
-    },
-    filename: function (req, file, cb) {
-        const ext = path.extname(file.originalname || '').toLowerCase() || '.mp3';
-        cb(null, `listening-${file.fieldname}-${Date.now()}${ext}`);
-    }
-});
-
-const upload = multer({ storage: storage });
+// Use memory storage — files go to B2, not local disk
+const upload = multer({ storage: multer.memoryStorage() });
 
 app.use(session({
     secret: process.env.SESSION_SECRET, 
@@ -373,10 +375,11 @@ app.post('/update-test/:id', isTeacher, upload.any(), async (req, res) => {
         if (type === 'listening') {
             const audioUrls = {};
             if (req.files && req.files.length > 0) {
-                req.files.forEach(file => {
-                    const localPath = `/uploads/${file.filename}`;
-                    audioUrls[file.fieldname] = localPath;
-                });
+                await Promise.all(req.files.map(async (file) => {
+                    const ext = path.extname(file.originalname || '').toLowerCase() || '.mp3';
+                    const filename = `listening-${file.fieldname}-${Date.now()}${ext}`;
+                    audioUrls[file.fieldname] = await uploadToB2(file.buffer, filename, file.mimetype);
+                }));
             }
 
             const previous = existingTest.readingPassage ? JSON.parse(existingTest.readingPassage) : {};
@@ -431,14 +434,15 @@ app.post('/update-test/:id', isTeacher, upload.any(), async (req, res) => {
     }
 });
 
-// --- GENERIC FILE UPLOAD (Fixed for Local) ---
+// --- GENERIC FILE UPLOAD ---
 app.post('/upload-test', isAdmin, upload.single('audioFile'), async (req, res) => {
     try {
         if (!req.file) {
             return res.status(400).json({ success: false, error: "No file uploaded" });
         }
-        // Формируем путь, который будет доступен через браузер
-        const fileUrl = `/uploads/${req.file.filename}`; 
+        const ext = path.extname(req.file.originalname || '').toLowerCase() || '.mp3';
+        const filename = `listening-audioFile-${Date.now()}${ext}`;
+        const fileUrl = await uploadToB2(req.file.buffer, filename, req.file.mimetype);
         res.json({ success: true, url: fileUrl });
     } catch (err) {
         res.status(500).json({ success: false, error: err.message });
@@ -450,16 +454,13 @@ app.post('/create-test/listening', isAdmin, upload.any(), async (req, res) => {
     try {
         const audioUrls = {};
         
-        // 1. Check if files were uploaded
+        // 1. Upload files to B2
         if (req.files && req.files.length > 0) {
-            console.log(`[Listening Upload] Received ${req.files.length} audio file(s):`);
-            req.files.forEach(file => {
-                const localPath = `/uploads/${file.filename}`;
-                audioUrls[file.fieldname] = localPath;
-                console.log(`  - Field: ${file.fieldname}, Original: ${file.originalname}, Saved: ${localPath}`);
-            });
-        } else {
-            console.log('[Listening Upload] WARNING: No audio files received in upload!');
+            await Promise.all(req.files.map(async (file) => {
+                const ext = path.extname(file.originalname || '').toLowerCase() || '.mp3';
+                const filename = `listening-${file.fieldname}-${Date.now()}${ext}`;
+                audioUrls[file.fieldname] = await uploadToB2(file.buffer, filename, file.mimetype);
+            }));
         }
 
         // 2. Если файл 'audioFile' не загружен, берем ссылку из текстового поля audioUrl
@@ -933,8 +934,29 @@ app.get('/download-test/:id', async (req, res) => {
 
         async function fileUrlToDataUri(fileUrl) {
             if (!fileUrl || typeof fileUrl !== 'string') return fileUrl;
+            // If it's already a B2 or external URL, fetch it
+            if (fileUrl.startsWith('http://') || fileUrl.startsWith('https://')) {
+                try {
+                    const https = require('https');
+                    const http = require('http');
+                    const client = fileUrl.startsWith('https') ? https : http;
+                    const buffer = await new Promise((resolve, reject) => {
+                        client.get(fileUrl, (response) => {
+                            const chunks = [];
+                            response.on('data', (chunk) => chunks.push(chunk));
+                            response.on('end', () => resolve(Buffer.concat(chunks)));
+                            response.on('error', reject);
+                        }).on('error', reject);
+                    });
+                    const contentType = mime.lookup(fileUrl) || 'audio/mpeg';
+                    return `data:${contentType};base64,${buffer.toString('base64')}`;
+                } catch (err) {
+                    console.warn('[download-test] Unable to fetch audio:', fileUrl, err.message);
+                    return fileUrl;
+                }
+            }
+            // Legacy local path fallback
             if (!fileUrl.startsWith('/uploads/')) return fileUrl;
-
             const localPath = path.join(__dirname, 'public', fileUrl.replace(/^\/+/, ''));
             try {
                 const buffer = await fs.promises.readFile(localPath);

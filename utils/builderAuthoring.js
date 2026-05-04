@@ -5,7 +5,6 @@ function replaceLastLiteral(template, searchValue, replacementValue) {
     if (lastIndex === -1) {
         return template;
     }
-
     return `${template.slice(0, lastIndex)}${replacementValue}${template.slice(lastIndex + searchValue.length)}`;
 }
 
@@ -71,6 +70,7 @@ function buildReadingInjection(testData = null) {
     const isEditMode = testData && testData._id;
     const testId = isEditMode ? testData._id : null;
     const preloadedData = isEditMode ? JSON.stringify(testData) : 'null';
+    const builderJson = isEditMode && testData.builderJson ? testData.builderJson : 'null';
 
     return `
 ${commonInjectionStyles()}
@@ -102,33 +102,17 @@ ${commonInjectionStyles()}
 
     actionArea.insertBefore(controls, actionArea.firstChild);
 
-    // Pre-load data if in edit mode
-    if (isEditMode && preloadedData) {
-        try {
-            const data = JSON.parse(preloadedData);
-            const content = data.readingPassage ? JSON.parse(data.readingPassage) : null;
-            if (content) {
-                if (content.p1) {
-                    if (document.getElementById('p1_title')) document.getElementById('p1_title').value = content.p1.title || '';
-                    if (document.getElementById('p1_text')) document.getElementById('p1_text').value = content.p1.text || '';
-                    if (document.getElementById('q1_text')) document.getElementById('q1_text').value = content.p1.questions || '';
+    if (isEditMode) {
+        const savedJson = ${builderJson};
+        if (savedJson && savedJson.parts) {
+            try {
+                ['p1_title','p1_text','q1_text','p2_title','p2_text','q2_text','p3_title','p3_text','q3_text'].forEach(function(id) {
+                    if (savedJson.parts[id] && document.getElementById(id)) document.getElementById(id).value = savedJson.parts[id];
+                });
+                if (savedJson.answerKey && document.getElementById('answer_key_json')) {
+                    document.getElementById('answer_key_json').value = savedJson.answerKey;
                 }
-                if (content.p2) {
-                    if (document.getElementById('p2_title')) document.getElementById('p2_title').value = content.p2.title || '';
-                    if (document.getElementById('p2_text')) document.getElementById('p2_text').value = content.p2.text || '';
-                    if (document.getElementById('q2_text')) document.getElementById('q2_text').value = content.p2.questions || '';
-                }
-                if (content.p3) {
-                    if (document.getElementById('p3_title')) document.getElementById('p3_title').value = content.p3.title || '';
-                    if (document.getElementById('p3_text')) document.getElementById('p3_text').value = content.p3.text || '';
-                    if (document.getElementById('q3_text')) document.getElementById('q3_text').value = content.p3.questions || '';
-                }
-                if (content.answerKey && document.getElementById('answer_key_json')) {
-                    document.getElementById('answer_key_json').value = JSON.stringify(content.answerKey, null, 2);
-                }
-            }
-        } catch (e) {
-            console.error('Error loading test data:', e);
+            } catch (e) { console.error('Error loading builder JSON:', e); }
         }
     }
 
@@ -165,14 +149,23 @@ ${commonInjectionStyles()}
             answerKey
         };
 
+        const builderJson = JSON.stringify({
+            answerKey: getVal('answer_key_json'),
+            parts: {
+                p1_title: getVal('p1_title'), p1_text: getVal('p1_text'), q1_text: getVal('q1_text'),
+                p2_title: getVal('p2_title'), p2_text: getVal('p2_text'), q2_text: getVal('q2_text'),
+                p3_title: getVal('p3_title'), p3_text: getVal('p3_text'), q3_text: getVal('q3_text')
+            }
+        });
+
         status.textContent = isEditMode ? 'Updating...' : 'Saving...';
 
         try {
             const endpoint = isEditMode ? '/update-test/' + testId : '/create-test/reading';
             const response = await fetch(endpoint, {
-                method: isEditMode ? 'POST' : 'POST',
+                method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ title, content, type: 'reading' })
+                body: JSON.stringify({ title, content, type: 'reading', builderJson })
             });
 
             const data = await response.json();
@@ -189,7 +182,7 @@ ${commonInjectionStyles()}
     }
 
     document.getElementById('platformSaveButton').addEventListener('click', saveToPlatform);
-    
+
     if (isEditMode && document.getElementById('platformCancelButton')) {
         document.getElementById('platformCancelButton').addEventListener('click', () => {
             window.location.href = '/admin';
@@ -203,6 +196,7 @@ function buildListeningInjection(testData = null) {
     const isEditMode = testData && testData._id;
     const testId = isEditMode ? testData._id : null;
     const preloadedData = isEditMode ? JSON.stringify(testData) : 'null';
+    const builderJson = isEditMode && testData.builderJson ? testData.builderJson : 'null';
 
     return `
 ${commonInjectionStyles()}
@@ -241,24 +235,18 @@ ${commonInjectionStyles()}
 
     actionArea.insertBefore(controls, actionArea.firstChild);
 
-    // Pre-load data if in edit mode
-    if (isEditMode && preloadedData) {
-        try {
-            const data = JSON.parse(preloadedData);
-            const content = data.readingPassage ? JSON.parse(data.readingPassage) : null;
-            if (content) {
+    if (isEditMode) {
+        const savedJson = ${builderJson};
+        if (savedJson && savedJson.parts) {
+            try {
                 for (let i = 1; i <= 4; i++) {
                     const el = document.getElementById('q' + i + '_text');
-                    const partData = content.parts && (content.parts[i] || content.parts[String(i)]);
-                    const html = partData ? (partData.finalHtml || partData.html || '') : (content['part' + i] ? (content['part' + i].finalHtml || content['part' + i] || '') : '');
-                    if (el && html) el.value = html;
+                    if (el && savedJson.parts[i]) el.value = savedJson.parts[i];
                 }
-                if (content.answerKey && document.getElementById('answer_key_json')) {
-                    document.getElementById('answer_key_json').value = JSON.stringify(content.answerKey, null, 2);
+                if (savedJson.answerKey && document.getElementById('answer_key_json')) {
+                    document.getElementById('answer_key_json').value = savedJson.answerKey;
                 }
-            }
-        } catch (e) {
-            console.error('Error loading test data:', e);
+            } catch (e) { console.error('Error loading builder JSON:', e); }
         }
     }
 
@@ -278,7 +266,7 @@ ${commonInjectionStyles()}
 
     async function saveToPlatform() {
         updateStatus(isEditMode ? 'Preparing update...' : 'Preparing upload...');
-        
+
         const title = getVal('platformTestTitle').trim() || 'Listening Test';
         if (!title) {
             updateStatus('Please enter a test title', true);
@@ -298,7 +286,6 @@ ${commonInjectionStyles()}
         const partAudioInputs = Array.from(fileInputs).slice(1, 5);
         const formData = new FormData();
 
-        // Check for at least one audio file (in edit mode, old audio is kept if no new upload)
         let hasAudio = false;
         if (fullAudioInput && fullAudioInput.files && fullAudioInput.files[0]) {
             hasAudio = true;
@@ -329,6 +316,10 @@ ${commonInjectionStyles()}
             3: { finalHtml: getVal('q3_text') },
             4: { finalHtml: getVal('q4_text') }
         }));
+        formData.append('builderJson', JSON.stringify({
+            answerKey: getVal('answer_key_json'),
+            parts: { 1: getVal('q1_text'), 2: getVal('q2_text'), 3: getVal('q3_text'), 4: getVal('q4_text') }
+        }));
 
         updateStatus(isEditMode ? 'Updating test...' : 'Uploading to server and processing...');
 
@@ -354,7 +345,7 @@ ${commonInjectionStyles()}
     }
 
     document.getElementById('platformSaveButton').addEventListener('click', saveToPlatform);
-    
+
     if (isEditMode && document.getElementById('platformCancelButton')) {
         document.getElementById('platformCancelButton').addEventListener('click', () => {
             window.location.href = '/admin';
@@ -368,6 +359,7 @@ function buildWritingInjection(testData = null) {
     const isEditMode = testData && testData._id;
     const testId = isEditMode ? testData._id : null;
     const preloadedData = isEditMode ? JSON.stringify(testData) : 'null';
+    const builderJson = isEditMode && testData.builderJson ? testData.builderJson : 'null';
 
     return `
 ${commonInjectionStyles()}
@@ -399,27 +391,14 @@ ${commonInjectionStyles()}
 
     actionArea.insertBefore(controls, actionArea.firstChild);
 
-    // Pre-load data if in edit mode
-    if (isEditMode && preloadedData) {
-        try {
-            const data = JSON.parse(preloadedData);
-            const content = data.readingPassage ? JSON.parse(data.readingPassage) : null;
-            if (content) {
-                if (content.timeLimit && document.getElementById('time_limit')) {
-                    document.getElementById('time_limit').value = content.timeLimit;
-                }
-                if (content.task1) {
-                    if (document.getElementById('t1_prompt')) document.getElementById('t1_prompt').value = content.task1.prompt || '';
-                    if (document.getElementById('t1_img')) document.getElementById('t1_img').value = content.task1.image || '';
-                    if (document.getElementById('t1_model')) document.getElementById('t1_model').value = content.task1.modelAnswer || '';
-                }
-                if (content.task2) {
-                    if (document.getElementById('t2_prompt')) document.getElementById('t2_prompt').value = content.task2.prompt || '';
-                    if (document.getElementById('t2_model')) document.getElementById('t2_model').value = content.task2.modelAnswer || '';
-                }
-            }
-        } catch (e) {
-            console.error('Error loading test data:', e);
+    if (isEditMode) {
+        const savedJson = ${builderJson};
+        if (savedJson && savedJson.parts) {
+            try {
+                ['time_limit','t1_prompt','t1_img','t1_model','t2_prompt','t2_model'].forEach(function(id) {
+                    if (savedJson.parts[id] && document.getElementById(id)) document.getElementById(id).value = savedJson.parts[id];
+                });
+            } catch (e) { console.error('Error loading builder JSON:', e); }
         }
     }
 
@@ -442,6 +421,14 @@ ${commonInjectionStyles()}
             }
         };
 
+        const builderJson = JSON.stringify({
+            parts: {
+                time_limit: getVal('time_limit'),
+                t1_prompt: getVal('t1_prompt'), t1_img: getVal('t1_img'), t1_model: getVal('t1_model'),
+                t2_prompt: getVal('t2_prompt'), t2_model: getVal('t2_model')
+            }
+        });
+
         status.textContent = isEditMode ? 'Updating...' : 'Saving...';
 
         try {
@@ -449,7 +436,7 @@ ${commonInjectionStyles()}
             const response = await fetch(endpoint, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ title, content, type: 'writing' })
+                body: JSON.stringify({ title, content, type: 'writing', builderJson })
             });
 
             const data = await response.json();
@@ -466,7 +453,7 @@ ${commonInjectionStyles()}
     }
 
     document.getElementById('platformSaveButton').addEventListener('click', saveToPlatform);
-    
+
     if (isEditMode && document.getElementById('platformCancelButton')) {
         document.getElementById('platformCancelButton').addEventListener('click', () => {
             window.location.href = '/admin';

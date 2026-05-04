@@ -239,7 +239,7 @@ async function saveStudentSubmission({ req, payload }) {
     return { ignored: false, submission };
 }
 
-async function saveValidatedTest({ title, type, content, req }) {
+async function saveValidatedTest({ title, type, content, builderJson, req }) {
     if (!title || !String(title).trim()) {
         throw new Error('Test title is required.');
     }
@@ -261,7 +261,8 @@ async function saveValidatedTest({ title, type, content, req }) {
         type,
         teacherName: req.session.username,
         createdBy: req.session.userId,
-        readingPassage: serializedContent
+        readingPassage: serializedContent,
+        builderJson: builderJson || null
     });
 
     await newTest.save();
@@ -431,6 +432,7 @@ app.post('/update-test/:id', isTeacher, upload.any(), async (req, res) => {
 
         existingTest.title = title;
         existingTest.readingPassage = serializedContent;
+        if (req.body.builderJson) existingTest.builderJson = req.body.builderJson;
         await existingTest.save();
 
         res.json({ success: true, message: "Test updated successfully." });
@@ -500,6 +502,7 @@ app.post('/create-test/listening', isAdmin, upload.any(), async (req, res) => {
             title: req.body.title,
             type: 'listening',
             content: contentObj,
+            builderJson: req.body.builderJson || null,
             req
         });
 
@@ -521,6 +524,7 @@ app.post('/create-test/reading', isAdmin, async (req, res) => {
             title: req.body.title,
             type: 'reading',
             content: req.body.content,
+            builderJson: req.body.builderJson || null,
             req
         });
 
@@ -552,6 +556,7 @@ app.post('/create-test/writing', isAdmin, async (req, res) => {
             title: legacyBody.title,
             type: 'writing',
             content: writingContent,
+            builderJson: legacyBody.builderJson || null,
             req
         });
 

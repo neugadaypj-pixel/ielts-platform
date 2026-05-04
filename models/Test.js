@@ -6,6 +6,7 @@ const testSchema = new mongoose.Schema({
     teacherName: String,
     createdBy: mongoose.Schema.Types.ObjectId, // Reference to the teacher/admin who created it
     readingPassage: String, // We'll store the JSON content from the builders here
+    builderJson: String, // Raw builder project JSON for edit restoration
     questions: Array
 });
 

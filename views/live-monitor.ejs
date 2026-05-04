@@ -215,7 +215,7 @@
                 .catch(() => {});
         }
 
-        setInterval(refresh, 10000);
+        setInterval(refresh, 5000);
         refresh();
         updateStats(<%= JSON.stringify(students) %>);
         renderTable(<%= JSON.stringify(students) %>);

@@ -1132,7 +1132,7 @@ app.get('/teacher/live/:testId', isTeacher, async (req, res) => {
         const students = [];
         const map = heartbeatStore.get(req.params.testId);
         if (map) {
-            const cutoff = Date.now() - 60000;
+            const cutoff = Date.now() - 30000;
             map.forEach((data) => {
                 if (data.lastSeen > cutoff) students.push(data);
             });
@@ -1147,7 +1147,7 @@ app.get('/api/live-data/:testId', isTeacher, (req, res) => {
     const students = [];
     const map = heartbeatStore.get(req.params.testId);
     if (map) {
-        const cutoff = Date.now() - 60000;
+        const cutoff = Date.now() - 30000;
         map.forEach((data) => {
             if (data.lastSeen > cutoff) students.push(data);
         });

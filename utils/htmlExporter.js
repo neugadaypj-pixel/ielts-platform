@@ -1736,8 +1736,8 @@ function injectHeartbeat(html, testDoc) {
         }).catch(() => {});
     }
 
-    setInterval(sendHeartbeat, 15000);
-    setTimeout(sendHeartbeat, 3000);
+    setInterval(sendHeartbeat, 5000);
+    setTimeout(sendHeartbeat, 2000);
 })();
 </script>`;
     return replaceLastLiteral(html, '</body>', `${snippet}\n</body>`);

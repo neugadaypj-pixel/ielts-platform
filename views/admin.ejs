@@ -377,6 +377,7 @@
                                             <h4><%= test.title %></h4>
                                             <p>Created by <strong><%= test.teacherName || 'admin' %></strong>. Preview and download use the same renderer the platform serves to students.</p>
                                             <div class="action-row">
+                                                <a href="/edit-test/<%= test._id %>" class="btn btn-primary">Edit</a>
                                                 <a href="/view-test/<%= test._id %>" target="_blank" class="btn btn-secondary">Preview</a>
                                                 <a href="/download-test/<%= test._id %>" class="btn btn-secondary">Download HTML</a>
                                                 <button class="btn btn-danger" onclick="deleteItem('test', '<%= test._id %>', '<%= test.title %>')">Delete</button>

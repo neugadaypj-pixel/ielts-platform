@@ -318,6 +318,63 @@ app.get('/create-test/writing', isAdmin, (req, res) => {
     res.send(getAuthoringPageHtml('writing'));
 });
 
+// --- EDIT TEST ROUTES ---
+app.get('/edit-test/:id', isAdmin, async (req, res) => {
+    try {
+        const test = await Test.findById(req.params.id);
+        if (!test) {
+            return res.status(404).send("Test not found.");
+        }
+
+        // Send builder HTML with the test data pre-loaded
+        const builderHtml = getAuthoringPageHtml(test.type, test);
+        res.send(builderHtml);
+    } catch (err) {
+        res.status(500).send("Error loading test for editing: " + err.message);
+    }
+});
+
+app.post('/update-test/:id', isAdmin, async (req, res) => {
+    try {
+        const { title, content } = req.body;
+        const testId = req.params.id;
+
+        if (!title || !String(title).trim()) {
+            return res.status(400).json({ success: false, error: 'Test title is required.' });
+        }
+
+        const serializedContent = stringifyContent(content);
+
+        // Validate against the builder-matched renderer before saving.
+        generateHTMLFromTest({
+            _id: testId,
+            title,
+            type: req.body.type,
+            readingPassage: serializedContent
+        }, {
+            groqApiKey: process.env.GROQ_API_KEY || ''
+        });
+
+        const updatedTest = await Test.findByIdAndUpdate(
+            testId,
+            {
+                title: String(title).trim(),
+                readingPassage: serializedContent
+            },
+            { new: true }
+        );
+
+        if (!updatedTest) {
+            return res.status(404).json({ success: false, error: 'Test not found.' });
+        }
+
+        res.json({ success: true, message: "Test updated successfully." });
+    } catch (err) {
+        console.error("Update test error:", err);
+        res.status(500).json({ success: false, error: err.message || "Database update failed." });
+    }
+});
+
 // --- GENERIC FILE UPLOAD (Fixed for Local) ---
 app.post('/upload-test', isAdmin, upload.single('audioFile'), async (req, res) => {
     try {

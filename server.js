@@ -939,28 +939,9 @@ app.get('/download-test/:id', async (req, res) => {
         if (!access.isAllowed) return res.status(403).send("Not authorized to download this test.");
 
         async function fileUrlToDataUri(fileUrl) {
+            // If it's a public URL (B2 or any https), keep it as-is — no need to inline
             if (!fileUrl || typeof fileUrl !== 'string') return fileUrl;
-            // If it's already a B2 or external URL, fetch it
-            if (fileUrl.startsWith('http://') || fileUrl.startsWith('https://')) {
-                try {
-                    const https = require('https');
-                    const http = require('http');
-                    const client = fileUrl.startsWith('https') ? https : http;
-                    const buffer = await new Promise((resolve, reject) => {
-                        client.get(fileUrl, (response) => {
-                            const chunks = [];
-                            response.on('data', (chunk) => chunks.push(chunk));
-                            response.on('end', () => resolve(Buffer.concat(chunks)));
-                            response.on('error', reject);
-                        }).on('error', reject);
-                    });
-                    const contentType = mime.lookup(fileUrl) || 'audio/mpeg';
-                    return `data:${contentType};base64,${buffer.toString('base64')}`;
-                } catch (err) {
-                    console.warn('[download-test] Unable to fetch audio:', fileUrl, err.message);
-                    return fileUrl;
-                }
-            }
+            if (fileUrl.startsWith('http://') || fileUrl.startsWith('https://')) return fileUrl;
             // Legacy local path fallback
             if (!fileUrl.startsWith('/uploads/')) return fileUrl;
             const localPath = path.join(__dirname, 'public', fileUrl.replace(/^\/+/, ''));

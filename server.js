@@ -240,6 +240,7 @@ async function saveStudentSubmission({ req, payload }) {
 }
 
 async function saveValidatedTest({ title, type, content, builderJson, req }) {
+    console.log('[saveValidatedTest] builderJson received:', builderJson ? 'YES (' + String(builderJson).length + ' chars)' : 'NO');
     if (!title || !String(title).trim()) {
         throw new Error('Test title is required.');
     }

@@ -458,7 +458,7 @@
             search.addEventListener('input', () => rebuildOptions(search.value));
 
             document.addEventListener('click', (event) => {
-                if (!wrap.contains(event.target)) {
+                if (!wrap.contains(event.target) && !panel.contains(event.target)) {
                     panel.classList.remove('open');
                 }
             });
@@ -466,9 +466,10 @@
             panel.appendChild(search);
             panel.appendChild(options);
 
+            document.body.appendChild(panel);
+
             selectEl.parentNode.insertBefore(wrap, selectEl);
             wrap.appendChild(button);
-            wrap.appendChild(panel);
             wrap.appendChild(selectEl);
             selectEl.style.display = 'none';
 

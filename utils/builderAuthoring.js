@@ -249,9 +249,9 @@ ${commonInjectionStyles()}
             if (content) {
                 for (let i = 1; i <= 4; i++) {
                     const el = document.getElementById('q' + i + '_text');
-                    if (el && content['part' + i]) {
-                        el.value = content['part' + i].finalHtml || '';
-                    }
+                    const partData = content.parts && (content.parts[i] || content.parts[String(i)]);
+                    const html = partData ? (partData.finalHtml || partData.html || '') : (content['part' + i] ? (content['part' + i].finalHtml || content['part' + i] || '') : '');
+                    if (el && html) el.value = html;
                 }
                 if (content.answerKey && document.getElementById('answer_key_json')) {
                     document.getElementById('answer_key_json').value = JSON.stringify(content.answerKey, null, 2);

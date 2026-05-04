@@ -930,9 +930,51 @@ app.get('/download-test/:id', async (req, res) => {
         const access = await getAccessibleTest(req, req.params.id);
         if (!access.test) return res.status(404).send("Test not found.");
         if (!access.isAllowed) return res.status(403).send("Not authorized to download this test.");
+
+        async function fileUrlToDataUri(fileUrl) {
+            if (!fileUrl || typeof fileUrl !== 'string') return fileUrl;
+            if (!fileUrl.startsWith('/uploads/')) return fileUrl;
+
+            const localPath = path.join(__dirname, 'public', fileUrl.replace(/^\/+/, ''));
+            try {
+                const buffer = await fs.promises.readFile(localPath);
+                const contentType = mime.lookup(localPath) || 'application/octet-stream';
+                return `data:${contentType};base64,${buffer.toString('base64')}`;
+            } catch (err) {
+                console.warn('[download-test] Unable to inline audio file:', localPath, err.message);
+                return fileUrl;
+            }
+        }
+
+        async function inlineListeningAudio(testDoc) {
+            const raw = testDoc.readingPassage;
+            if (!raw || typeof raw !== 'string') return testDoc;
+            let parsed;
+            try {
+                parsed = JSON.parse(raw);
+            } catch (err) {
+                return testDoc;
+            }
+
+            const next = { ...(parsed || {}) };
+            next.fullAudio = await fileUrlToDataUri(parsed.fullAudio);
+
+            if (Array.isArray(parsed.audioParts)) {
+                next.audioParts = await Promise.all(parsed.audioParts.map((part) => fileUrlToDataUri(part)));
+            }
+
+            return {
+                ...(typeof testDoc.toObject === 'function' ? testDoc.toObject() : { ...testDoc }),
+                readingPassage: JSON.stringify(next)
+            };
+        }
         
         try {
-            const html = generateHTMLFromTest(access.test, {
+            const testForDownload = String(access.test.type || '').toLowerCase() === 'listening'
+                ? await inlineListeningAudio(access.test)
+                : access.test;
+
+            const html = generateHTMLFromTest(testForDownload, {
                 groqApiKey: process.env.GROQ_API_KEY || ''
             });
             const safeTitle = access.test.title.replace(/[^a-z0-9]/gi, '_').toLowerCase();

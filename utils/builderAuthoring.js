@@ -105,14 +105,21 @@ ${commonInjectionStyles()}
     if (isEditMode) {
         const savedJson = ${builderJson};
         if (savedJson && savedJson.parts) {
-            try {
-                ['p1_title','p1_text','q1_text','p2_title','p2_text','q2_text','p3_title','p3_text','q3_text'].forEach(function(id) {
-                    if (savedJson.parts[id] && document.getElementById(id)) document.getElementById(id).value = savedJson.parts[id];
-                });
-                if (savedJson.answerKey && document.getElementById('answer_key_json')) {
-                    document.getElementById('answer_key_json').value = savedJson.answerKey;
-                }
-            } catch (e) { console.error('Error loading builder JSON:', e); }
+            function applyReadingData() {
+                try {
+                    ['p1_title','p1_text','q1_text','p2_title','p2_text','q2_text','p3_title','p3_text','q3_text'].forEach(function(id) {
+                        if (savedJson.parts[id] && document.getElementById(id)) document.getElementById(id).value = savedJson.parts[id];
+                    });
+                    if (savedJson.answerKey && document.getElementById('answer_key_json')) {
+                        document.getElementById('answer_key_json').value = savedJson.answerKey;
+                    }
+                } catch (e) { console.error('Error loading builder JSON:', e); }
+            }
+            if (document.getElementById('p1_title')) {
+                applyReadingData();
+            } else {
+                setTimeout(applyReadingData, 300);
+            }
         }
     }
 
@@ -238,15 +245,22 @@ ${commonInjectionStyles()}
     if (isEditMode) {
         const savedJson = ${builderJson};
         if (savedJson && savedJson.parts) {
-            try {
-                for (let i = 1; i <= 4; i++) {
-                    const el = document.getElementById('q' + i + '_text');
-                    if (el && savedJson.parts[i]) el.value = savedJson.parts[i];
-                }
-                if (savedJson.answerKey && document.getElementById('answer_key_json')) {
-                    document.getElementById('answer_key_json').value = savedJson.answerKey;
-                }
-            } catch (e) { console.error('Error loading builder JSON:', e); }
+            function applyListeningData() {
+                try {
+                    for (let i = 1; i <= 4; i++) {
+                        const el = document.getElementById('q' + i + '_text');
+                        if (el && savedJson.parts[i]) el.value = savedJson.parts[i];
+                    }
+                    if (savedJson.answerKey && document.getElementById('answer_key_json')) {
+                        document.getElementById('answer_key_json').value = savedJson.answerKey;
+                    }
+                } catch (e) { console.error('Error loading builder JSON:', e); }
+            }
+            if (document.getElementById('q1_text')) {
+                applyListeningData();
+            } else {
+                setTimeout(applyListeningData, 300);
+            }
         }
     }
 
@@ -394,11 +408,18 @@ ${commonInjectionStyles()}
     if (isEditMode) {
         const savedJson = ${builderJson};
         if (savedJson && savedJson.parts) {
-            try {
-                ['time_limit','t1_prompt','t1_img','t1_model','t2_prompt','t2_model'].forEach(function(id) {
-                    if (savedJson.parts[id] && document.getElementById(id)) document.getElementById(id).value = savedJson.parts[id];
-                });
-            } catch (e) { console.error('Error loading builder JSON:', e); }
+            function applyWritingData() {
+                try {
+                    ['time_limit','t1_prompt','t1_img','t1_model','t2_prompt','t2_model'].forEach(function(id) {
+                        if (savedJson.parts[id] && document.getElementById(id)) document.getElementById(id).value = savedJson.parts[id];
+                    });
+                } catch (e) { console.error('Error loading builder JSON:', e); }
+            }
+            if (document.getElementById('t1_prompt')) {
+                applyWritingData();
+            } else {
+                setTimeout(applyWritingData, 300);
+            }
         }
     }
 

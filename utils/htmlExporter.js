@@ -1632,17 +1632,62 @@ function injectHeartbeat(html, testDoc) {
 
     function countAnswered() {
         let count = 0;
-        document.querySelectorAll('input[id^="q"]:not([type="hidden"]), input[type="radio"]:checked, input[type="checkbox"]:checked').forEach(el => {
-            if (el.value && el.value.trim()) count++;
+        const seen = new Set();
+
+        // Gap inputs (text)
+        document.querySelectorAll('input.gap-input, input.answer-input').forEach(el => {
+            if (!seen.has(el.id) && el.value && el.value.trim()) {
+                seen.add(el.id);
+                count++;
+            }
         });
-        document.querySelectorAll('.map-drop-zone.filled').forEach(() => count++);
+
+        // Radio groups
+        const radioGroups = new Set();
+        document.querySelectorAll('input[type="radio"]').forEach(el => radioGroups.add(el.name));
+        radioGroups.forEach(name => {
+            if (document.querySelector('input[name="' + name + '"]:checked')) count++;
+        });
+
+        // Checkboxes (pick-n)
+        document.querySelectorAll('.pick-n-question').forEach(group => {
+            if (group.querySelector('input[type="checkbox"]:checked')) count++;
+        });
+
+        // Map drop zones
+        document.querySelectorAll('.map-drop-zone.filled').forEach(zone => {
+            if (!seen.has(zone.dataset.qid)) {
+                seen.add(zone.dataset.qid);
+                count++;
+            }
+        });
+
+        // Custom select (matching)
+        document.querySelectorAll('.custom-select-wrapper input[type="hidden"]').forEach(el => {
+            if (!seen.has(el.id) && el.value && el.value.trim()) {
+                seen.add(el.id);
+                count++;
+            }
+        });
+
         return count;
     }
 
     function countTotal() {
-        const inputs = document.querySelectorAll('input[id^="q"]:not([type="hidden"])');
-        const zones = document.querySelectorAll('.map-drop-zone');
-        return inputs.length + zones.length || 0;
+        try {
+            const ansKey = document.querySelector('#answer_key_json, [data-answer-key]');
+            if (ansKey) {
+                const parsed = JSON.parse(ansKey.value || ansKey.dataset.answerKey || '{}');
+                return Object.keys(parsed).length;
+            }
+        } catch(e) {}
+
+        // Fallback: count unique question IDs
+        const ids = new Set();
+        document.querySelectorAll('input[id^="q"]').forEach(el => ids.add(el.id));
+        document.querySelectorAll('.map-drop-zone[data-qid]').forEach(el => ids.add('q' + el.dataset.qid));
+        document.querySelectorAll('input[type="radio"][name^="q"]').forEach(el => ids.add(el.name));
+        return ids.size;
     }
 
     function getCurrentPart() {
@@ -1657,11 +1702,13 @@ function injectHeartbeat(html, testDoc) {
 
     function getStudentName() {
         const el = document.getElementById('studentName') || document.getElementById('lockdownName');
-        return el ? el.value.trim() : 'Student';
+        return (el ? el.value.trim() : '') || (window.__platformStudentName || 'Student');
     }
 
     function sendHeartbeat() {
-        const studentName = getStudentName() || 'Student';
+        const studentName = getStudentName();
+        const answered = countAnswered();
+        const total = countTotal();
         fetch('/api/heartbeat', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -1669,8 +1716,8 @@ function injectHeartbeat(html, testDoc) {
             body: JSON.stringify({
                 testId: TEST_ID,
                 studentName,
-                answeredCount: countAnswered(),
-                totalCount: countTotal(),
+                answeredCount: answered,
+                totalCount: total,
                 currentPart: getCurrentPart(),
                 timeRemaining: getTimeRemaining(),
                 type: TEST_TYPE

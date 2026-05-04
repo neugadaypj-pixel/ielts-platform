@@ -142,25 +142,7 @@
                     <th>Time Remaining</th>
                 </tr>
             </thead>
-            <tbody id="studentTable">
-                <% if (students.length === 0) { %>
-                    <tr><td colspan="5" class="empty">No active students yet. They will appear here once they open the test.</td></tr>
-                <% } else { %>
-                    <% students.forEach(s => { %>
-                        <% const pct = s.totalCount > 0 ? Math.round((s.answeredCount / s.totalCount) * 100) : 0; %>
-                        <tr>
-                            <td><strong><%= s.studentName %></strong></td>
-                            <td>
-                                <div class="progress-bar"><div class="progress-fill" style="width:<%= pct %>%"></div></div>
-                                <span style="font-size:0.8rem; color:#64748b;"><%= pct %>%</span>
-                            </td>
-                            <td><%= s.answeredCount %> / <%= s.totalCount %></td>
-                            <td><%= s.currentPart || '—' %></td>
-                            <td><%= s.timeRemaining || '—' %></td>
-                        </tr>
-                    <% }) %>
-                <% } %>
-            </tbody>
+            <tbody id="studentTable"></tbody>
         </table>
     </div>
 
@@ -214,7 +196,9 @@
         }
 
         setInterval(refresh, 10000);
+        refresh();
         updateStats(<%= JSON.stringify(students) %>);
+        renderTable(<%= JSON.stringify(students) %>);
     </script>
 </body>
 </html>

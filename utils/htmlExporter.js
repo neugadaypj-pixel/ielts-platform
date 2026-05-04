@@ -1603,6 +1603,71 @@ function injectWritingSubmissionHook(html, testDoc) {
     return replaceLastLiteral(html, '</body>', `${snippet}\n</body>`);
 }
 
+function injectHeartbeat(html, testDoc) {
+    const safeTestId = escapeForBuilderValue(testDoc._id);
+    const safeType = escapeForBuilderValue(testDoc.type || 'reading');
+    const snippet = `
+<script>
+(function() {
+    if (!/^https?:$/i.test(location.protocol || '')) return;
+    const TEST_ID = '${safeTestId}';
+    const TEST_TYPE = '${safeType}';
+
+    function countAnswered() {
+        let count = 0;
+        document.querySelectorAll('input[id^="q"]:not([type="hidden"]), input[type="radio"]:checked, input[type="checkbox"]:checked').forEach(el => {
+            if (el.value && el.value.trim()) count++;
+        });
+        document.querySelectorAll('.map-drop-zone.filled').forEach(() => count++);
+        return count;
+    }
+
+    function countTotal() {
+        const inputs = document.querySelectorAll('input[id^="q"]:not([type="hidden"])');
+        const zones = document.querySelectorAll('.map-drop-zone');
+        return inputs.length + zones.length || 0;
+    }
+
+    function getCurrentPart() {
+        const active = document.querySelector('.part-btn.active, .tab.active');
+        return active ? active.innerText.trim() : '';
+    }
+
+    function getTimeRemaining() {
+        const el = document.getElementById('timerDisplay');
+        return el ? el.innerText.trim() : '';
+    }
+
+    function getStudentName() {
+        const el = document.getElementById('studentName') || document.getElementById('lockdownName');
+        return el ? el.value.trim() : 'Student';
+    }
+
+    function sendHeartbeat() {
+        const studentName = getStudentName() || 'Student';
+        fetch('/api/heartbeat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'same-origin',
+            body: JSON.stringify({
+                testId: TEST_ID,
+                studentName,
+                answeredCount: countAnswered(),
+                totalCount: countTotal(),
+                currentPart: getCurrentPart(),
+                timeRemaining: getTimeRemaining(),
+                type: TEST_TYPE
+            })
+        }).catch(() => {});
+    }
+
+    setInterval(sendHeartbeat, 15000);
+    setTimeout(sendHeartbeat, 3000);
+})();
+</script>`;
+    return replaceLastLiteral(html, '</body>', `${snippet}\n</body>`);
+}
+
 function generateReadingHtml(testDoc, parsedContent) {
     const content = normalizeReadingContent(parsedContent, testDoc);
     const stableSessionId = createStableSessionId(testDoc, 'test_');
@@ -1629,6 +1694,7 @@ function generateReadingHtml(testDoc, parsedContent) {
     html = injectThemeController(html, 'reading');
     html = injectReadingHighlightFix(html);
     html = injectReadingSubmissionHook(html, testDoc);
+    html = injectHeartbeat(html, testDoc);
     return html.trim();
 }
 
@@ -1689,6 +1755,7 @@ function generateListeningHtml(testDoc, parsedContent) {
     generatedHtml = injectThemeController(generatedHtml, 'listening');
     generatedHtml = injectListeningHighlightFix(generatedHtml);
     generatedHtml = injectListeningSubmissionHook(generatedHtml, testDoc);
+    generatedHtml = injectHeartbeat(generatedHtml, testDoc);
     return generatedHtml.trim();
 }
 
@@ -1718,6 +1785,7 @@ function generateWritingHtml(testDoc, parsedContent, options = {}) {
     generatedHtml = injectWebsiteThemeButton(generatedHtml, 'writing');
     generatedHtml = injectThemeController(generatedHtml, 'writing');
     generatedHtml = injectWritingSubmissionHook(generatedHtml, testDoc);
+    generatedHtml = injectHeartbeat(generatedHtml, testDoc);
     return generatedHtml.trim();
 }
 function generateHTMLFromTest(testDoc, options = {}) {

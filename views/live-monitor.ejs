@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Monitor — <%= test.title %></title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: "Segoe UI", sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            padding: 24px;
+            color: #1f2937;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 24px 28px;
+            border-radius: 24px;
+            background: rgba(255,255,255,0.92);
+            box-shadow: 0 18px 40px rgba(15,23,42,0.08);
+            margin-bottom: 24px;
+        }
+        .header h1 { font-size: 1.6rem; font-weight: 900; }
+        .header p { color: #64748b; margin-top: 4px; }
+        .live-badge {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            border-radius: 999px;
+            background: #fee2e2;
+            color: #dc2626;
+            font-weight: 800;
+            font-size: 0.9rem;
+        }
+        .live-dot {
+            width: 10px; height: 10px;
+            border-radius: 50%;
+            background: #dc2626;
+            animation: pulse 1.2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.4; transform: scale(0.8); }
+        }
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        .stat-card {
+            padding: 20px 24px;
+            border-radius: 20px;
+            background: rgba(255,255,255,0.92);
+            box-shadow: 0 10px 24px rgba(15,23,42,0.06);
+            text-align: center;
+        }
+        .stat-value { font-size: 2rem; font-weight: 900; color: #1f2937; }
+        .stat-label { color: #64748b; font-size: 0.88rem; margin-top: 4px; }
+        .table-card {
+            padding: 24px;
+            border-radius: 24px;
+            background: rgba(255,255,255,0.92);
+            box-shadow: 0 18px 40px rgba(15,23,42,0.08);
+        }
+        .table-card h2 { font-size: 1.2rem; font-weight: 900; margin-bottom: 16px; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { text-align: left; padding: 14px 12px; border-bottom: 1px solid #e2e8f0; }
+        th { font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.04em; color: #64748b; }
+        td { color: #334155; }
+        .progress-bar {
+            height: 8px;
+            border-radius: 999px;
+            background: #e5e7eb;
+            overflow: hidden;
+            min-width: 80px;
+        }
+        .progress-fill {
+            height: 100%;
+            border-radius: inherit;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            transition: width 0.5s ease;
+        }
+        .empty { color: #94a3b8; text-align: center; padding: 40px; }
+        .back-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+            padding: 10px 18px;
+            border-radius: 999px;
+            background: white;
+            border: 1px solid #dbe3f1;
+            color: #334155;
+            font-weight: 700;
+            font-size: 0.9rem;
+        }
+        .refresh-note { color: #94a3b8; font-size: 0.85rem; margin-top: 8px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div>
+            <h1>📡 Live Monitor</h1>
+            <p><strong><%= test.title %></strong> &mdash; <%= test.type %> test</p>
+            <p class="refresh-note">Auto-refreshes every 10 seconds. Students appear within 15 seconds of opening the test.</p>
+        </div>
+        <div style="display:flex; gap:12px; align-items:center;">
+            <div class="live-badge"><div class="live-dot"></div> LIVE</div>
+            <a href="/teacher-dashboard" class="back-btn">← Dashboard</a>
+        </div>
+    </div>
+
+    <div class="stats-row">
+        <div class="stat-card">
+            <div class="stat-value" id="statActive">0</div>
+            <div class="stat-label">Active Students</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" id="statAvg">—</div>
+            <div class="stat-label">Avg. Progress</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" id="statPart">—</div>
+            <div class="stat-label">Most Common Part</div>
+        </div>
+    </div>
+
+    <div class="table-card">
+        <h2>Student Activity</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Student</th>
+                    <th>Progress</th>
+                    <th>Answered</th>
+                    <th>Current Part</th>
+                    <th>Time Remaining</th>
+                </tr>
+            </thead>
+            <tbody id="studentTable">
+                <% if (students.length === 0) { %>
+                    <tr><td colspan="5" class="empty">No active students yet. They will appear here once they open the test.</td></tr>
+                <% } else { %>
+                    <% students.forEach(s => { %>
+                        <% const pct = s.totalCount > 0 ? Math.round((s.answeredCount / s.totalCount) * 100) : 0; %>
+                        <tr>
+                            <td><strong><%= s.studentName %></strong></td>
+                            <td>
+                                <div class="progress-bar"><div class="progress-fill" style="width:<%= pct %>%"></div></div>
+                                <span style="font-size:0.8rem; color:#64748b;"><%= pct %>%</span>
+                            </td>
+                            <td><%= s.answeredCount %> / <%= s.totalCount %></td>
+                            <td><%= s.currentPart || '—' %></td>
+                            <td><%= s.timeRemaining || '—' %></td>
+                        </tr>
+                    <% }) %>
+                <% } %>
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        const TEST_ID = '<%= testId %>';
+
+        function updateStats(students) {
+            document.getElementById('statActive').textContent = students.length;
+            if (students.length === 0) {
+                document.getElementById('statAvg').textContent = '—';
+                document.getElementById('statPart').textContent = '—';
+                return;
+            }
+            const avg = Math.round(students.reduce((sum, s) => sum + (s.totalCount > 0 ? (s.answeredCount / s.totalCount) * 100 : 0), 0) / students.length);
+            document.getElementById('statAvg').textContent = avg + '%';
+            const partCounts = {};
+            students.forEach(s => { if (s.currentPart) partCounts[s.currentPart] = (partCounts[s.currentPart] || 0) + 1; });
+            const topPart = Object.entries(partCounts).sort((a, b) => b[1] - a[1])[0];
+            document.getElementById('statPart').textContent = topPart ? topPart[0] : '—';
+        }
+
+        function renderTable(students) {
+            const tbody = document.getElementById('studentTable');
+            if (students.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="empty">No active students yet.</td></tr>';
+                return;
+            }
+            tbody.innerHTML = students.map(s => {
+                const pct = s.totalCount > 0 ? Math.round((s.answeredCount / s.totalCount) * 100) : 0;
+                return `<tr>
+                    <td><strong>${s.studentName}</strong></td>
+                    <td>
+                        <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
+                        <span style="font-size:0.8rem;color:#64748b">${pct}%</span>
+                    </td>
+                    <td>${s.answeredCount} / ${s.totalCount}</td>
+                    <td>${s.currentPart || '—'}</td>
+                    <td>${s.timeRemaining || '—'}</td>
+                </tr>`;
+            }).join('');
+        }
+
+        function refresh() {
+            fetch('/api/live-data/' + TEST_ID, { credentials: 'same-origin' })
+                .then(r => r.json())
+                .then(data => {
+                    updateStats(data.students);
+                    renderTable(data.students);
+                })
+                .catch(() => {});
+        }
+
+        setInterval(refresh, 10000);
+        updateStats(<%= JSON.stringify(students) %>);
+    </script>
+</body>
+</html>

@@ -1099,6 +1099,57 @@ app.get('/student-dashboard', async (req, res) => {
     }
 });
 
+// --- LIVE MONITOR ---
+const heartbeatStore = new Map(); // testId -> Map(studentName -> data)
+
+app.post('/api/heartbeat', async (req, res) => {
+    if (!req.session.userId) return res.status(401).json({ ok: false });
+    const { testId, studentName, answeredCount, totalCount, currentPart, timeRemaining, type } = req.body;
+    if (!testId || !studentName) return res.json({ ok: false });
+
+    if (!heartbeatStore.has(testId)) heartbeatStore.set(testId, new Map());
+    heartbeatStore.get(testId).set(studentName, {
+        studentName,
+        answeredCount: Number(answeredCount) || 0,
+        totalCount: Number(totalCount) || 0,
+        currentPart: currentPart || '',
+        timeRemaining: timeRemaining || '',
+        type: type || '',
+        lastSeen: Date.now()
+    });
+    res.json({ ok: true });
+});
+
+app.get('/teacher/live/:testId', isTeacher, async (req, res) => {
+    try {
+        const test = await Test.findById(req.params.testId).select('title type createdBy');
+        if (!test) return res.status(404).send('Test not found');
+        const students = [];
+        const map = heartbeatStore.get(req.params.testId);
+        if (map) {
+            const cutoff = Date.now() - 60000;
+            map.forEach((data) => {
+                if (data.lastSeen > cutoff) students.push(data);
+            });
+        }
+        res.render('live-monitor', { test, students, testId: req.params.testId });
+    } catch (err) {
+        res.status(500).send('Error: ' + err.message);
+    }
+});
+
+app.get('/api/live-data/:testId', isTeacher, (req, res) => {
+    const students = [];
+    const map = heartbeatStore.get(req.params.testId);
+    if (map) {
+        const cutoff = Date.now() - 60000;
+        map.forEach((data) => {
+            if (data.lastSeen > cutoff) students.push(data);
+        });
+    }
+    res.json({ students });
+});
+
 // --- RENAME / FOLDER ROUTE ---
 app.post('/teacher/update-test-meta/:id', isTeacher, async (req, res) => {
     try {

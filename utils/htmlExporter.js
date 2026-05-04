@@ -1674,17 +1674,18 @@ function injectHeartbeat(html, testDoc) {
     }
 
     function countTotal() {
+        // The answer key is stored as encodedKey in the test HTML
         try {
-            const ansKey = document.querySelector('#answer_key_json, [data-answer-key]');
-            if (ansKey) {
-                const parsed = JSON.parse(ansKey.value || ansKey.dataset.answerKey || '{}');
-                return Object.keys(parsed).length;
+            if (typeof encodedKey !== 'undefined' && encodedKey) {
+                const decoded = JSON.parse(atob(encodedKey));
+                return Object.keys(decoded).length;
             }
         } catch(e) {}
-
-        // Fallback: count unique question IDs
+        // Fallback: count unique question IDs excluding non-question inputs
         const ids = new Set();
-        document.querySelectorAll('input[id^="q"]').forEach(el => ids.add(el.id));
+        document.querySelectorAll('input[id^="q"]').forEach(el => {
+            if (el.type !== 'hidden' && el.id !== 'studentName') ids.add(el.id);
+        });
         document.querySelectorAll('.map-drop-zone[data-qid]').forEach(el => ids.add('q' + el.dataset.qid));
         document.querySelectorAll('input[type="radio"][name^="q"]').forEach(el => ids.add(el.name));
         return ids.size;

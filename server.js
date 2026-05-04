@@ -76,6 +76,15 @@ function isTeacher(req, res, next) {
     res.redirect('/login');
 }
 
+async function canEditTest(req, testId) {
+    if (!req.session.userId) return false;
+    if (req.session.userRole === 'admin') return true;
+
+    const test = await Test.findById(testId).select('createdBy');
+    if (!test) return false;
+    return Boolean(test.createdBy && String(test.createdBy) === String(req.session.userId));
+}
+
 function groupTestsByType(tests = []) {
     const grouped = {
         reading: [],
@@ -319,8 +328,13 @@ app.get('/create-test/writing', isAdmin, (req, res) => {
 });
 
 // --- EDIT TEST ROUTES ---
-app.get('/edit-test/:id', isAdmin, async (req, res) => {
+app.get('/edit-test/:id', isTeacher, async (req, res) => {
     try {
+        const allowed = await canEditTest(req, req.params.id);
+        if (!allowed) {
+            return res.status(403).send('Not authorized to edit this test.');
+        }
+
         const test = await Test.findById(req.params.id);
         if (!test) {
             return res.status(404).send("Test not found.");
@@ -334,39 +348,81 @@ app.get('/edit-test/:id', isAdmin, async (req, res) => {
     }
 });
 
-app.post('/update-test/:id', isAdmin, async (req, res) => {
+app.post('/update-test/:id', isTeacher, upload.any(), async (req, res) => {
     try {
-        const { title, content } = req.body;
         const testId = req.params.id;
 
-        if (!title || !String(title).trim()) {
+        const allowed = await canEditTest(req, testId);
+        if (!allowed) {
+            return res.status(403).json({ success: false, error: 'Not authorized to edit this test.' });
+        }
+
+        const existingTest = await Test.findById(testId);
+        if (!existingTest) {
+            return res.status(404).json({ success: false, error: 'Test not found.' });
+        }
+
+        const type = String(req.body.type || existingTest.type || '').toLowerCase();
+        const title = String(req.body.title || '').trim();
+
+        if (!title) {
             return res.status(400).json({ success: false, error: 'Test title is required.' });
         }
 
-        const serializedContent = stringifyContent(content);
+        let contentObj;
+        if (type === 'listening') {
+            const audioUrls = {};
+            if (req.files && req.files.length > 0) {
+                req.files.forEach(file => {
+                    const localPath = `/uploads/${file.filename}`;
+                    audioUrls[file.fieldname] = localPath;
+                });
+            }
+
+            const previous = existingTest.readingPassage ? JSON.parse(existingTest.readingPassage) : {};
+            const finalFullAudio = audioUrls['audioFile'] || req.body.audioUrl || previous.fullAudio || null;
+
+            const partsPayload = JSON.parse(req.body.parts || '{}');
+            const parts = {};
+            for (let index = 1; index <= 4; index += 1) {
+                const source = partsPayload[index] ?? partsPayload[String(index)] ?? '';
+                parts[index] = typeof source === 'string'
+                    ? { finalHtml: source }
+                    : { ...(source || {}), finalHtml: source?.finalHtml ?? source?.html ?? '' };
+            }
+
+            const prevAudioParts = Array.isArray(previous.audioParts) ? previous.audioParts : [];
+            contentObj = {
+                fullAudio: finalFullAudio,
+                audioParts: [
+                    audioUrls['part1'] || prevAudioParts[0] || null,
+                    audioUrls['part2'] || prevAudioParts[1] || null,
+                    audioUrls['part3'] || prevAudioParts[2] || null,
+                    audioUrls['part4'] || prevAudioParts[3] || null
+                ],
+                parts,
+                answerKey: JSON.parse(req.body.answerKey || '{}'),
+                includePause: req.body.usePause === 'true'
+            };
+        } else {
+            contentObj = req.body.content;
+        }
+
+        const serializedContent = stringifyContent(contentObj);
 
         // Validate against the builder-matched renderer before saving.
         generateHTMLFromTest({
             _id: testId,
             title,
-            type: req.body.type,
+            type,
             readingPassage: serializedContent
         }, {
             groqApiKey: process.env.GROQ_API_KEY || ''
         });
 
-        const updatedTest = await Test.findByIdAndUpdate(
-            testId,
-            {
-                title: String(title).trim(),
-                readingPassage: serializedContent
-            },
-            { new: true }
-        );
-
-        if (!updatedTest) {
-            return res.status(404).json({ success: false, error: 'Test not found.' });
-        }
+        existingTest.title = title;
+        existingTest.readingPassage = serializedContent;
+        await existingTest.save();
 
         res.json({ success: true, message: "Test updated successfully." });
     } catch (err) {

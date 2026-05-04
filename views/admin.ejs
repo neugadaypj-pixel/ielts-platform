@@ -173,6 +173,66 @@
             color: white;
         }
 
+        .ms-select-wrap { position: relative; }
+
+        .ms-button {
+            width: 100%;
+            padding: 12px 44px 12px 14px;
+            border-radius: 16px;
+            border: 2px solid #e2e8f0;
+            background: #f8fafc;
+            font-size: 0.95rem;
+            font-family: inherit;
+            cursor: pointer;
+            text-align: left;
+            transition: all 0.2s ease;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23667eea' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            background-size: 20px;
+        }
+
+        .ms-button:hover { border-color: #cbd5e1; background: white; }
+        .ms-button:focus { outline: none; border-color: #667eea; box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.12); background: white; }
+
+        .ms-panel {
+            position: absolute;
+            top: calc(100% + 10px);
+            left: 0;
+            right: 0;
+            z-index: 20;
+            border-radius: 18px;
+            border: 1px solid #e2e8f0;
+            background: rgba(255,255,255,0.98);
+            box-shadow: 0 18px 40px rgba(15, 23, 42, 0.12);
+            padding: 10px;
+            display: none;
+        }
+
+        .ms-panel.open { display: block; }
+
+        .ms-search {
+            width: 100%;
+            padding: 10px 12px;
+            border-radius: 14px;
+            border: 1px solid #e2e8f0;
+            background: #f8fafc;
+            font-family: inherit;
+        }
+
+        .ms-options { margin-top: 10px; max-height: 220px; overflow: auto; border-radius: 14px; }
+
+        .ms-option {
+            padding: 10px 12px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 700;
+            color: #334155;
+        }
+
+        .ms-option:hover { background: #eef2ff; color: #4338ca; }
+        .ms-option.selected { background: #667eea; color: white; }
+
         .library-grid {
             display: grid;
             grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -307,6 +367,106 @@
                 })
                 .catch((error) => alert('Error: ' + error.message));
         }
+
+        function initModernSelect(selectEl) {
+            if (!selectEl || selectEl.dataset.msReady === 'true') return;
+            selectEl.dataset.msReady = 'true';
+
+            const wrap = document.createElement('div');
+            wrap.className = 'ms-select-wrap';
+
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'ms-button';
+
+            const panel = document.createElement('div');
+            panel.className = 'ms-panel';
+
+            const search = document.createElement('input');
+            search.type = 'text';
+            search.className = 'ms-search';
+            search.placeholder = 'Search...';
+
+            const options = document.createElement('div');
+            options.className = 'ms-options';
+
+            function getOptionLabel(opt) {
+                return (opt && opt.textContent ? opt.textContent : '').trim();
+            }
+
+            function syncButtonLabel() {
+                const selected = selectEl.options[selectEl.selectedIndex];
+                const label = selected && selected.value ? getOptionLabel(selected) : (selectEl.options[0] ? getOptionLabel(selectEl.options[0]) : 'Select');
+                button.textContent = label;
+            }
+
+            function rebuildOptions(filterText) {
+                const needle = String(filterText || '').toLowerCase();
+                options.innerHTML = '';
+
+                Array.from(selectEl.options).forEach((opt, idx) => {
+                    if (idx === 0) return;
+                    const label = getOptionLabel(opt);
+                    if (needle && !label.toLowerCase().includes(needle)) return;
+                    const div = document.createElement('div');
+                    div.className = 'ms-option' + (opt.selected ? ' selected' : '');
+                    div.textContent = label;
+                    div.addEventListener('click', () => {
+                        selectEl.value = opt.value;
+                        selectEl.dispatchEvent(new Event('change', { bubbles: true }));
+                        panel.classList.remove('open');
+                    });
+                    options.appendChild(div);
+                });
+
+                if (!options.childElementCount) {
+                    const empty = document.createElement('div');
+                    empty.className = 'ms-option';
+                    empty.style.cursor = 'default';
+                    empty.style.opacity = '0.7';
+                    empty.textContent = 'No matches';
+                    options.appendChild(empty);
+                }
+            }
+
+            button.addEventListener('click', () => {
+                const isOpen = panel.classList.toggle('open');
+                if (isOpen) {
+                    search.value = '';
+                    rebuildOptions('');
+                    setTimeout(() => search.focus(), 0);
+                }
+            });
+
+            selectEl.addEventListener('change', () => {
+                syncButtonLabel();
+                rebuildOptions(search.value);
+            });
+
+            search.addEventListener('input', () => rebuildOptions(search.value));
+
+            document.addEventListener('click', (event) => {
+                if (!wrap.contains(event.target)) {
+                    panel.classList.remove('open');
+                }
+            });
+
+            panel.appendChild(search);
+            panel.appendChild(options);
+
+            selectEl.parentNode.insertBefore(wrap, selectEl);
+            wrap.appendChild(button);
+            wrap.appendChild(panel);
+            wrap.appendChild(selectEl);
+            selectEl.style.display = 'none';
+
+            syncButtonLabel();
+            rebuildOptions('');
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            document.querySelectorAll('select').forEach((el) => initModernSelect(el));
+        });
     </script>
 </head>
 <body>

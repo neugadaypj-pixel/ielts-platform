@@ -1122,7 +1122,7 @@ app.post('/api/heartbeat', async (req, res) => {
         wordCount2: wordCount2 || null,
         lastSeen: Date.now()
     });
-    res.json({ ok: true });
+    res.json({ ok: true, activeCount: heartbeatStore.get(testId) ? heartbeatStore.get(testId).size : 1 });
 });
 
 app.get('/teacher/live/:testId', isTeacher, async (req, res) => {

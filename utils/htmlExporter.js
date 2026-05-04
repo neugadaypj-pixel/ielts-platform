@@ -1705,6 +1705,20 @@ function injectHeartbeat(html, testDoc) {
         return (el ? el.value.trim() : '') || (window.__platformStudentName || 'Student');
     }
 
+    let heartbeatInterval = 5000;
+    let heartbeatTimer = null;
+
+    function scheduleNext(activeCount) {
+        // 1-10 students: 5s, 11-20: 8s, 21-40: 12s, 40+: 20s
+        const next = activeCount <= 10 ? 5000
+            : activeCount <= 20 ? 8000
+            : activeCount <= 40 ? 12000
+            : 20000;
+        if (next !== heartbeatInterval) heartbeatInterval = next;
+        clearTimeout(heartbeatTimer);
+        heartbeatTimer = setTimeout(sendHeartbeat, heartbeatInterval);
+    }
+
     function sendHeartbeat() {
         const studentName = getStudentName();
         const answered = countAnswered();
@@ -1733,10 +1747,12 @@ function injectHeartbeat(html, testDoc) {
                 wordCount1: wc1El ? wc1El.innerText.trim() : null,
                 wordCount2: wc2El ? wc2El.innerText.trim() : null
             })
-        }).catch(() => {});
+        })
+        .then(r => r.json())
+        .then(data => scheduleNext(data.activeCount || 1))
+        .catch(() => scheduleNext(1));
     }
 
-    setInterval(sendHeartbeat, 5000);
     setTimeout(sendHeartbeat, 2000);
 })();
 </script>`;

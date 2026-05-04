@@ -1105,7 +1105,7 @@ const heartbeatStore = new Map(); // testId -> Map(studentName -> data)
 
 app.post('/api/heartbeat', async (req, res) => {
     if (!req.session.userId) return res.status(401).json({ ok: false });
-    const { testId, studentName, answeredCount, totalCount, currentPart, timeRemaining, type } = req.body;
+    const { testId, studentName, answeredCount, totalCount, currentPart, timeRemaining, type, task1Preview, task2Preview, wordCount1, wordCount2 } = req.body;
     if (!testId || !studentName) return res.json({ ok: false });
 
     if (!heartbeatStore.has(testId)) heartbeatStore.set(testId, new Map());
@@ -1116,6 +1116,10 @@ app.post('/api/heartbeat', async (req, res) => {
         currentPart: currentPart || '',
         timeRemaining: timeRemaining || '',
         type: type || '',
+        task1Preview: task1Preview || null,
+        task2Preview: task2Preview || null,
+        wordCount1: wordCount1 || null,
+        wordCount2: wordCount2 || null,
         lastSeen: Date.now()
     });
     res.json({ ok: true });

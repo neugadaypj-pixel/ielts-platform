@@ -1709,6 +1709,13 @@ function injectHeartbeat(html, testDoc) {
         const studentName = getStudentName();
         const answered = countAnswered();
         const total = countTotal();
+
+        // For writing tests, capture task text
+        const task1 = (document.getElementById('input_task1') || document.getElementById('view_t1'));
+        const task2 = (document.getElementById('input_task2') || document.getElementById('view_t2'));
+        const wc1El = document.getElementById('wc_1') || document.getElementById('final_wc1');
+        const wc2El = document.getElementById('wc_2') || document.getElementById('final_wc2');
+
         fetch('/api/heartbeat', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -1720,7 +1727,11 @@ function injectHeartbeat(html, testDoc) {
                 totalCount: total,
                 currentPart: getCurrentPart(),
                 timeRemaining: getTimeRemaining(),
-                type: TEST_TYPE
+                type: TEST_TYPE,
+                task1Preview: task1 ? (task1.value || task1.innerText || '').slice(0, 300) : null,
+                task2Preview: task2 ? (task2.value || task2.innerText || '').slice(0, 300) : null,
+                wordCount1: wc1El ? wc1El.innerText.trim() : null,
+                wordCount2: wc2El ? wc2El.innerText.trim() : null
             })
         }).catch(() => {});
     }

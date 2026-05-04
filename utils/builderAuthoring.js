@@ -76,7 +76,7 @@ function buildReadingInjection(testData = null) {
 ${commonInjectionStyles()}
 <script>
 (function () {
-    const isEditMode = ${isEditMode};
+    const isEditMode = ${isEditMode ? 'true' : 'false'};
     const testId = '${testId}';
     const preloadedData = ${preloadedData};
 
@@ -213,7 +213,7 @@ ${commonInjectionStyles()}
 </style>
 <script>
 (function () {
-    const isEditMode = ${isEditMode};
+    const isEditMode = ${isEditMode ? 'true' : 'false'};
     const testId = '${testId}';
     const preloadedData = ${preloadedData};
 
@@ -375,7 +375,7 @@ function buildWritingInjection(testData = null) {
 ${commonInjectionStyles()}
 <script>
 (function () {
-    const isEditMode = ${isEditMode};
+    const isEditMode = ${isEditMode ? 'true' : 'false'};
     const testId = '${testId}';
     const preloadedData = ${preloadedData};
 

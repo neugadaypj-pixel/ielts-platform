@@ -70,7 +70,7 @@ function buildReadingInjection(testData = null) {
     const isEditMode = testData && testData._id;
     const testId = isEditMode ? testData._id : null;
     const preloadedData = isEditMode ? JSON.stringify(testData) : 'null';
-    const builderJson = isEditMode && testData.builderJson ? testData.builderJson : 'null';
+    const builderJson = isEditMode && testData.builderJson ? JSON.stringify(testData.builderJson) : 'null';
 
     return `
 ${commonInjectionStyles()}
@@ -103,7 +103,7 @@ ${commonInjectionStyles()}
     actionArea.insertBefore(controls, actionArea.firstChild);
 
     if (isEditMode) {
-        const savedJson = ${builderJson};
+        const savedJson = JSON.parse(${builderJson});
         if (savedJson && savedJson.parts) {
             function applyReadingData() {
                 const el = document.getElementById('p1_title');
@@ -201,7 +201,7 @@ function buildListeningInjection(testData = null) {
     const isEditMode = testData && testData._id;
     const testId = isEditMode ? testData._id : null;
     const preloadedData = isEditMode ? JSON.stringify(testData) : 'null';
-    const builderJson = isEditMode && testData.builderJson ? testData.builderJson : 'null';
+    const builderJson = isEditMode && testData.builderJson ? JSON.stringify(testData.builderJson) : 'null';
 
     return `
 ${commonInjectionStyles()}
@@ -241,7 +241,7 @@ ${commonInjectionStyles()}
     actionArea.insertBefore(controls, actionArea.firstChild);
 
     if (isEditMode) {
-        const savedJson = ${builderJson};
+        const savedJson = JSON.parse(${builderJson});
         if (savedJson && savedJson.parts) {
             function applyListeningData() {
                 const el = document.getElementById('q1_text');
@@ -369,7 +369,7 @@ function buildWritingInjection(testData = null) {
     const isEditMode = testData && testData._id;
     const testId = isEditMode ? testData._id : null;
     const preloadedData = isEditMode ? JSON.stringify(testData) : 'null';
-    const builderJson = isEditMode && testData.builderJson ? testData.builderJson : 'null';
+    const builderJson = isEditMode && testData.builderJson ? JSON.stringify(testData.builderJson) : 'null';
 
     return `
 ${commonInjectionStyles()}
@@ -402,7 +402,7 @@ ${commonInjectionStyles()}
     actionArea.insertBefore(controls, actionArea.firstChild);
 
     if (isEditMode) {
-        const savedJson = ${builderJson};
+        const savedJson = JSON.parse(${builderJson});
         if (savedJson && savedJson.parts) {
             function applyWritingData() {
                 const el = document.getElementById('t1_prompt');

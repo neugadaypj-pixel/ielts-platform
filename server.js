@@ -291,7 +291,7 @@ app.get('/logout', (req, res) => {
 app.get('/admin', isAdmin, async (req, res) => {
     try {
         const tests = await Test.find({}).sort({ type: 1, title: 1 });
-        const teachers = await User.find({ role: 'teacher' });
+        const teachers = await User.find({ role: 'teacher' }).populate('assignedTests');
         res.render('admin', {
             tests,
             teachers,
@@ -594,6 +594,22 @@ app.get('/teacher/add-student', isTeacher, (req, res) => {
 app.post('/teacher/add-student', isTeacher, async (req, res) => {
     try {
         const { username, password } = req.body;
+        
+        // Validation
+        if (!username || !password) {
+            return res.status(400).json({ success: false, message: "Username and password are required." });
+        }
+        
+        if (password.length < 6) {
+            return res.status(400).json({ success: false, message: "Password must be at least 6 characters." });
+        }
+        
+        // Check if username already exists
+        const existingUser = await User.findOne({ username });
+        if (existingUser) {
+            return res.status(400).json({ success: false, message: "Username already exists. Please choose a different one." });
+        }
+        
         const hashedPassword = await bcrypt.hash(password, 10);
         const newStudent = new User({
             username: username,
@@ -602,9 +618,15 @@ app.post('/teacher/add-student', isTeacher, async (req, res) => {
             teacherId: req.session.userId 
         });
         await newStudent.save();
-        res.send(`<h1>Student '${username}' Created!</h1><a href='/teacher-dashboard'>Back</a>`);
+        
+        res.json({ 
+            success: true, 
+            message: `Student '${username}' created successfully!`,
+            redirect: '/teacher-dashboard'
+        });
     } catch (err) {
-        res.status(500).send("Error creating student.");
+        console.error('Add student error:', err);
+        res.status(500).json({ success: false, message: "Error creating student: " + err.message });
     }
 });
 

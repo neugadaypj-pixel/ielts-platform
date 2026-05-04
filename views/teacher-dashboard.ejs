@@ -370,16 +370,40 @@
             width: 100%;
             padding: 12px 14px;
             border-radius: 16px;
-            border: 1px solid #cbd5e1;
+            border: 2px solid #e2e8f0;
             background: white;
             font-size: 0.95rem;
             font-family: inherit;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+
+        select {
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23667eea' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 8px center;
+            background-size: 20px;
+            padding-right: 36px;
+            background-color: #f8fafc;
+        }
+
+        select:hover {
+            border-color: #cbd5e1;
+            background-color: white;
+        }
+
+        select option {
+            padding: 8px 12px;
+            background: white;
+            color: #1f2937;
         }
 
         input[type="text"]:focus, select:focus {
             outline: none;
             border-color: #667eea;
             box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.12);
+            background-color: white;
         }
 
         .group-grid {

@@ -196,17 +196,15 @@
         .ms-button:focus { outline: none; border-color: #667eea; box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.12); background: white; }
 
         .ms-panel {
-            position: absolute;
-            top: calc(100% + 10px);
-            left: 0;
-            right: 0;
-            z-index: 20;
+            position: fixed;
+            z-index: 9999;
             border-radius: 18px;
             border: 1px solid #e2e8f0;
             background: rgba(255,255,255,0.98);
             box-shadow: 0 18px 40px rgba(15, 23, 42, 0.12);
             padding: 10px;
             display: none;
+            min-width: 220px;
         }
 
         .ms-panel.open { display: block; }
@@ -429,9 +427,23 @@
                 }
             }
 
+            function positionPanel() {
+                const rect = button.getBoundingClientRect();
+                const spaceBelow = window.innerHeight - rect.bottom;
+                const panelHeight = 280;
+                panel.style.width = rect.width + 'px';
+                panel.style.left = rect.left + 'px';
+                if (spaceBelow < panelHeight && rect.top > panelHeight) {
+                    panel.style.top = (rect.top - panelHeight - 4) + 'px';
+                } else {
+                    panel.style.top = (rect.bottom + 4) + 'px';
+                }
+            }
+
             button.addEventListener('click', () => {
                 const isOpen = panel.classList.toggle('open');
                 if (isOpen) {
+                    positionPanel();
                     search.value = '';
                     rebuildOptions('');
                     setTimeout(() => search.focus(), 0);

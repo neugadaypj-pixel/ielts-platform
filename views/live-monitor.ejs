@@ -107,7 +107,7 @@
         <div>
             <h1>📡 Live Monitor</h1>
             <p><strong><%= test.title %></strong> &mdash; <%= test.type %> test</p>
-            <p class="refresh-note">Auto-refreshes every 3.5 seconds. Students appear within 5 seconds of opening the test.</p>
+            <p class="refresh-note">Updates instantly as students answer questions. Students appear within 5 seconds of opening the test.</p>
         </div>
         <div style="display:flex; gap:12px; align-items:center;">
             <div class="live-badge"><div class="live-dot"></div> LIVE</div>
@@ -205,20 +205,21 @@
             }).join('');
         }
 
-        function refresh() {
-            fetch('/api/live-data/' + TEST_ID, { credentials: 'same-origin' })
-                .then(r => r.json())
-                .then(data => {
-                    updateStats(data.students);
-                    renderTable(data.students);
-                })
-                .catch(() => {});
-        }
-
-        setInterval(refresh, 3500);
-        refresh();
-        updateStats(<%= JSON.stringify(students) %>);
-        renderTable(<%= JSON.stringify(students) %>);
+        const evtSource = new EventSource('/api/live-stream/' + TEST_ID);
+        evtSource.onmessage = function(e) {
+            const data = JSON.parse(e.data);
+            updateStats(data.students);
+            renderTable(data.students);
+        };
+        evtSource.onerror = function() {
+            // Fallback to polling if SSE fails
+            setTimeout(() => {
+                fetch('/api/live-data/' + TEST_ID, { credentials: 'same-origin' })
+                    .then(r => r.json())
+                    .then(data => { updateStats(data.students); renderTable(data.students); })
+                    .catch(() => {});
+            }, 3500);
+        };
     </script>
 </body>
 </html>

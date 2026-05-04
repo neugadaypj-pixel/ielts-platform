@@ -1101,7 +1101,25 @@ app.get('/student-dashboard', async (req, res) => {
 });
 
 // --- LIVE MONITOR ---
-const heartbeatStore = new Map(); // testId -> Map(studentName -> data)
+const heartbeatStore = new Map();
+const sseClients = new Map();
+
+function getActiveStudents(testId) {
+    const students = [];
+    const map = heartbeatStore.get(testId);
+    if (map) {
+        const cutoff = Date.now() - 30000;
+        map.forEach((data) => { if (data.lastSeen > cutoff) students.push(data); });
+    }
+    return students;
+}
+
+function pushToTeachers(testId) {
+    const clients = sseClients.get(testId);
+    if (!clients || clients.size === 0) return;
+    const payload = `data: ${JSON.stringify({ students: getActiveStudents(testId) })}\n\n`;
+    clients.forEach(res => { try { res.write(payload); } catch(e) {} });
+}
 
 app.post('/api/heartbeat', async (req, res) => {
     if (!req.session.userId) return res.status(401).json({ ok: false });
@@ -1122,37 +1140,43 @@ app.post('/api/heartbeat', async (req, res) => {
         wordCount2: wordCount2 || null,
         lastSeen: Date.now()
     });
-    res.json({ ok: true, activeCount: heartbeatStore.get(testId) ? heartbeatStore.get(testId).size : 1 });
+
+    pushToTeachers(testId);
+
+    const activeCount = heartbeatStore.get(testId).size;
+    res.json({ ok: true, activeCount });
+});
+
+app.get('/api/live-stream/:testId', isTeacher, (req, res) => {
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.flushHeaders();
+
+    const testId = req.params.testId;
+    if (!sseClients.has(testId)) sseClients.set(testId, new Set());
+    sseClients.get(testId).add(res);
+
+    res.write(`data: ${JSON.stringify({ students: getActiveStudents(testId) })}\n\n`);
+
+    req.on('close', () => {
+        const clients = sseClients.get(testId);
+        if (clients) { clients.delete(res); if (clients.size === 0) sseClients.delete(testId); }
+    });
 });
 
 app.get('/teacher/live/:testId', isTeacher, async (req, res) => {
     try {
         const test = await Test.findById(req.params.testId).select('title type createdBy');
         if (!test) return res.status(404).send('Test not found');
-        const students = [];
-        const map = heartbeatStore.get(req.params.testId);
-        if (map) {
-            const cutoff = Date.now() - 30000;
-            map.forEach((data) => {
-                if (data.lastSeen > cutoff) students.push(data);
-            });
-        }
-        res.render('live-monitor', { test, students, testId: req.params.testId });
+        res.render('live-monitor', { test, students: [], testId: req.params.testId });
     } catch (err) {
         res.status(500).send('Error: ' + err.message);
     }
 });
 
 app.get('/api/live-data/:testId', isTeacher, (req, res) => {
-    const students = [];
-    const map = heartbeatStore.get(req.params.testId);
-    if (map) {
-        const cutoff = Date.now() - 30000;
-        map.forEach((data) => {
-            if (data.lastSeen > cutoff) students.push(data);
-        });
-    }
-    res.json({ students });
+    res.json({ students: getActiveStudents(req.params.testId) });
 });
 
 // --- RENAME / FOLDER ROUTE ---

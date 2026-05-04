@@ -241,6 +241,7 @@ async function saveStudentSubmission({ req, payload }) {
 
 async function saveValidatedTest({ title, type, content, builderJson, req }) {
     console.log('[saveValidatedTest] builderJson received:', builderJson ? 'YES (' + String(builderJson).length + ' chars)' : 'NO');
+    console.log('[saveValidatedTest] builderJson value:', String(builderJson || '').slice(0, 200));
     if (!title || !String(title).trim()) {
         throw new Error('Test title is required.');
     }
@@ -349,6 +350,7 @@ app.get('/edit-test/:id', isTeacher, async (req, res) => {
         if (!test) {
             return res.status(404).send("Test not found.");
         }
+        console.log('[edit-test] builderJson in DB:', test.builderJson ? 'YES (' + String(test.builderJson).length + ' chars)' : 'NO');
 
         // Send builder HTML with the test data pre-loaded
         const builderHtml = getAuthoringPageHtml(test.type, test);

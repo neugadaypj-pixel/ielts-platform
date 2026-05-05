@@ -1,5 +1,6 @@
 const logger = require('../utils/logger');
 const CONSTANTS = require('../utils/constants');
+const { sendErrorResponse, AppError } = require('../utils/errorUtils');
 
 // CSRF error handler
 function csrfErrorHandler(err, req, res, next) {
@@ -29,32 +30,13 @@ function csrfErrorHandler(err, req, res, next) {
 
 // Generic error handler
 function errorHandler(err, req, res, next) {
-    logger.error('Unhandled error', { 
-        error: err.message,
-        stack: err.stack,
-        path: req.path,
-        method: req.method,
-        userId: req.session?.userId
-    });
-
-    const wantsJson = req.xhr
-        || String(req.headers.accept || '').includes('application/json')
-        || String(req.headers['content-type'] || '').includes('application/json');
-
-    if (wantsJson) {
-        return res.status(CONSTANTS.STATUS.INTERNAL_ERROR).json({ 
-            success: false, 
-            message: process.env.NODE_ENV === 'production' 
-                ? 'Internal server error' 
-                : err.message 
-        });
+    // If headers already sent, delegate to default Express error handler
+    if (res.headersSent) {
+        return next(err);
     }
 
-    res.status(CONSTANTS.STATUS.INTERNAL_ERROR).send(
-        process.env.NODE_ENV === 'production' 
-            ? 'Internal server error' 
-            : err.message
-    );
+    // Use custom error response utility
+    sendErrorResponse(res, err, req);
 }
 
 // 404 handler

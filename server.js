@@ -1,4 +1,17 @@
 require('dotenv').config(); 
+
+// Validate environment variables before starting
+const { validateEnv, getConfig, logConfig } = require('./utils/config');
+try {
+    validateEnv();
+    logConfig();
+} catch (error) {
+    console.error('? Environment validation failed:', error.message);
+    process.exit(1);
+}
+
+const config = getConfig();
+
 const express = require('express');
 const mongoose = require('mongoose');
 const path = require('path');
@@ -1804,4 +1817,5 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`Server is cooking at http://localhost:${PORT} 🍲`);
 });
+
 

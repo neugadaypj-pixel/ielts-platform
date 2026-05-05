@@ -66,9 +66,7 @@ async function uploadToB2(buffer, filename, mimetype) {
 const app = express();
 
 app.disable('x-powered-by');
-app.use(helmet({
-    contentSecurityPolicy: false
-}));
+app.use(helmet({ contentSecurityPolicy: false, permissionsPolicy: false }));
 
 // --- 1. DATABASE CONNECTION ---
 mongoose.connect(process.env.MONGO_URI)
@@ -422,8 +420,7 @@ app.get('/', (req, res) => {
     res.render('index', { user: req.session.username });
 });
 
-app.get('/login', csrfProtection, (req, res) => {
-    res.render('login', { csrfToken: req.csrfToken() });
+app.get('/login', csrfProtection, (req, res) => { if (req.session.userId) { const role = req.session.userRole; if (role === 'admin') return res.redirect('/admin'); if (role === 'teacher') return res.redirect('/teacher-dashboard'); if (role === 'student') return res.redirect('/student-dashboard'); } res.render('login', { csrfToken: req.csrfToken() });
 });
 
 app.post('/login', loginLimiter, csrfProtection, async (req, res) => {
@@ -1839,6 +1836,8 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`Server is cooking at http://localhost:${PORT} 🍲`);
 });
+
+
 
 
 

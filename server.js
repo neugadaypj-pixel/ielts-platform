@@ -4,7 +4,7 @@ const mongoose = require('mongoose');
 const path = require('path');
 const bcrypt = require('bcryptjs'); 
 const session = require('express-session'); 
-const MongoStore = require('connect-mongo');
+const MongoStore = require('connect-mongo').default;
 const multer = require("multer");
 const mime = require('mime-types');
 const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
@@ -89,9 +89,8 @@ app.use(session({
     secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
-    store: MongoStore.create({
-        mongoUrl: process.env.MONGO_URI,
-        touchAfter: 24 * 3600 // lazy session update (24 hours)
+    store: new MongoStore({
+        mongoUrl: process.env.MONGO_URI
     }),
     cookie: {
         maxAge: 1000 * 60 * 60 * 24,

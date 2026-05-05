@@ -10,6 +10,11 @@ const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
 const { generateHTMLFromTest, stringifyContent } = require('./utils/htmlExporter');
 const { getAuthoringPageHtml } = require('./utils/builderAuthoring');
 
+// Import utilities
+const CONSTANTS = require('./utils/constants');
+const { validateUsername, validatePassword, validateTestTitle, validateTestType, validateObjectId, safeJSONParse, sanitizeString } = require('./utils/validation');
+const logger = require('./utils/logger');
+
 console.log('[B2 Config] ENDPOINT:', process.env.B2_ENDPOINT);
 console.log('[B2 Config] BUCKET:', process.env.B2_BUCKET);
 console.log('[B2 Config] PUBLIC_URL:', process.env.B2_PUBLIC_URL);
@@ -59,7 +64,13 @@ app.use(express.static('public'));
 const fs = require('fs');
 
 // Use memory storage — files go to B2, not local disk
-const upload = multer({ storage: multer.memoryStorage() });
+const upload = multer({ 
+    storage: multer.memoryStorage(),
+    limits: {
+        fileSize: CONSTANTS.FILE_UPLOAD.MAX_FILE_SIZE,
+        files: CONSTANTS.FILE_UPLOAD.MAX_FILES
+    }
+});
 
 app.use(session({
     secret: process.env.SESSION_SECRET, 
@@ -271,7 +282,86 @@ async function saveValidatedTest({ title, type, content, builderJson, req }) {
     return newTest;
 }
 
-// --- 5. ROUTES ---
+// --- 5. ERROR HANDLER & HELPERS ---
+
+/**
+ * Generic delete handler for reducing code duplication
+ * Handles deletion of: tests, students, teachers, groups
+ */
+async function handleDelete(req, res, options) {
+    const { model, modelName, idParam, authCheck, preDelete, postDelete } = options;
+    
+    if (!req.session.userId) return res.redirect('/login');
+    
+    try {
+        const id = req.params[idParam];
+        
+        // Validate ID format
+        const idValidation = validateObjectId(id);
+        if (!idValidation.valid) {
+            return res.status(CONSTANTS.STATUS.BAD_REQUEST).json({ 
+                success: false, 
+                message: idValidation.error 
+            });
+        }
+
+        const doc = await model.findById(id);
+        if (!doc) {
+            return res.status(CONSTANTS.STATUS.NOT_FOUND).json({ 
+                success: false, 
+                message: `${modelName} not found` 
+            });
+        }
+
+        // Check authorization
+        const authResult = await authCheck(req, doc);
+        if (!authResult.allowed) {
+            logger.warn(`Unauthorized delete attempt for ${modelName}`, { 
+                userId: req.session.userId, 
+                documentId: id 
+            });
+            return res.status(CONSTANTS.STATUS.FORBIDDEN).json({ 
+                success: false, 
+                message: authResult.message || 'Not authorized' 
+            });
+        }
+
+        // Execute pre-delete operations
+        if (preDelete) {
+            await preDelete(doc);
+        }
+
+        // Delete the document
+        await model.findByIdAndDelete(id);
+
+        // Execute post-delete operations
+        if (postDelete) {
+            await postDelete(doc);
+        }
+
+        logger.info(`${modelName} deleted successfully`, { 
+            userId: req.session.userId, 
+            documentId: id 
+        });
+
+        res.json({ 
+            success: true, 
+            message: `${modelName} deleted successfully`, 
+            redirect: req.body.redirect || '/teacher-dashboard' 
+        });
+    } catch (err) {
+        logger.error(`Error deleting ${modelName}`, { 
+            error: err.message,
+            userId: req.session.userId 
+        });
+        res.status(CONSTANTS.STATUS.INTERNAL_ERROR).json({ 
+            success: false, 
+            message: `Error deleting ${modelName}: ${err.message}` 
+        });
+    }
+}
+
+// --- 6. ROUTES ---
 
 app.get('/', (req, res) => {
     res.render('index', { user: req.session.username });
@@ -463,6 +553,15 @@ app.post('/upload-test', isAdmin, upload.single('audioFile'), async (req, res) =
 // --- LISTENING TEST UPLOAD ---
 app.post('/create-test/listening', isAdmin, upload.any(), async (req, res) => {
     try {
+        // Validate input
+        const titleValidation = validateTestTitle(req.body.title);
+        if (!titleValidation.valid) {
+            return res.status(CONSTANTS.STATUS.BAD_REQUEST).json({ 
+                success: false, 
+                error: titleValidation.error 
+            });
+        }
+
         const audioUrls = {};
         
         // 1. Upload files to B2
@@ -474,11 +573,11 @@ app.post('/create-test/listening', isAdmin, upload.any(), async (req, res) => {
             }));
         }
 
-        // 2. Если файл 'audioFile' не загружен, берем ссылку из текстового поля audioUrl
-        // Это позволит работать и загрузке, и вставке ссылок
+        // 2. If audio file is not uploaded, use URL from audioUrl field
+        // This allows both file upload and URL paste options
         const finalFullAudio = audioUrls['audioFile'] || req.body.audioUrl || null;
 
-        const partsPayload = JSON.parse(req.body.parts || '{}');
+        const partsPayload = safeJSONParse(req.body.parts, {});
         const parts = {};
         for (let index = 1; index <= 4; index += 1) {
             const source = partsPayload[index] ?? partsPayload[String(index)] ?? '';
@@ -488,7 +587,6 @@ app.post('/create-test/listening', isAdmin, upload.any(), async (req, res) => {
         }
         
         const contentObj = {
-            // ТЕПЕРЬ ТУТ БУДЕТ ЛИБО ПУТЬ К ФАЙЛУ, ЛИБО ССЫЛКА
             fullAudio: finalFullAudio, 
             audioParts: [
                 audioUrls['part1'] || null,
@@ -497,7 +595,7 @@ app.post('/create-test/listening', isAdmin, upload.any(), async (req, res) => {
                 audioUrls['part4'] || null
             ],
             parts,
-            answerKey: JSON.parse(req.body.answerKey || '{}'),
+            answerKey: safeJSONParse(req.body.answerKey, {}),
             includePause: req.body.usePause === 'true'
         };
 
@@ -509,14 +607,25 @@ app.post('/create-test/listening', isAdmin, upload.any(), async (req, res) => {
             req
         });
 
+        logger.info('Listening test created', { 
+            testId: newTest._id, 
+            userId: req.session.userId 
+        });
+
         res.json({
             success: true,
-            message: "Listening test saved successfully.",
+            message: CONSTANTS.MESSAGES.LISTENING_TEST_SAVED,
             testId: newTest._id
         });
     } catch (err) {
-        console.error("Upload error:", err);
-        res.status(500).json({ success: false, error: err.message });
+        logger.error('Listening test upload error', { 
+            error: err.message, 
+            userId: req.session.userId 
+        });
+        res.status(CONSTANTS.STATUS.INTERNAL_ERROR).json({ 
+            success: false, 
+            error: err.message 
+        });
     }
 });
 
@@ -1204,153 +1313,194 @@ app.post('/teacher/update-test-meta/:id', isTeacher, async (req, res) => {
 
 // Delete a test
 app.post('/delete-test/:id', async (req, res) => {
-    if(!req.session.userId) return res.redirect('/login');
-    try {
-        const test = await Test.findById(req.params.id);
-        if (!test) return res.status(404).json({ success: false, message: "Test not found" });
-        
-        const user = await User.findById(req.session.userId);
-        
-        // Check authorization: only admin or the teacher who created it can delete
-        if (user.role !== 'admin' && (user.role !== 'teacher' || test.createdBy.toString() !== req.session.userId)) {
-            return res.status(403).json({ success: false, message: "Not authorized to delete this test" });
+    await handleDelete(req, res, {
+        model: Test,
+        modelName: 'Test',
+        idParam: 'id',
+        authCheck: async (req, test) => {
+            const user = await User.findById(req.session.userId);
+            const isAllowed = user.role === CONSTANTS.ROLES.ADMIN || 
+                             (user.role === CONSTANTS.ROLES.TEACHER && test.createdBy.toString() === req.session.userId);
+            return {
+                allowed: isAllowed,
+                message: 'Not authorized to delete this test'
+            };
+        },
+        preDelete: async (test) => {
+            // Remove test from all groups and teachers' assigned lists
+            await Group.updateMany({ assignedTests: test._id }, { $pull: { assignedTests: test._id } });
+            await User.updateMany({ assignedTests: test._id }, { $pull: { assignedTests: test._id } });
+            await Submission.deleteMany({ testId: test._id });
         }
-        
-        // Remove test from all groups and teachers' assigned lists
-        await Group.updateMany({ assignedTests: test._id }, { $pull: { assignedTests: test._id } });
-        await User.updateMany({ assignedTests: test._id }, { $pull: { assignedTests: test._id } });
-
-        await Submission.deleteMany({ testId: test._id });
-        
-        // Delete the test
-        await Test.findByIdAndDelete(req.params.id);
-        
-        res.json({ success: true, message: "Test deleted successfully", redirect: req.body.redirect || '/teacher-dashboard' });
-    } catch (err) {
-        console.error('Delete test error:', err);
-        res.status(500).json({ success: false, message: "Error deleting test: " + err.message });
-    }
+    });
 });
 
 // Delete a student account
 app.post('/delete-student/:id', async (req, res) => {
-    if(!req.session.userId) return res.redirect('/login');
-    try {
-        const student = await User.findById(req.params.id);
-        if (!student) return res.status(404).json({ success: false, message: "Student not found" });
-        
-        const user = await User.findById(req.session.userId);
-        
-        // Check authorization: only admin or the student's teacher can delete a student
-        if (user.role !== 'admin') {
-            if (user.role !== 'teacher') {
-                return res.status(403).json({ success: false, message: "Not authorized to delete this student" });
+    await handleDelete(req, res, {
+        model: User,
+        modelName: 'Student',
+        idParam: 'id',
+        authCheck: async (req, student) => {
+            if (student.role !== CONSTANTS.ROLES.STUDENT) {
+                return { allowed: false, message: 'User is not a student' };
             }
-            if (!student.teacherId || String(student.teacherId) !== String(user._id)) {
-                return res.status(403).json({ success: false, message: "Cannot delete students from other teachers" });
+
+            const user = await User.findById(req.session.userId);
+            
+            if (user.role === CONSTANTS.ROLES.ADMIN) {
+                return { allowed: true };
             }
+
+            if (user.role !== CONSTANTS.ROLES.TEACHER) {
+                return { allowed: false, message: 'Not authorized' };
+            }
+
+            if (!student.teacherId || student.teacherId.toString() !== req.session.userId) {
+                return { 
+                    allowed: false, 
+                    message: CONSTANTS.MESSAGES.CANNOT_DELETE_OTHER_TEACHERS_STUDENTS 
+                };
+            }
+
+            return { allowed: true };
+        },
+        preDelete: async (student) => {
+            // Remove student from group if they belong to one
+            if (student.groupId) {
+                await Group.findByIdAndUpdate(student.groupId, { $pull: { students: student._id } });
+            }
+            // Delete student submissions
+            await Submission.deleteMany({ studentId: student._id });
         }
-        
-        // Remove student from group if they belong to one
-        if (student.groupId) {
-            await Group.findByIdAndUpdate(student.groupId, { $pull: { students: student._id } });
-        }
-        
-        // Delete the student account
-        await Submission.deleteMany({ studentId: student._id });
-        await User.findByIdAndDelete(req.params.id);
-        
-        res.json({ success: true, message: "Student account deleted successfully", redirect: req.body.redirect || '/teacher-dashboard' });
-    } catch (err) {
-        console.error('Delete student error:', err);
-        res.status(500).json({ success: false, message: "Error deleting student: " + err.message });
-    }
+    });
 });
 
 // Delete a teacher account
 app.post('/delete-teacher/:id', async (req, res) => {
-    if(!req.session.userId) return res.redirect('/login');
-    try {
-        const teacher = await User.findById(req.params.id);
-        if (!teacher) return res.status(404).json({ success: false, message: "Teacher not found" });
-        
-        const user = await User.findById(req.session.userId);
-        
-        // Check authorization: only admin can delete teachers
-        if (user.role !== 'admin') {
-            return res.status(403).json({ success: false, message: "Only admins can delete teachers" });
-        }
-        
-        if (teacher.role !== 'teacher') {
-            return res.status(400).json({ success: false, message: "User is not a teacher" });
-        }
-        
-        // Find all tests created by this teacher
-        const teacherTests = await Test.find({ createdBy: teacher._id });
-        const testIds = teacherTests.map(t => t._id);
-        
-        // Remove tests from all groups
-        if (testIds.length > 0) {
-            await Group.updateMany({ assignedTests: { $in: testIds } }, { $pull: { assignedTests: { $in: testIds } } });
-            await User.updateMany({ assignedTests: { $in: testIds } }, { $pull: { assignedTests: { $in: testIds } } });
-        }
+    await handleDelete(req, res, {
+        model: User,
+        modelName: 'Teacher',
+        idParam: 'id',
+        authCheck: async (req, teacher) => {
+            if (teacher.role !== CONSTANTS.ROLES.TEACHER) {
+                return { allowed: false, message: 'User is not a teacher' };
+            }
 
-        await User.findByIdAndDelete(req.params.id);
-        res.json({ success: true, message: "Teacher account and associated tests deleted successfully", redirect: req.body.redirect || '/admin' });
-    } catch (err) {
-        console.error('Delete teacher error:', err);
-        res.status(500).json({ success: false, message: "Error deleting teacher: " + err.message });
-    }
+            const user = await User.findById(req.session.userId);
+            const isAllowed = user.role === CONSTANTS.ROLES.ADMIN;
+            return {
+                allowed: isAllowed,
+                message: 'Only admins can delete teachers'
+            };
+        },
+        preDelete: async (teacher) => {
+            // Find all tests created by this teacher
+            const teacherTests = await Test.find({ createdBy: teacher._id });
+            const testIds = teacherTests.map(t => t._id);
+            
+            // Remove tests from all groups
+            if (testIds.length > 0) {
+                await Group.updateMany(
+                    { assignedTests: { $in: testIds } }, 
+                    { $pull: { assignedTests: { $in: testIds } } }
+                );
+                await User.updateMany(
+                    { assignedTests: { $in: testIds } }, 
+                    { $pull: { assignedTests: { $in: testIds } } }
+                );
+            }
+        }
+    });
+});
+
+// Delete a group
+app.post('/delete-group/:id', async (req, res) => {
+    await handleDelete(req, res, {
+        model: Group,
+        modelName: 'Group',
+        idParam: 'id',
+        authCheck: async (req, group) => {
+            const user = await User.findById(req.session.userId);
+            
+            if (user.role === CONSTANTS.ROLES.ADMIN) {
+                return { allowed: true };
+            }
+
+            const isTeacherOwner = user.role === CONSTANTS.ROLES.TEACHER && 
+                                   group.teacherId.toString() === req.session.userId;
+            
+            return {
+                allowed: isTeacherOwner,
+                message: 'Not authorized to delete this group'
+            };
+        },
+        preDelete: async (group) => {
+            // Remove group reference from all students
+            await User.updateMany({ groupId: group._id }, { $unset: { groupId: 1 } });
+        }
+    });
 });
 
 // Remove a student from a group (keep account, just remove from group)
 app.post('/remove-student-from-group/:groupId/:studentId', async (req, res) => {
     if(!req.session.userId) return res.redirect('/login');
     try {
+        // Validate IDs
+        const groupValidation = validateObjectId(req.params.groupId);
+        const studentValidation = validateObjectId(req.params.studentId);
+
+        if (!groupValidation.valid || !studentValidation.valid) {
+            return res.status(CONSTANTS.STATUS.BAD_REQUEST).json({ 
+                success: false, 
+                message: 'Invalid ID format' 
+            });
+        }
+
         const group = await Group.findById(req.params.groupId);
-        if (!group) return res.status(404).json({ success: false, message: "Group not found" });
+        if (!group) {
+            return res.status(CONSTANTS.STATUS.NOT_FOUND).json({ 
+                success: false, 
+                message: CONSTANTS.MESSAGES.GROUP_NOT_FOUND 
+            });
+        }
         
         const user = await User.findById(req.session.userId);
         
-        // Check authorization: only teacher who owns the group can remove students
-        if (user.role !== 'admin' && (user.role !== 'teacher' || group.teacherId.toString() !== req.session.userId)) {
-            return res.status(403).json({ success: false, message: "Not authorized to remove students from this group" });
+        // Check authorization
+        if (user.role !== CONSTANTS.ROLES.ADMIN && 
+            (user.role !== CONSTANTS.ROLES.TEACHER || group.teacherId.toString() !== req.session.userId)) {
+            logger.warn('Unauthorized attempt to remove student from group', { 
+                userId: req.session.userId 
+            });
+            return res.status(CONSTANTS.STATUS.FORBIDDEN).json({ 
+                success: false, 
+                message: 'Not authorized to remove students from this group' 
+            });
         }
         
         // Remove student from group
         await Group.findByIdAndUpdate(req.params.groupId, { $pull: { students: req.params.studentId } });
         await User.findByIdAndUpdate(req.params.studentId, { $unset: { groupId: 1 } });
         
-        res.json({ success: true, message: "Student removed from group successfully", redirect: req.body.redirect || '/teacher-dashboard' });
-    } catch (err) {
-        console.error('Remove student from group error:', err);
-        res.status(500).json({ success: false, message: "Error removing student: " + err.message });
-    }
-});
+        logger.info('Student removed from group', { 
+            userId: req.session.userId, 
+            studentId: req.params.studentId 
+        });
 
-// Delete a group
-app.post('/delete-group/:id', async (req, res) => {
-    if(!req.session.userId) return res.redirect('/login');
-    try {
-        const group = await Group.findById(req.params.id);
-        if (!group) return res.status(404).json({ success: false, message: "Group not found" });
-        
-        const user = await User.findById(req.session.userId);
-        
-        if (user.role !== 'admin' && (user.role !== 'teacher' || String(group.teacherId) !== String(user._id))) {
-            return res.status(403).json({ success: false, message: "Not authorized to delete this group" });
-        }
-        
-        // Remove group reference from all students
-        await User.updateMany({ groupId: group._id }, { $unset: { groupId: 1 } });
-        
-        // Delete the group
-        await Group.findByIdAndDelete(req.params.id);
-        
-        res.json({ success: true, message: "Group deleted successfully", redirect: req.body.redirect || '/teacher-dashboard' });
+        res.json({ 
+            success: true, 
+            message: CONSTANTS.MESSAGES.STUDENT_REMOVED_FROM_GROUP, 
+            redirect: req.body.redirect || '/teacher-dashboard' 
+        });
     } catch (err) {
-        console.error('Delete group error:', err);
-        res.status(500).json({ success: false, message: "Error deleting group: " + err.message });
+        logger.error('Error removing student from group', { 
+            error: err.message 
+        });
+        res.status(CONSTANTS.STATUS.INTERNAL_ERROR).json({ 
+            success: false, 
+            message: 'Error removing student: ' + err.message 
+        });
     }
 });
 

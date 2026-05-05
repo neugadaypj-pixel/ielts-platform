@@ -107,6 +107,10 @@
         /* Fix for overly wide flow chart gaps */
         .flow-box .gap-input, .flow-chart-content .gap-input { width: 70px !important; padding: 5px; margin: 0 auto; text-align: center; }
         .flow-box .map-drop-zone, .flow-chart-content .map-drop-zone { min-width: 60px; height: 30px; padding: 0 8px; font-size: 14px; margin: 0 auto; }
+        
+        /* Prevent pasted content from inheriting flow chart's large sizing */
+        #flow_editor_1 *, #flow_editor_2 *, #flow_editor_3 *, #flow_editor_4 * { font-size: 15px !important; }
+        #flow_editor_1 .flow-box, #flow_editor_2 .flow-box, #flow_editor_3 .flow-box, #flow_editor_4 .flow-box { font-size: 15px !important; }
     </style>
 </head>
 <body>

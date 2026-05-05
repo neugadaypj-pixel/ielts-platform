@@ -4,6 +4,7 @@ const mongoose = require('mongoose');
 const path = require('path');
 const bcrypt = require('bcryptjs'); 
 const session = require('express-session'); 
+const MongoStore = require('connect-mongo');
 const multer = require("multer");
 const mime = require('mime-types');
 const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
@@ -88,6 +89,10 @@ app.use(session({
     secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
+    store: MongoStore.create({
+        mongoUrl: process.env.MONGO_URI,
+        touchAfter: 24 * 3600 // lazy session update (24 hours)
+    }),
     cookie: {
         maxAge: 1000 * 60 * 60 * 24,
         httpOnly: true,
@@ -940,29 +945,7 @@ app.post('/teacher/assign-student', isTeacher, async (req, res) => {
     }
 });
 
-app.post('/teacher/assign-test-group', isTeacher, async (req, res) => {
-    const { testId, groupId } = req.body;
-    try {
-        const group = await Group.findById(groupId);
-        if (!group) {
-            return res.status(404).send("Group not found.");
-        }
 
-        if (req.session.userRole !== 'admin' && String(group.teacherId) !== String(req.session.userId)) {
-            return res.status(403).send("Not authorized to assign tests to this group.");
-        }
-
-        const access = await getAccessibleTest(req, testId);
-        if (!access.test || !access.isAllowed) {
-            return res.status(403).send("You do not have access to this test.");
-        }
-
-        await Group.findByIdAndUpdate(groupId, { $addToSet: { assignedTests: testId } });
-        res.redirect('/teacher-dashboard');
-    } catch (err) {
-        res.status(500).send("Error assigning test.");
-    }
-});
 
 app.get('/teacher/progress/:id', isTeacher, async (req, res) => {
     try {

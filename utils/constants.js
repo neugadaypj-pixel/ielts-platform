@@ -29,7 +29,12 @@ module.exports = {
     FILE_UPLOAD: {
         MAX_FILE_SIZE: 100 * 1024 * 1024, // 100MB
         MAX_FILES: 10,
-        ALLOWED_AUDIO_TYPES: ['audio/mpeg', 'audio/mp3', 'audio/wav', 'audio/ogg']
+        ALLOWED_AUDIO_TYPES: [
+            'audio/mpeg', 'audio/mp3', 'audio/wav', 'audio/ogg',
+            'audio/aac', 'audio/x-aac', 'audio/mp4', 'audio/x-m4a',
+            'audio/flac', 'audio/x-flac', 'audio/webm', 'audio/opus',
+            'audio/x-wav', 'audio/vnd.wav'
+        ]
     },
 
     // Validation rules

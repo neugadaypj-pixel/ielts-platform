@@ -7,7 +7,8 @@ const session = require('express-session');
 const multer = require("multer");
 const mime = require('mime-types');
 const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
-const { generateHTMLFromTest, stringifyContent } = require('./utils/htmlExporter');
+const rateLimit = require('express-rate-limit');
+const { generateHTMLFromTest, stringifyContent, injectPersistentStateForDownload } = require('./utils/htmlExporter');
 const { getAuthoringPageHtml } = require('./utils/builderAuthoring');
 
 // Import utilities
@@ -64,20 +65,40 @@ app.use(express.static('public'));
 const fs = require('fs');
 
 // Use memory storage — files go to B2, not local disk
-const upload = multer({ 
+const upload = multer({
     storage: multer.memoryStorage(),
     limits: {
         fileSize: CONSTANTS.FILE_UPLOAD.MAX_FILE_SIZE,
         files: CONSTANTS.FILE_UPLOAD.MAX_FILES
+    },
+    fileFilter(req, file, cb) {
+        if (CONSTANTS.FILE_UPLOAD.ALLOWED_AUDIO_TYPES.includes(file.mimetype)) {
+            cb(null, true);
+        } else {
+            cb(new Error(`Invalid file type: ${file.mimetype}. Only audio files are allowed.`));
+        }
     }
 });
 
 app.use(session({
-    secret: process.env.SESSION_SECRET, 
+    secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
-    cookie: { maxAge: 1000 * 60 * 60 * 24 } 
+    cookie: {
+        maxAge: 1000 * 60 * 60 * 24,
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax'
+    }
 }));
+
+const loginLimiter = rateLimit({
+    windowMs: 60 * 1000,
+    max: 10,
+    message: "Too many login attempts. Please wait a minute and try again.",
+    standardHeaders: true,
+    legacyHeaders: false
+});
 
 // --- 4. AUTHENTICATION GATEKEEPERS ---
 
@@ -371,7 +392,7 @@ app.get('/login', (req, res) => {
     res.render('login');
 });
 
-app.post('/login', async (req, res) => {
+app.post('/login', loginLimiter, async (req, res) => {
     const { username, password } = req.body;
     try {
         const user = await User.findOne({ username });
@@ -706,17 +727,20 @@ app.get('/admin/add-teacher', isAdmin, (req, res) => {
 app.post('/admin/add-teacher', isAdmin, async (req, res) => {
     try {
         const { username, password } = req.body;
+
+        const usernameValidation = validateUsername(username);
+        if (!usernameValidation.valid) return res.status(400).send(usernameValidation.error + " <a href='/admin/add-teacher'>Try again</a>");
+
+        const passwordValidation = validatePassword(password);
+        if (!passwordValidation.valid) return res.status(400).send(passwordValidation.error + " <a href='/admin/add-teacher'>Try again</a>");
+
         const existingUser = await User.findOne({ username });
         if (existingUser) return res.send("Username taken. <a href='/admin/add-teacher'>Try again</a>");
 
         const hashedPassword = await bcrypt.hash(password, 10);
-        const newTeacher = new User({
-            username: username,
-            password: hashedPassword,
-            role: 'teacher'
-        });
-
+        const newTeacher = new User({ username, password: hashedPassword, role: 'teacher' });
         await newTeacher.save();
+        logger.info('Teacher created', { username, adminId: req.session.userId });
         res.send(`<h1>Success!</h1><p>Teacher '${username}' created.</p><a href='/admin'>Back</a>`);
     } catch (err) {
         res.status(500).send("Error creating teacher.");
@@ -726,7 +750,17 @@ app.post('/admin/add-teacher', isAdmin, async (req, res) => {
 app.post('/admin/assign-test', isAdmin, async (req, res) => {
     const { teacherId, testId } = req.body;
     try {
+        const teacherValidation = validateObjectId(teacherId);
+        const testValidation = validateObjectId(testId);
+        if (!teacherValidation.valid) return res.status(400).send('Invalid teacher ID. <a href=\'/admin\'>Back</a>');
+        if (!testValidation.valid) return res.status(400).send('Invalid test ID. <a href=\'/admin\'>Back</a>');
+
+        const [teacher, test] = await Promise.all([User.findById(teacherId), Test.findById(testId)]);
+        if (!teacher || teacher.role !== 'teacher') return res.status(404).send('Teacher not found. <a href=\'/admin\'>Back</a>');
+        if (!test) return res.status(404).send('Test not found. <a href=\'/admin\'>Back</a>');
+
         await User.findByIdAndUpdate(teacherId, { $addToSet: { assignedTests: testId } });
+        logger.info('Test assigned to teacher', { testId, teacherId, adminId: req.session.userId });
         res.send("<h1>Success!</h1><p>Test assigned.</p><a href='/admin'>Back</a>");
     } catch (err) {
         res.status(500).send("Error assigning test.");
@@ -737,6 +771,9 @@ app.post('/admin/assign-test', isAdmin, async (req, res) => {
 
 app.get('/teacher-dashboard', isTeacher, async (req, res) => {
     try {
+        const page = Math.max(1, parseInt(req.query.page) || 1);
+        const PAGE_SIZE = 20;
+
         const [teacher, groups, allStudents, submissions] = await Promise.all([
             User.findById(req.session.userId).populate({
                 path: 'assignedTests',
@@ -755,12 +792,8 @@ app.get('/teacher-dashboard', isTeacher, async (req, res) => {
             (group.assignedTests || []).forEach((test) => {
                 const key = String(test._id);
                 if (!groupStatsByTestId.has(key)) {
-                    groupStatsByTestId.set(key, {
-                        groupCount: 0,
-                        studentIds: new Set()
-                    });
+                    groupStatsByTestId.set(key, { groupCount: 0, studentIds: new Set() });
                 }
-
                 const current = groupStatsByTestId.get(key);
                 current.groupCount += 1;
                 uniqueStudentIds.forEach((studentId) => current.studentIds.add(studentId));
@@ -771,32 +804,25 @@ app.get('/teacher-dashboard', isTeacher, async (req, res) => {
         submissions.forEach((submission) => {
             const key = String(submission.testId);
             if (!submissionStatsByTestId.has(key)) {
-                submissionStatsByTestId.set(key, {
-                    completedCount: 0,
-                    studentIds: new Set(),
-                    latestSubmissionAt: null
-                });
+                submissionStatsByTestId.set(key, { completedCount: 0, studentIds: new Set(), latestSubmissionAt: null });
             }
-
             const current = submissionStatsByTestId.get(key);
             const studentKey = String(submission.studentId);
             if (!current.studentIds.has(studentKey)) {
                 current.studentIds.add(studentKey);
                 current.completedCount += 1;
             }
-
             if (!current.latestSubmissionAt || submission.lastSubmittedAt > current.latestSubmissionAt) {
                 current.latestSubmissionAt = submission.lastSubmittedAt;
             }
         });
 
-        const tests = (teacher?.assignedTests || [])
+        const allTests = (teacher?.assignedTests || [])
             .filter((testDoc) => testDoc != null)
             .map((testDoc) => {
                 const test = typeof testDoc.toObject === 'function' ? testDoc.toObject() : { ...testDoc };
                 const groupStats = groupStatsByTestId.get(String(test._id));
                 const submissionStats = submissionStatsByTestId.get(String(test._id));
-
                 return {
                     ...test,
                     assignedGroupCount: groupStats ? groupStats.groupCount : 0,
@@ -807,6 +833,10 @@ app.get('/teacher-dashboard', isTeacher, async (req, res) => {
             })
             .sort((left, right) => left.title.localeCompare(right.title));
 
+        const totalTests = allTests.length;
+        const totalPages = Math.ceil(totalTests / PAGE_SIZE);
+        const tests = allTests.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
         res.render('teacher-dashboard', {
             teacher,
             tests,
@@ -814,10 +844,11 @@ app.get('/teacher-dashboard', isTeacher, async (req, res) => {
             allStudents,
             groups,
             stats: {
-                testsCount: tests.length,
+                testsCount: totalTests,
                 groupsCount: groups.length,
                 studentsCount: allStudents.length
-            }
+            },
+            pagination: { page, totalPages, totalTests, pageSize: PAGE_SIZE }
         });
     } catch (err) {
         res.status(500).send("Error loading dashboard.");
@@ -1104,10 +1135,11 @@ app.get('/download-test/:id', async (req, res) => {
             const html = generateHTMLFromTest(testForDownload, {
                 groqApiKey: process.env.GROQ_API_KEY || ''
             });
+            const stableHtml = injectPersistentStateForDownload(html, access.test);
             const safeTitle = access.test.title.replace(/[^a-z0-9]/gi, '_').toLowerCase();
             res.setHeader('Content-Disposition', `attachment; filename="${safeTitle}.html"`);
             res.setHeader('Content-Type', 'text/html; charset=utf-8');
-            return res.send(html);
+            return res.send(stableHtml);
         } catch (generatorErr) {
             console.error('HTML generation error for download:', generatorErr);
             console.error('Test data:', access.test);
@@ -1212,6 +1244,17 @@ app.get('/student-dashboard', async (req, res) => {
 // --- LIVE MONITOR ---
 const heartbeatStore = new Map();
 const sseClients = new Map();
+
+// Cleanup stale heartbeat entries every 5 minutes
+setInterval(() => {
+    const cutoff = Date.now() - 300000; // 5 minutes
+    heartbeatStore.forEach((studentMap, testId) => {
+        studentMap.forEach((data, name) => {
+            if (data.lastSeen < cutoff) studentMap.delete(name);
+        });
+        if (studentMap.size === 0) heartbeatStore.delete(testId);
+    });
+}, 300000);
 
 function getActiveStudents(testId) {
     const students = [];
@@ -1501,6 +1544,32 @@ app.post('/remove-student-from-group/:groupId/:studentId', async (req, res) => {
             success: false, 
             message: 'Error removing student: ' + err.message 
         });
+    }
+});
+
+// --- ADMIN LOG VIEWER ---
+app.get('/admin/logs', isAdmin, async (req, res) => {
+    try {
+        const level = (req.query.level || 'info').toLowerCase();
+        const page = Math.max(1, parseInt(req.query.page) || 1);
+        const PAGE_SIZE = 50;
+        const logFile = path.join(__dirname, 'logs', `${level}.log`);
+
+        if (!fs.existsSync(logFile)) {
+            return res.json({ entries: [], total: 0, page, totalPages: 0 });
+        }
+
+        const raw = await fs.promises.readFile(logFile, 'utf8');
+        const lines = raw.trim().split('\n').filter(Boolean).reverse();
+        const total = lines.length;
+        const totalPages = Math.ceil(total / PAGE_SIZE);
+        const entries = lines
+            .slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
+            .map(line => { try { return JSON.parse(line); } catch { return { raw: line }; } });
+
+        res.json({ entries, total, page, totalPages, level });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
     }
 });
 

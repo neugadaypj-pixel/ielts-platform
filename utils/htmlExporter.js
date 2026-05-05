@@ -1760,6 +1760,35 @@ function injectHeartbeat(html, testDoc) {
     return replaceLastLiteral(html, '</body>', `${snippet}\n</body>`);
 }
 
+function injectPersistentStateForDownload(html, testDoc) {
+    const stableId = createStableSessionId(testDoc, 'dl_');
+    const snippet = `
+<script>
+(function() {
+    // Ensure state keys are stable and not time-based so data survives file re-open
+    const STABLE_KEY = '${stableId}';
+    function patchSessionKey(varName) {
+        try {
+            const current = window[varName];
+            if (current && typeof current === 'string' && current !== STABLE_KEY) {
+                // Migrate any existing state from old key to stable key
+                try {
+                    const old = localStorage.getItem(current);
+                    if (old && !localStorage.getItem(STABLE_KEY)) {
+                        localStorage.setItem(STABLE_KEY, old);
+                    }
+                } catch(e) {}
+                window[varName] = STABLE_KEY;
+            }
+        } catch(e) {}
+    }
+    if (typeof SESSION_KEY !== 'undefined') patchSessionKey('SESSION_KEY');
+    if (typeof SESSION_ID !== 'undefined') patchSessionKey('SESSION_ID');
+})();
+</script>`;
+    return replaceAllLiteral(html, '</head>', `${snippet}\n</head>`);
+}
+
 function generateReadingHtml(testDoc, parsedContent, studentName) {
     const content = normalizeReadingContent(parsedContent, testDoc);
     const stableSessionId = createStableSessionId(testDoc, 'test_');
@@ -1950,5 +1979,6 @@ module.exports = {
     generateHTMLFromTest,
     getHTMLTemplate,
     parseStoredContent,
-    stringifyContent
+    stringifyContent,
+    injectPersistentStateForDownload
 };

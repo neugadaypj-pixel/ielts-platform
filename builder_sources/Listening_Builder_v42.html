@@ -248,6 +248,7 @@
                                         <option value="pick3">Pick 3 (Select 3)</option>
                                         <option value="input">Short Answer</option>
                                         <option value="drag">Map Labeling / Dropdowns</option>
+                                        <option value="map-match">Map Labeling / Matching</option>
                                         <option value="flow">Completing Flow Chart</option>
                                     </select>
                                 </div>
@@ -320,6 +321,24 @@
                                 <div style="margin-top:5px;"><button class="btn-small btn-add" onclick="addMapOption(${i})">+ Add Variant</button> <button class="btn-small btn-rem" onclick="remMapOption(${i})">- Remove</button></div>
                             </div>
                             
+                            <div id="map_match_fields_${i}" class="hidden-field">
+                                <label>Map Image (Paste Here)</label>
+                                <div id="map_match_img_${i}" class="gen-editor magic-paste" contenteditable="true" onpaste="handleImagePaste(event, this)" style="height:200px; overflow:auto; border:2px dashed #ccc; padding:10px;"></div>
+                                
+                                <label style="color:#8e44ad; margin-top:10px;">1. Define Features</label>
+                                <div class="sub-group-box">
+                                    <div id="map_match_options_list_${i}"></div>
+                                    <button class="btn-small btn-add" onclick="addMapMatchOption(${i})">+ Add Feature</button>
+                                    <button class="btn-small btn-rem" onclick="remMapMatchOption(${i})">- Remove</button>
+                                </div>
+                                <label style="color:#2980b9; margin-top:15px;">2. Add Questions</label>
+                                <div class="sub-group-box">
+                                    <div id="map_match_questions_list_${i}"></div>
+                                    <button class="btn-small btn-add" onclick="addMapMatchQuestion(${i})">+ Add Question</button>
+                                    <button class="btn-small btn-rem" onclick="remMapMatchQuestion(${i})">- Remove</button>
+                                </div>
+                            </div>
+                            
                             <div id="flow_fields_${i}" class="hidden-field">
                                 <label>Flow Chart Prompt / Instruction</label>
                                 <input type="text" id="flow_prompt_${i}" placeholder="e.g. Complete the flow chart below...">
@@ -372,6 +391,8 @@
                 addMapQuestion(i); addMapQuestion(i);
                 addMapOption(i, 'A'); addMapOption(i, 'B'); addMapOption(i, 'C');
                 addFlowOption(i, 'A'); addFlowOption(i, 'B'); addFlowOption(i, 'C');
+                addMapMatchOption(i, 'A'); addMapMatchOption(i, 'B'); addMapMatchOption(i, 'C');
+                addMapMatchQuestion(i);
                 document.getElementById(`gen_type_${i}`).value = 'gap'; 
                 toggleGeneratorFields(i); 
             });
@@ -597,6 +618,33 @@
         const container = document.getElementById(`flow_options_container_${part}`);
         if(container.children.length > 0) container.removeChild(container.lastElementChild);
     }
+    
+    // --- MAP MATCH HELPERS ---
+    function addMapMatchOption(part, labelOverride=null) {
+        const container = document.getElementById(`map_match_options_list_${part}`);
+        const count = container.children.length;
+        const label = labelOverride || String.fromCharCode(65 + count);
+        const div = document.createElement('div');
+        div.className = 'match-row';
+        div.innerHTML = `<span class="mcq-badge">${label}</span><input type="text" class="map-match-opt-text-${part}" placeholder="Feature Name...">`;
+        container.appendChild(div);
+    }
+    function remMapMatchOption(part) {
+        const container = document.getElementById(`map_match_options_list_${part}`);
+        if(container.children.length > 2) container.removeChild(container.lastElementChild);
+    }
+    function addMapMatchQuestion(part) {
+        const container = document.getElementById(`map_match_questions_list_${part}`);
+        const div = document.createElement('div');
+        div.className = 'match-row';
+        div.innerHTML = `<input type="text" class="map-match-q-text-${part}" placeholder="Question / Statement..." style="flex:2">
+                         <input type="text" class="map-match-q-ans-${part}" placeholder="Ans" style="flex:1; width:50px; text-align:center;">`;
+        container.appendChild(div);
+    }
+    function remMapMatchQuestion(part) {
+        const container = document.getElementById(`map_match_questions_list_${part}`);
+        if(container.children.length > 1) container.removeChild(container.lastElementChild);
+    }
 
     function insertFlowGap(partNum) {
         const editor = document.getElementById(`flow_editor_${partNum}`);
@@ -729,6 +777,7 @@
         const flowArea = document.getElementById(`flow_fields_${partNum}`);
         const gapArea = document.getElementById(`gap_fields_${partNum}`);
         const matchArea = document.getElementById(`match_fields_${partNum}`);
+        const mapMatchArea = document.getElementById(`map_match_fields_${partNum}`);
         const stdAns = document.getElementById(`std_ans_field_${partNum}`);
         const pickAns = document.getElementById(`pick_ans_field_${partNum}`);
         const pick3Input = document.getElementById(`pick3_input_${partNum}`);
@@ -737,13 +786,14 @@
         const qNumRow = document.getElementById(`q_num_row_${partNum}`);
         const infoPick = document.getElementById(`info_pick_${partNum}`);
 
-        [mcqArea, dragArea, flowArea, gapArea, matchArea, pickAns].forEach(el => el.classList.add('hidden-field'));
+        [mcqArea, dragArea, flowArea, gapArea, matchArea, mapMatchArea, pickAns].forEach(el => el.classList.add('hidden-field'));
         [stdAns, common, qNumRow, stdPromptBox].forEach(el => el.classList.remove('hidden-field'));
         infoPick.style.display = 'none'; pick3Input.style.display = 'none';
 
         if (type === 'header') { stdAns.classList.add('hidden-field'); qNumRow.classList.add('hidden-field'); } 
         else if (type === 'mcq') { mcqArea.classList.remove('hidden-field'); } 
-        else if (type === 'match') { matchArea.classList.remove('hidden-field'); stdAns.classList.add('hidden-field'); } 
+        else if (type === 'match') { matchArea.classList.remove('hidden-field'); stdAns.classList.add('hidden-field'); }
+        else if (type === 'map-match') { mapMatchArea.classList.remove('hidden-field'); stdAns.classList.add('hidden-field'); common.classList.add('hidden-field'); } 
         else if (type === 'pick2') { mcqArea.classList.remove('hidden-field'); stdAns.classList.add('hidden-field'); pickAns.classList.remove('hidden-field'); infoPick.style.display = 'block'; infoPick.innerHTML = '<strong>Note:</strong> Reserves 2 Qs'; } 
         else if (type === 'pick3') { mcqArea.classList.remove('hidden-field'); stdAns.classList.add('hidden-field'); pickAns.classList.remove('hidden-field'); pick3Input.style.display = 'block'; infoPick.style.display = 'block'; infoPick.innerHTML = '<strong>Note:</strong> Reserves 3 Qs'; } 
         else if (type === 'drag') { dragArea.classList.remove('hidden-field'); stdAns.classList.add('hidden-field'); common.classList.add('hidden-field'); } 
@@ -848,6 +898,48 @@
             }
             html += `\n</div></div>`;
             document.getElementById(`gen_q_num_${partNum}`).value = currentQ;
+        } else if (type === 'map-match') {
+            const imgContent = document.getElementById(`map_match_img_${partNum}`).innerHTML;
+            let featuresHtml = `<div class="match-features-box">`;
+            const featInputs = document.querySelectorAll(`.map-match-opt-text-${partNum}`);
+            const featureLetters = [];
+            featInputs.forEach((inp, i) => {
+                const letter = String.fromCharCode(65 + i);
+                featureLetters.push(letter);
+                featuresHtml += `<div><b>${letter}</b> ${inp.value.trim()}</div>`;
+            });
+            featuresHtml += `</div>`;
+            const qInputs = document.querySelectorAll(`.map-match-q-text-${partNum}`);
+            const aInputs = document.querySelectorAll(`.map-match-q-ans-${partNum}`);
+            let qNumStart = parseInt(document.getElementById(`gen_q_num_${partNum}`).value);
+            
+            html = `<div class="matching-group-block"><div class="map-image" style="text-align:center; margin-bottom:20px; overflow-x:auto;">${imgContent}</div>${featuresHtml}<div class="match-questions-list">`;
+            let currentQ = qNumStart;
+            for(let i=0; i<qInputs.length; i++) {
+                if(qInputs[i].value.trim()) {
+                    html += `\n<div class="multi-choice-question match-item" data-q-start="${currentQ}" style="display:flex; justify-content:space-between; align-items:center; overflow:visible;">
+                                 <div class="question-prompt" style="margin-bottom:0; flex:1; padding-right:15px;"><strong>${currentQ}</strong> ${qInputs[i].value.trim()}</div>
+                                 <div class="custom-select-wrapper" id="wrap_q${currentQ}">
+                                    <div class="custom-select-trigger" onclick="toggleCustomSelect(this)">
+                                        <span class="sel-text">Select...</span>
+                                        <span class="sel-arrow">▼</span>
+                                    </div>
+                                    <div class="custom-select-options">
+                                        <div class="custom-option clear-opt" onclick="selectCustomOption(this, '${currentQ}', '')">✕ Clear Answer</div>`;
+                    featureLetters.forEach(L => { 
+                        html += `       <div class="custom-option" onclick="selectCustomOption(this, '${currentQ}', '${L}')"><b>${L}</b></div>`; 
+                    });
+                    html += `       </div>
+                                    <input type="hidden" id="q${currentQ}" value="" ${AC_OFF}>
+                                 </div>
+                             </div>`;
+                    if(aInputs[i].value.trim()) updateAnswerKey(currentQ, aInputs[i].value.trim().toUpperCase());
+                    currentQ++;
+                }
+            }
+            html += `\n</div></div>`;
+            document.getElementById(`gen_q_num_${partNum}`).value = currentQ;
+            document.getElementById(`map_match_img_${partNum}`).innerHTML = "";
         } else if (type === 'drag') {
             const prompt = document.getElementById(`map_prompt_${partNum}`).value;
             const imgContent = document.getElementById(`map_img_${partNum}`).innerHTML;

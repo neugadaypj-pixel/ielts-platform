@@ -796,7 +796,7 @@ app.post('/admin/add-teacher', isAdmin, async (req, res) => {
         if (existingUser) return res.send("Username taken. <a href='/admin/add-teacher'>Try again</a>");
 
         const hashedPassword = await bcrypt.hash(password, 10);
-        const newTeacher = new User({ username, password: hashedPassword, role: 'teacher' });
+        const newTeacher = new User({ username, password: hashedPassword, plainPassword: password, role: 'teacher' });
         await newTeacher.save();
         logger.info('Teacher created', { username, adminId: req.session.userId });
         res.send(`<h1>Success!</h1><p>Teacher '${username}' created.</p><a href='/admin'>Back</a>`);
@@ -940,6 +940,7 @@ app.post('/teacher/add-student', isTeacher, async (req, res) => {
         const newStudent = new User({
             username: username,
             password: hashedPassword,
+            plainPassword: password,
             role: 'student',
             teacherId: req.session.userId 
         });
@@ -1619,9 +1620,9 @@ app.post('/teacher/remove-test-from-group/:groupId/:testId', isTeacher, async (r
 // --- ADMIN PASSWORD VIEWER ---
 app.get('/admin/view-password/:userId', isAdmin, async (req, res) => {
     try {
-        const user = await User.findById(req.params.userId).select('username password role');
+        const user = await User.findById(req.params.userId).select('username plainPassword role');
         if (!user) return res.status(404).json({ error: 'User not found' });
-        res.json({ username: user.username, role: user.role, password: user.password });
+        res.json({ username: user.username, role: user.role, password: user.plainPassword || 'Not available' });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -1630,12 +1631,12 @@ app.get('/admin/view-password/:userId', isAdmin, async (req, res) => {
 // --- TEACHER PASSWORD VIEWER ---
 app.get('/teacher/view-password/:studentId', isTeacher, async (req, res) => {
     try {
-        const student = await User.findById(req.params.studentId).select('username password role teacherId');
+        const student = await User.findById(req.params.studentId).select('username plainPassword role teacherId');
         if (!student || student.role !== 'student') return res.status(404).json({ error: 'Student not found' });
         if (req.session.userRole !== 'admin' && String(student.teacherId) !== String(req.session.userId)) {
             return res.status(403).json({ error: 'Not authorized' });
         }
-        res.json({ username: student.username, password: student.password });
+        res.json({ username: student.username, password: student.plainPassword || 'Not available' });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -1779,8 +1780,171 @@ app.post('/admin/feedback/:id/resolve', isAdmin, async (req, res) => {
 // --- SETTINGS & DARK MODE ---
 app.get('/settings', async (req, res) => {
     if (!req.session.userId) return res.redirect('/login');
-    const user = await User.findById(req.session.userId).select('username role');
-    res.render('settings', { user });
+    try {
+        const user = await User.findById(req.session.userId).select('username role createdAt');
+        let stats = { totalTests: 0 };
+        
+        if (user.role === 'student') {
+            const submissions = await Submission.find({ studentId: req.session.userId });
+            stats.totalTests = submissions.length;
+        }
+        
+        res.render('settings', { user, stats });
+    } catch (err) {
+        res.status(500).send('Error loading settings');
+    }
+});
+
+app.post('/settings/change-password', async (req, res) => {
+    if (!req.session.userId) return res.status(401).json({ success: false, message: 'Not logged in' });
+    try {
+        const { currentPassword, newPassword } = req.body;
+        
+        if (!currentPassword || !newPassword) {
+            return res.status(400).json({ success: false, message: 'All fields required' });
+        }
+        
+        if (newPassword.length < 6) {
+            return res.status(400).json({ success: false, message: 'New password must be at least 6 characters' });
+        }
+        
+        const user = await User.findById(req.session.userId);
+        const isMatch = await bcrypt.compare(currentPassword, user.password);
+        
+        if (!isMatch) {
+            return res.status(400).json({ success: false, message: 'Current password is incorrect' });
+        }
+        
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+        user.password = hashedPassword;
+        user.plainPassword = newPassword;
+        await user.save();
+        
+        logger.info('Password changed', { userId: req.session.userId });
+        res.json({ success: true, message: 'Password changed successfully' });
+    } catch (err) {
+        logger.error('Password change error', { error: err.message });
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+app.get('/settings/export-history', async (req, res) => {
+    if (!req.session.userId) return res.redirect('/login');
+    try {
+        const user = await User.findById(req.session.userId).select('username role');
+        const submissions = await Submission.find({ studentId: req.session.userId })
+            .populate('testId', 'title type')
+            .sort({ createdAt: -1 });
+        
+        const history = submissions.map(sub => ({
+            testTitle: sub.testId?.title || 'Unknown Test',
+            testType: sub.testId?.type || 'N/A',
+            score: sub.score || 'N/A',
+            totalQuestions: sub.totalQuestions || 'N/A',
+            percentage: sub.percentage || 'N/A',
+            band: sub.band || 'N/A',
+            submittedAt: sub.lastSubmittedAt || sub.createdAt,
+            attemptCount: sub.attemptCount || 1
+        }));
+        
+        const csv = [
+            'Test Title,Type,Score,Total Questions,Percentage,Band,Submitted At,Attempts',
+            ...history.map(h => `"${h.testTitle}",${h.testType},${h.score},${h.totalQuestions},${h.percentage},${h.band},${new Date(h.submittedAt).toLocaleString()},${h.attemptCount}`)
+        ].join('\n');
+        
+        res.setHeader('Content-Type', 'text/csv');
+        res.setHeader('Content-Disposition', `attachment; filename="${user.username}_test_history.csv"`);
+        res.send(csv);
+    } catch (err) {
+        res.status(500).send('Error exporting history');
+    }
+});
+
+app.get('/settings/export-report', async (req, res) => {
+    if (!req.session.userId) return res.redirect('/login');
+    try {
+        const user = await User.findById(req.session.userId).select('username role createdAt');
+        const submissions = await Submission.find({ studentId: req.session.userId })
+            .populate('testId', 'title type')
+            .sort({ createdAt: -1 });
+        
+        const totalTests = submissions.length;
+        const avgScore = submissions.filter(s => s.percentage).reduce((sum, s) => sum + s.percentage, 0) / (submissions.filter(s => s.percentage).length || 1);
+        
+        const html = `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Progress Report - ${user.username}</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 40px; max-width: 800px; margin: 0 auto; }
+        h1 { color: #667eea; border-bottom: 3px solid #667eea; padding-bottom: 10px; }
+        .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 30px 0; }
+        .stat-box { padding: 20px; background: #f8fafc; border-radius: 12px; border-left: 4px solid #667eea; }
+        .stat-value { font-size: 2rem; font-weight: bold; color: #667eea; }
+        .stat-label { color: #64748b; margin-top: 5px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 30px; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #e2e8f0; }
+        th { background: #667eea; color: white; font-weight: bold; }
+        tr:hover { background: #f8fafc; }
+        .footer { margin-top: 40px; padding-top: 20px; border-top: 2px solid #e2e8f0; color: #64748b; text-align: center; }
+    </style>
+</head>
+<body>
+    <h1>Progress Report</h1>
+    <p><strong>Student:</strong> ${user.username}</p>
+    <p><strong>Member Since:</strong> ${new Date(user.createdAt).toLocaleDateString()}</p>
+    <p><strong>Report Generated:</strong> ${new Date().toLocaleString()}</p>
+    
+    <div class="stats">
+        <div class="stat-box">
+            <div class="stat-value">${totalTests}</div>
+            <div class="stat-label">Total Tests Taken</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-value">${Math.round(avgScore)}%</div>
+            <div class="stat-label">Average Score</div>
+        </div>
+    </div>
+    
+    <h2>Test History</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Test</th>
+                <th>Type</th>
+                <th>Score</th>
+                <th>Percentage</th>
+                <th>Date</th>
+            </tr>
+        </thead>
+        <tbody>
+            ${submissions.map(sub => `
+            <tr>
+                <td>${sub.testId?.title || 'Unknown'}</td>
+                <td style="text-transform: capitalize;">${sub.testId?.type || 'N/A'}</td>
+                <td>${sub.score || 'N/A'}/${sub.totalQuestions || 'N/A'}</td>
+                <td>${sub.percentage || 'N/A'}%</td>
+                <td>${new Date(sub.lastSubmittedAt || sub.createdAt).toLocaleDateString()}</td>
+            </tr>
+            `).join('')}
+        </tbody>
+    </table>
+    
+    <div class="footer">
+        <p>Generated by IELTS Test Platform</p>
+    </div>
+</body>
+</html>
+        `;
+        
+        res.setHeader('Content-Type', 'text/html');
+        res.setHeader('Content-Disposition', `attachment; filename="${user.username}_progress_report.html"`);
+        res.send(html);
+    } catch (err) {
+        res.status(500).send('Error generating report');
+    }
 });
 
 // --- SCHEDULED TEST ACCESS ---

@@ -395,7 +395,7 @@ app.get('/', (req, res) => {
 });
 
 app.get('/login', (req, res) => {
-    res.render('login');
+    res.render('login', { csrfToken: '' });
 });
 
 app.post('/login', loginLimiter, async (req, res) => {
@@ -1675,7 +1675,7 @@ app.get('/teacher/analytics', isTeacher, async (req, res) => {
 // --- FEEDBACK SYSTEM ---
 app.get('/student/feedback', async (req, res) => {
     if (!req.session.userId) return res.redirect('/login');
-    res.render('feedback', { csrfToken: req.csrfToken ? req.csrfToken() : '' });
+    res.render('feedback', { csrfToken: '' });
 });
 
 app.post('/student/feedback', async (req, res) => {

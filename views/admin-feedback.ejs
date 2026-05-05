@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Student Feedback</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: "Segoe UI", sans-serif; background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); min-height: 100vh; padding: 24px; color: #1f2937; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .header { display: flex; justify-content: space-between; align-items: center; padding: 28px 32px; border-radius: 28px; background: rgba(255,255,255,0.92); box-shadow: 0 18px 42px rgba(15,23,42,0.08); margin-bottom: 24px; }
+        .header h1 { font-size: 2rem; font-weight: 900; }
+        .btn { padding: 12px 18px; border-radius: 999px; text-decoration: none; font-weight: 800; background: white; color: #334155; border: 1px solid #dbe3f1; cursor: pointer; }
+        .tabs { display: flex; gap: 12px; margin-bottom: 24px; }
+        .tab { padding: 12px 24px; border-radius: 999px; font-weight: 800; cursor: pointer; background: rgba(255,255,255,0.6); border: 1px solid #e2e8f0; }
+        .tab.active { background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; }
+        .feedback-list { display: grid; gap: 18px; }
+        .feedback-card { padding: 24px; border-radius: 24px; background: rgba(255,255,255,0.92); box-shadow: 0 12px 28px rgba(15,23,42,0.06); }
+        .feedback-header { display: flex; justify-content: space-between; align-items: start; margin-bottom: 16px; }
+        .feedback-meta { font-size: 0.85rem; color: #64748b; }
+        .badge { padding: 6px 12px; border-radius: 999px; font-size: 0.8rem; font-weight: 800; }
+        .badge.open { background: #fee2e2; color: #dc2626; }
+        .badge.resolved { background: #dcfce7; color: #166534; }
+        .feedback-content { margin: 16px 0; line-height: 1.6; }
+        .resolve-form { margin-top: 16px; padding-top: 16px; border-top: 1px solid #e2e8f0; }
+        textarea { width: 100%; padding: 12px; border-radius: 12px; border: 2px solid #e2e8f0; font-family: inherit; margin-bottom: 12px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div>
+                <h1>📬 Student Feedback</h1>
+                <p style="color:#64748b;margin-top:8px;">Review and resolve student-reported issues</p>
+            </div>
+            <a href="/admin" class="btn">← Back</a>
+        </div>
+
+        <div class="tabs">
+            <div class="tab <%= status === 'open' ? 'active' : '' %>" onclick="window.location.href='/admin/feedback?status=open'">Open (<%= feedback.filter(f => f.status === 'open').length %>)</div>
+            <div class="tab <%= status === 'resolved' ? 'active' : '' %>" onclick="window.location.href='/admin/feedback?status=resolved'">Resolved</div>
+        </div>
+
+        <div class="feedback-list">
+            <% if (feedback.length === 0) { %>
+                <div style="padding:40px;text-align:center;color:#94a3b8;">No <%= status %> feedback yet.</div>
+            <% } else { %>
+                <% feedback.forEach(item => { %>
+                    <div class="feedback-card">
+                        <div class="feedback-header">
+                            <div>
+                                <strong style="font-size:1.1rem;"><%= item.studentName %></strong>
+                                <div class="feedback-meta">
+                                    <%= new Date(item.createdAt).toLocaleString() %> • 
+                                    <span style="text-transform:capitalize;"><%= item.testType %></span>
+                                    <% if (item.questionType) { %> • <%= item.questionType %><% } %>
+                                </div>
+                            </div>
+                            <span class="badge <%= item.status %>"><%= item.status %></span>
+                        </div>
+                        <div class="feedback-content"><%= item.issueDescription %></div>
+                        <% if (item.status === 'open') { %>
+                            <div class="resolve-form">
+                                <textarea id="notes-<%= item._id %>" placeholder="Add admin notes (optional)..."></textarea>
+                                <button class="btn" style="background:linear-gradient(135deg,#10b981,#059669);color:white;" onclick="resolve('<%= item._id %>')">Mark as Resolved</button>
+                            </div>
+                        <% } else if (item.adminNotes) { %>
+                            <div style="margin-top:12px;padding:12px;background:#f8fafc;border-radius:12px;font-size:0.9rem;">
+                                <strong>Admin Notes:</strong> <%= item.adminNotes %>
+                            </div>
+                        <% } %>
+                    </div>
+                <% }) %>
+            <% } %>
+        </div>
+    </div>
+
+    <script>
+        async function resolve(id) {
+            const notes = document.getElementById('notes-' + id).value;
+            const res = await fetch(`/admin/feedback/${id}/resolve`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ adminNotes: notes })
+            });
+            if (res.ok) location.reload();
+            else alert('Error resolving feedback');
+        }
+    </script>
+</body>
+</html>

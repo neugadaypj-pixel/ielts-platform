@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analytics Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: "Segoe UI", sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            padding: 24px;
+            color: #1f2937;
+        }
+        .container { max-width: 1400px; margin: 0 auto; }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 28px 32px;
+            border-radius: 28px;
+            background: rgba(255,255,255,0.92);
+            box-shadow: 0 18px 42px rgba(15,23,42,0.08);
+            margin-bottom: 24px;
+        }
+        .header h1 { font-size: 2rem; font-weight: 900; }
+        .btn {
+            padding: 12px 18px;
+            border-radius: 999px;
+            text-decoration: none;
+            font-weight: 800;
+            background: white;
+            color: #334155;
+            border: 1px solid #dbe3f1;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 18px;
+            margin-bottom: 24px;
+        }
+        .stat-card {
+            padding: 24px;
+            border-radius: 24px;
+            background: rgba(255,255,255,0.92);
+            box-shadow: 0 12px 28px rgba(15,23,42,0.06);
+            text-align: center;
+        }
+        .stat-value { font-size: 2.2rem; font-weight: 900; color: #667eea; }
+        .stat-label { color: #64748b; margin-top: 8px; font-size: 0.9rem; }
+        .chart-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 24px;
+        }
+        .chart-card {
+            padding: 28px;
+            border-radius: 28px;
+            background: rgba(255,255,255,0.92);
+            box-shadow: 0 18px 42px rgba(15,23,42,0.08);
+        }
+        .chart-card h2 { font-size: 1.3rem; font-weight: 900; margin-bottom: 20px; }
+        canvas { max-height: 300px; }
+        @media (max-width: 1200px) {
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+            .chart-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div>
+                <h1>📊 Analytics Dashboard</h1>
+                <p style="color:#64748b;margin-top:8px;">Performance insights and trends across all your students</p>
+            </div>
+            <a href="/teacher-dashboard" class="btn">← Back</a>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value"><%= submissions.length %></div>
+                <div class="stat-label">Total Submissions</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value"><%= students.length %></div>
+                <div class="stat-label">Active Students</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">
+                    <% const avgScore = submissions.filter(s => s.score).length > 0 
+                        ? Math.round(submissions.filter(s => s.score).reduce((sum, s) => sum + (s.percentage || 0), 0) / submissions.filter(s => s.score).length)
+                        : 0; %>
+                    <%= avgScore %>%
+                </div>
+                <div class="stat-label">Average Score</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value"><%= tests.length %></div>
+                <div class="stat-label">Tests Created</div>
+            </div>
+        </div>
+
+        <div class="chart-grid">
+            <div class="chart-card">
+                <h2>Submissions by Test Type</h2>
+                <canvas id="typeChart"></canvas>
+            </div>
+            <div class="chart-card">
+                <h2>Average Scores by Type</h2>
+                <canvas id="scoreChart"></canvas>
+            </div>
+            <div class="chart-card">
+                <h2>Submissions Over Time (Last 30 Days)</h2>
+                <canvas id="timeChart"></canvas>
+            </div>
+            <div class="chart-card">
+                <h2>Score Distribution</h2>
+                <canvas id="distChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const submissions = <%- JSON.stringify(submissions) %>;
+        
+        // Type distribution
+        const typeCounts = { reading: 0, listening: 0, writing: 0 };
+        submissions.forEach(s => typeCounts[s.type] = (typeCounts[s.type] || 0) + 1);
+        new Chart(document.getElementById('typeChart'), {
+            type: 'doughnut',
+            data: {
+                labels: ['Reading', 'Listening', 'Writing'],
+                datasets: [{
+                    data: [typeCounts.reading, typeCounts.listening, typeCounts.writing],
+                    backgroundColor: ['#3b82f6', '#10b981', '#f97316']
+                }]
+            },
+            options: { responsive: true, maintainAspectRatio: true }
+        });
+
+        // Average scores by type
+        const scoresByType = { reading: [], listening: [], writing: [] };
+        submissions.forEach(s => { if (s.percentage) scoresByType[s.type].push(s.percentage); });
+        const avgByType = {
+            reading: scoresByType.reading.length ? Math.round(scoresByType.reading.reduce((a,b)=>a+b,0)/scoresByType.reading.length) : 0,
+            listening: scoresByType.listening.length ? Math.round(scoresByType.listening.reduce((a,b)=>a+b,0)/scoresByType.listening.length) : 0,
+            writing: scoresByType.writing.length ? Math.round(scoresByType.writing.reduce((a,b)=>a+b,0)/scoresByType.writing.length) : 0
+        };
+        new Chart(document.getElementById('scoreChart'), {
+            type: 'bar',
+            data: {
+                labels: ['Reading', 'Listening', 'Writing'],
+                datasets: [{
+                    label: 'Average Score (%)',
+                    data: [avgByType.reading, avgByType.listening, avgByType.writing],
+                    backgroundColor: ['#3b82f6', '#10b981', '#f97316']
+                }]
+            },
+            options: { responsive: true, scales: { y: { beginAtZero: true, max: 100 } } }
+        });
+
+        // Submissions over time
+        const last30Days = Array.from({length: 30}, (_, i) => {
+            const d = new Date();
+            d.setDate(d.getDate() - (29 - i));
+            return d.toISOString().split('T')[0];
+        });
+        const submissionsByDay = {};
+        last30Days.forEach(d => submissionsByDay[d] = 0);
+        submissions.forEach(s => {
+            const day = new Date(s.createdAt).toISOString().split('T')[0];
+            if (submissionsByDay[day] !== undefined) submissionsByDay[day]++;
+        });
+        new Chart(document.getElementById('timeChart'), {
+            type: 'line',
+            data: {
+                labels: last30Days.map(d => new Date(d).toLocaleDateString('en-US', {month:'short', day:'numeric'})),
+                datasets: [{
+                    label: 'Submissions',
+                    data: last30Days.map(d => submissionsByDay[d]),
+                    borderColor: '#667eea',
+                    backgroundColor: 'rgba(102,126,234,0.1)',
+                    tension: 0.4,
+                    fill: true
+                }]
+            },
+            options: { responsive: true, scales: { y: { beginAtZero: true } } }
+        });
+
+        // Score distribution
+        const scoreBuckets = { '0-20': 0, '21-40': 0, '41-60': 0, '61-80': 0, '81-100': 0 };
+        submissions.forEach(s => {
+            if (!s.percentage) return;
+            if (s.percentage <= 20) scoreBuckets['0-20']++;
+            else if (s.percentage <= 40) scoreBuckets['21-40']++;
+            else if (s.percentage <= 60) scoreBuckets['41-60']++;
+            else if (s.percentage <= 80) scoreBuckets['61-80']++;
+            else scoreBuckets['81-100']++;
+        });
+        new Chart(document.getElementById('distChart'), {
+            type: 'bar',
+            data: {
+                labels: Object.keys(scoreBuckets),
+                datasets: [{
+                    label: 'Number of Students',
+                    data: Object.values(scoreBuckets),
+                    backgroundColor: '#764ba2'
+                }]
+            },
+            options: { responsive: true, scales: { y: { beginAtZero: true } } }
+        });
+    </script>
+</body>
+</html>

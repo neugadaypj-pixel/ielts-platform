@@ -505,6 +505,44 @@
         window.addEventListener('DOMContentLoaded', () => {
             document.querySelectorAll('select').forEach((el) => initModernSelect(el));
         });
+
+        async function viewPassword(userId, username, role) {
+            try {
+                const res = await fetch(`/admin/view-password/${userId}`);
+                const data = await res.json();
+                if (data.password) {
+                    showConfirm(`Password for ${username} (${role}):<br><br><strong style="font-size:1.2rem;color:#667eea;">${data.password}</strong><br><br>This is the hashed password from database.`, () => {});
+                } else {
+                    showToast('Error: ' + data.error, 'error');
+                }
+            } catch (err) {
+                showToast('Error fetching password', 'error');
+            }
+        }
+
+        function bulkDelete(type) {
+            const checkboxes = document.querySelectorAll(`input[data-bulk-type="${type}"]:checked`);
+            if (checkboxes.length === 0) return showToast('No items selected', 'error');
+            const ids = Array.from(checkboxes).map(cb => cb.value);
+            showConfirm(`Delete ${ids.length} ${type}(s)? This cannot be undone.`, async () => {
+                try {
+                    const res = await fetch('/admin/bulk-delete', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ type, ids })
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        showToast(data.message);
+                        setTimeout(() => location.reload(), 800);
+                    } else {
+                        showToast('Error: ' + data.message, 'error');
+                    }
+                } catch (err) {
+                    showToast('Error: ' + err.message, 'error');
+                }
+            });
+        }
     </script>
 </head>
 <body>
@@ -517,6 +555,8 @@
             <div class="header-actions">
                 <a href="/create-test" class="btn btn-primary">+ Create Test</a>
                 <a href="/admin/add-teacher" class="btn btn-success">+ Add Teacher</a>
+                <a href="/admin/feedback" class="btn" style="background:linear-gradient(135deg,#f97316,#ea580c);color:white;box-shadow:0 12px 26px rgba(249,115,22,0.24);">📬 Feedback</a>
+                <a href="/settings" class="btn btn-secondary">⚙️ Settings</a>
                 <a href="/logout" class="btn btn-secondary">Logout</a>
             </div>
         </header>
@@ -619,6 +659,7 @@
                                     <td><%= teacher.assignedTests ? teacher.assignedTests.length : 0 %> tests</td>
                                     <td>
                                         <div class="action-row">
+                                            <button class="btn btn-secondary" onclick="viewPassword('<%= teacher._id %>', '<%= teacher.username %>', 'teacher')" style="padding:8px 14px;font-size:0.85rem;">🔑 View Password</button>
                                             <button class="btn btn-danger" onclick="deleteItem('teacher', '<%= teacher._id %>', '<%= teacher.username %>')">Delete</button>
                                         </div>
                                     </td>

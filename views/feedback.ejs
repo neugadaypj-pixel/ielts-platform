@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Report an Issue</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: "Segoe UI", sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            padding: 24px;
+            color: #1f2937;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .card {
+            max-width: 600px;
+            width: 100%;
+            padding: 32px;
+            border-radius: 28px;
+            background: rgba(255,255,255,0.92);
+            box-shadow: 0 18px 42px rgba(15,23,42,0.08);
+        }
+        h1 { font-size: 1.8rem; font-weight: 900; margin-bottom: 12px; }
+        .subtitle { color: #64748b; margin-bottom: 24px; line-height: 1.6; }
+        .instructions {
+            padding: 16px;
+            border-radius: 16px;
+            background: #fef9c3;
+            border: 1px solid #fde047;
+            margin-bottom: 24px;
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+        .instructions strong { color: #854d0e; }
+        label {
+            display: block;
+            font-weight: 800;
+            margin-bottom: 8px;
+            color: #334155;
+        }
+        select, textarea {
+            width: 100%;
+            padding: 12px 14px;
+            border-radius: 16px;
+            border: 2px solid #e2e8f0;
+            font-family: inherit;
+            font-size: 0.95rem;
+            margin-bottom: 18px;
+        }
+        select { cursor: pointer; }
+        textarea { min-height: 150px; resize: vertical; }
+        select:focus, textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 4px rgba(102,126,234,0.12);
+        }
+        .btn-group {
+            display: flex;
+            gap: 12px;
+            margin-top: 24px;
+        }
+        .btn {
+            flex: 1;
+            padding: 14px;
+            border-radius: 999px;
+            border: none;
+            font-weight: 800;
+            cursor: pointer;
+            font-size: 0.95rem;
+            transition: transform 0.2s;
+        }
+        .btn:hover { transform: translateY(-2px); }
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .btn-secondary {
+            background: white;
+            color: #334155;
+            border: 1px solid #dbe3f1;
+        }
+        .toast {
+            position: fixed;
+            bottom: 28px;
+            right: 28px;
+            padding: 14px 22px;
+            border-radius: 16px;
+            font-weight: 800;
+            color: white;
+            box-shadow: 0 12px 28px rgba(15,23,42,0.18);
+            opacity: 0;
+            transition: opacity 0.4s;
+        }
+        .toast.show { opacity: 1; }
+        .toast.success { background: linear-gradient(135deg, #10b981, #059669); }
+        .toast.error { background: linear-gradient(135deg, #ef4444, #dc2626); }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>🐛 Report an Issue</h1>
+        <p class="subtitle">Help us improve the platform by reporting problems you encounter during tests.</p>
+        
+        <div class="instructions">
+            <strong>📝 How to report effectively:</strong><br>
+            • Mention which <strong>test type</strong> (Reading/Listening/Writing)<br>
+            • Specify the <strong>question type</strong> (Multiple Choice, Gap Fill, etc.)<br>
+            • Describe <strong>when</strong> the problem occurs (e.g., "when I click submit", "after 10 minutes")<br>
+            • Be as detailed as possible
+        </div>
+
+        <form id="feedbackForm">
+            <label for="testType">Test Type *</label>
+            <select id="testType" name="testType" required>
+                <option value="">Select test type</option>
+                <option value="reading">Reading</option>
+                <option value="listening">Listening</option>
+                <option value="writing">Writing</option>
+                <option value="general">General Platform Issue</option>
+            </select>
+
+            <label for="questionType">Question Type (if applicable)</label>
+            <select id="questionType" name="questionType">
+                <option value="">Select question type</option>
+                <option value="multiple-choice">Multiple Choice</option>
+                <option value="true-false">True/False/Not Given</option>
+                <option value="gap-fill">Gap Fill</option>
+                <option value="matching">Matching</option>
+                <option value="short-answer">Short Answer</option>
+                <option value="diagram">Diagram Labeling</option>
+                <option value="map">Map Labeling</option>
+                <option value="flow-chart">Flow Chart</option>
+                <option value="essay">Essay/Writing Task</option>
+                <option value="other">Other</option>
+            </select>
+
+            <label for="issueDescription">Describe the Problem *</label>
+            <textarea id="issueDescription" name="issueDescription" required placeholder="Example: In the Reading test, when I select an answer for question 5 (multiple choice), it doesn't save and disappears when I move to the next question. This happens every time I try."></textarea>
+
+            <div class="btn-group">
+                <button type="button" class="btn btn-secondary" onclick="window.location.href='/student-dashboard'">Cancel</button>
+                <button type="submit" class="btn btn-primary">Submit Report</button>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        document.getElementById('feedbackForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const data = Object.fromEntries(formData);
+            
+            try {
+                const res = await fetch('/student/feedback', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                const result = await res.json();
+                
+                if (result.success) {
+                    showToast('Report submitted successfully! Thank you.', 'success');
+                    setTimeout(() => window.location.href = '/student-dashboard', 2000);
+                } else {
+                    showToast('Error: ' + result.message, 'error');
+                }
+            } catch (err) {
+                showToast('Error submitting report', 'error');
+            }
+        });
+
+        function showToast(msg, type) {
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.textContent = msg;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.classList.add('show'), 100);
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 400);
+            }, 3000);
+        }
+    </script>
+</body>
+</html>

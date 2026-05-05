@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: "Segoe UI", sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            padding: 24px;
+            color: #1f2937;
+            transition: background 0.3s, color 0.3s;
+        }
+        body.dark-mode {
+            background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+            color: #f3f4f6;
+        }
+        .container { max-width: 800px; margin: 0 auto; }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 28px 32px;
+            border-radius: 28px;
+            background: rgba(255,255,255,0.92);
+            box-shadow: 0 18px 42px rgba(15,23,42,0.08);
+            margin-bottom: 24px;
+        }
+        body.dark-mode .header {
+            background: rgba(31,41,55,0.92);
+            box-shadow: 0 18px 42px rgba(0,0,0,0.3);
+        }
+        .header h1 { font-size: 2rem; font-weight: 900; }
+        .btn {
+            padding: 12px 18px;
+            border-radius: 999px;
+            text-decoration: none;
+            font-weight: 800;
+            background: white;
+            color: #334155;
+            border: 1px solid #dbe3f1;
+        }
+        body.dark-mode .btn {
+            background: #374151;
+            color: #f3f4f6;
+            border-color: #4b5563;
+        }
+        .section {
+            padding: 28px;
+            border-radius: 28px;
+            background: rgba(255,255,255,0.92);
+            box-shadow: 0 18px 42px rgba(15,23,42,0.08);
+            margin-bottom: 24px;
+        }
+        body.dark-mode .section {
+            background: rgba(31,41,55,0.92);
+            box-shadow: 0 18px 42px rgba(0,0,0,0.3);
+        }
+        .section h2 { font-size: 1.3rem; font-weight: 900; margin-bottom: 16px; }
+        .setting-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 18px 0;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        body.dark-mode .setting-row { border-color: #374151; }
+        .setting-row:last-child { border-bottom: none; }
+        .setting-label { font-weight: 700; }
+        .setting-desc { color: #64748b; font-size: 0.9rem; margin-top: 4px; }
+        body.dark-mode .setting-desc { color: #9ca3af; }
+        .toggle {
+            position: relative;
+            width: 56px;
+            height: 28px;
+            background: #e2e8f0;
+            border-radius: 999px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        .toggle.active { background: linear-gradient(135deg, #667eea, #764ba2); }
+        .toggle-knob {
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            width: 22px;
+            height: 22px;
+            background: white;
+            border-radius: 50%;
+            transition: transform 0.3s;
+        }
+        .toggle.active .toggle-knob { transform: translateX(28px); }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div>
+                <h1>⚙️ Settings</h1>
+                <p style="color:#64748b;margin-top:8px;">Customize your platform experience</p>
+            </div>
+            <a href="/<%= user.role === 'admin' ? 'admin' : user.role === 'teacher' ? 'teacher-dashboard' : 'student-dashboard' %>" class="btn">← Back</a>
+        </div>
+
+        <div class="section">
+            <h2>Appearance</h2>
+            <div class="setting-row">
+                <div>
+                    <div class="setting-label">Dark Mode</div>
+                    <div class="setting-desc">Switch to a darker color scheme for reduced eye strain</div>
+                </div>
+                <div class="toggle" id="darkModeToggle" onclick="toggleDarkMode()">
+                    <div class="toggle-knob"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Account Information</h2>
+            <div class="setting-row">
+                <div>
+                    <div class="setting-label">Username</div>
+                    <div class="setting-desc"><%= user.username %></div>
+                </div>
+            </div>
+            <div class="setting-row">
+                <div>
+                    <div class="setting-label">Role</div>
+                    <div class="setting-desc" style="text-transform:capitalize;"><%= user.role %></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const DARK_MODE_KEY = 'platform_dark_mode';
+        
+        function toggleDarkMode() {
+            const isDark = document.body.classList.toggle('dark-mode');
+            document.getElementById('darkModeToggle').classList.toggle('active', isDark);
+            localStorage.setItem(DARK_MODE_KEY, isDark ? '1' : '0');
+        }
+
+        // Load saved preference
+        if (localStorage.getItem(DARK_MODE_KEY) === '1') {
+            document.body.classList.add('dark-mode');
+            document.getElementById('darkModeToggle').classList.add('active');
+        }
+
+        // Apply dark mode to all pages
+        window.addEventListener('DOMContentLoaded', () => {
+            if (localStorage.getItem(DARK_MODE_KEY) === '1') {
+                document.body.classList.add('dark-mode');
+            }
+        });
+    </script>
+</body>
+</html>

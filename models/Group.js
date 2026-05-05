@@ -5,6 +5,10 @@ const GroupSchema = new mongoose.Schema({
     teacherId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     students: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
     assignedTests: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Test' }],
+    testSchedule: [{
+        testId: { type: mongoose.Schema.Types.ObjectId, ref: 'Test' },
+        availableFrom: { type: Date, default: null }
+    }],
     createdAt: { type: Date, default: Date.now }
 });
 

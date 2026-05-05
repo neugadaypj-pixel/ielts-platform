@@ -8,6 +8,8 @@ const multer = require("multer");
 const mime = require('mime-types');
 const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
 const rateLimit = require('express-rate-limit');
+const csrf = require('csurf');
+const cookieParser = require('cookie-parser');
 const { generateHTMLFromTest, stringifyContent, injectPersistentStateForDownload } = require('./utils/htmlExporter');
 const { getAuthoringPageHtml } = require('./utils/builderAuthoring');
 
@@ -54,12 +56,14 @@ const User = require('./models/User');
 const Test = require('./models/Test');
 const Group = require('./models/Group');
 const Submission = require('./models/Submission');
+const Feedback = require('./models/Feedback');
 
 // --- 3. MIDDLEWARE & SETTINGS ---
 app.set('view engine', 'ejs');
 app.use(express.urlencoded({ extended: true })); 
 app.use(express.json()); 
 app.use(express.static('public')); 
+app.use(cookieParser()); 
 
 // --- STORAGE CONFIGURATION ---
 const fs = require('fs');
@@ -99,6 +103,8 @@ const loginLimiter = rateLimit({
     standardHeaders: true,
     legacyHeaders: false
 });
+
+const csrfProtection = csrf({ cookie: true });
 
 // --- 4. AUTHENTICATION GATEKEEPERS ---
 
@@ -1222,20 +1228,27 @@ app.get('/student-dashboard', async (req, res) => {
             submissions.map((submission) => [String(submission.testId), submission])
         );
 
-        const tests = (student.groupId ? student.groupId.assignedTests : []).map((testDoc) => {
+        let allTests = student.groupId ? student.groupId.assignedTests : [];
+        
+        // Filter by schedule
+        if (student.groupId && student.groupId.testSchedule) {
+            const now = new Date();
+            const scheduledTestIds = new Set();
+            student.groupId.testSchedule.forEach(schedule => {
+                if (schedule.availableFrom && new Date(schedule.availableFrom) > now) {
+                    scheduledTestIds.add(String(schedule.testId));
+                }
+            });
+            allTests = allTests.filter(test => !scheduledTestIds.has(String(test._id)));
+        }
+
+        const tests = allTests.map((testDoc) => {
             const test = typeof testDoc.toObject === 'function' ? testDoc.toObject() : { ...testDoc };
-            return {
-                ...test,
-                submission: submissionsByTestId.get(String(test._id)) || null
-            };
+            return { ...test, submission: submissionsByTestId.get(String(test._id)) || null };
         });
+        
         const groupName = student.groupId ? student.groupId.name : "No Group Assigned";
-        res.render('student-dashboard', {
-            student,
-            tests,
-            testsByType: groupTestsByType(tests),
-            groupName
-        });
+        res.render('student-dashboard', { student, tests, testsByType: groupTestsByType(tests), groupName });
     } catch (err) {
         res.status(500).send("Error loading student dashboard.");
     }
@@ -1544,6 +1557,200 @@ app.post('/remove-student-from-group/:groupId/:studentId', async (req, res) => {
             success: false, 
             message: 'Error removing student: ' + err.message 
         });
+    }
+});
+
+// --- ADMIN PASSWORD VIEWER ---
+app.get('/admin/view-password/:userId', isAdmin, async (req, res) => {
+    try {
+        const user = await User.findById(req.params.userId).select('username password role');
+        if (!user) return res.status(404).json({ error: 'User not found' });
+        res.json({ username: user.username, role: user.role, password: user.password });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// --- TEACHER PASSWORD VIEWER ---
+app.get('/teacher/view-password/:studentId', isTeacher, async (req, res) => {
+    try {
+        const student = await User.findById(req.params.studentId).select('username password role teacherId');
+        if (!student || student.role !== 'student') return res.status(404).json({ error: 'Student not found' });
+        if (req.session.userRole !== 'admin' && String(student.teacherId) !== String(req.session.userId)) {
+            return res.status(403).json({ error: 'Not authorized' });
+        }
+        res.json({ username: student.username, password: student.password });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// --- BULK DELETE ---
+app.post('/admin/bulk-delete', isAdmin, async (req, res) => {
+    try {
+        const { type, ids } = req.body;
+        if (!Array.isArray(ids) || ids.length === 0) return res.status(400).json({ success: false, message: 'No items selected' });
+        
+        let deleted = 0;
+        if (type === 'test') {
+            await Test.deleteMany({ _id: { $in: ids } });
+            await Group.updateMany({}, { $pull: { assignedTests: { $in: ids } } });
+            await User.updateMany({}, { $pull: { assignedTests: { $in: ids } } });
+            await Submission.deleteMany({ testId: { $in: ids } });
+            deleted = ids.length;
+        } else if (type === 'teacher') {
+            const teachers = await User.find({ _id: { $in: ids }, role: 'teacher' });
+            for (const teacher of teachers) {
+                const tests = await Test.find({ createdBy: teacher._id });
+                const testIds = tests.map(t => t._id);
+                if (testIds.length > 0) {
+                    await Group.updateMany({}, { $pull: { assignedTests: { $in: testIds } } });
+                    await User.updateMany({}, { $pull: { assignedTests: { $in: testIds } } });
+                }
+            }
+            await User.deleteMany({ _id: { $in: ids }, role: 'teacher' });
+            deleted = teachers.length;
+        }
+        logger.info('Bulk delete completed', { type, count: deleted, adminId: req.session.userId });
+        res.json({ success: true, message: `${deleted} ${type}(s) deleted successfully` });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+app.post('/teacher/bulk-delete-students', isTeacher, async (req, res) => {
+    try {
+        const { ids } = req.body;
+        if (!Array.isArray(ids) || ids.length === 0) return res.status(400).json({ success: false, message: 'No students selected' });
+        
+        const students = await User.find({ _id: { $in: ids }, role: 'student', teacherId: req.session.userId });
+        const validIds = students.map(s => s._id);
+        
+        for (const student of students) {
+            if (student.groupId) await Group.findByIdAndUpdate(student.groupId, { $pull: { students: student._id } });
+            await Submission.deleteMany({ studentId: student._id });
+        }
+        await User.deleteMany({ _id: { $in: validIds } });
+        
+        logger.info('Bulk student delete', { count: validIds.length, teacherId: req.session.userId });
+        res.json({ success: true, message: `${validIds.length} student(s) deleted successfully` });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+// --- SEARCH/FILTER ---
+app.get('/api/search-tests', isTeacher, async (req, res) => {
+    try {
+        const query = (req.query.q || '').trim();
+        const type = req.query.type || '';
+        const teacher = await User.findById(req.session.userId).select('assignedTests');
+        
+        let filter = { _id: { $in: teacher.assignedTests || [] } };
+        if (query) filter.title = { $regex: query, $options: 'i' };
+        if (type) filter.type = type;
+        
+        const tests = await Test.find(filter).select('_id title type').limit(50);
+        res.json({ tests });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// --- ANALYTICS DASHBOARD ---
+app.get('/teacher/analytics', isTeacher, async (req, res) => {
+    try {
+        const [submissions, tests, students] = await Promise.all([
+            Submission.find({ teacherId: req.session.userId }).select('type score totalQuestions percentage createdAt testId'),
+            Test.find({ createdBy: req.session.userId }).select('title type'),
+            User.find({ teacherId: req.session.userId, role: 'student' }).select('username')
+        ]);
+        
+        res.render('analytics', { submissions, tests, students });
+    } catch (err) {
+        res.status(500).send('Error loading analytics');
+    }
+});
+
+// --- FEEDBACK SYSTEM ---
+app.get('/student/feedback', async (req, res) => {
+    if (!req.session.userId) return res.redirect('/login');
+    res.render('feedback', { csrfToken: req.csrfToken ? req.csrfToken() : '' });
+});
+
+app.post('/student/feedback', async (req, res) => {
+    if (!req.session.userId) return res.status(401).json({ success: false, message: 'Not logged in' });
+    try {
+        const { testType, questionType, issueDescription } = req.body;
+        const student = await User.findById(req.session.userId).select('username');
+        
+        const feedback = new Feedback({
+            studentId: req.session.userId,
+            studentName: student.username,
+            testType,
+            questionType: questionType || '',
+            issueDescription
+        });
+        await feedback.save();
+        logger.info('Feedback submitted', { studentId: req.session.userId, testType });
+        res.json({ success: true, message: 'Feedback submitted successfully' });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+app.get('/admin/feedback', isAdmin, async (req, res) => {
+    try {
+        const status = req.query.status || 'open';
+        const feedback = await Feedback.find({ status }).sort({ createdAt: -1 }).limit(100);
+        res.render('admin-feedback', { feedback, status });
+    } catch (err) {
+        res.status(500).send('Error loading feedback');
+    }
+});
+
+app.post('/admin/feedback/:id/resolve', isAdmin, async (req, res) => {
+    try {
+        const { adminNotes } = req.body;
+        await Feedback.findByIdAndUpdate(req.params.id, { status: 'resolved', adminNotes });
+        logger.info('Feedback resolved', { feedbackId: req.params.id, adminId: req.session.userId });
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+// --- SETTINGS & DARK MODE ---
+app.get('/settings', async (req, res) => {
+    if (!req.session.userId) return res.redirect('/login');
+    const user = await User.findById(req.session.userId).select('username role');
+    res.render('settings', { user });
+});
+
+// --- SCHEDULED TEST ACCESS ---
+app.post('/teacher/assign-test-group', isTeacher, async (req, res) => {
+    const { testId, groupId, scheduleType, availableFrom } = req.body;
+    try {
+        const group = await Group.findById(groupId);
+        if (!group) return res.status(404).send("Group not found.");
+        if (req.session.userRole !== 'admin' && String(group.teacherId) !== String(req.session.userId)) {
+            return res.status(403).send("Not authorized to assign tests to this group.");
+        }
+        const access = await getAccessibleTest(req, testId);
+        if (!access.test || !access.isAllowed) return res.status(403).send("You do not have access to this test.");
+        
+        await Group.findByIdAndUpdate(groupId, { $addToSet: { assignedTests: testId } });
+        
+        if (scheduleType === 'scheduled' && availableFrom) {
+            await Group.findByIdAndUpdate(groupId, {
+                $push: { testSchedule: { testId, availableFrom: new Date(availableFrom) } }
+            });
+        }
+        
+        logger.info('Test assigned to group', { testId, groupId, scheduleType, teacherId: req.session.userId });
+        res.redirect('/teacher-dashboard');
+    } catch (err) {
+        res.status(500).send("Error assigning test.");
     }
 });
 

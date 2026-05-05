@@ -835,6 +835,33 @@
         window.addEventListener('DOMContentLoaded', () => {
             document.querySelectorAll('select').forEach((el) => initModernSelect(el));
         });
+
+        function filterTests() {
+            const query = document.getElementById('searchTests').value.toLowerCase();
+            const type = document.getElementById('filterType').value;
+            document.querySelectorAll('.test-card').forEach(card => {
+                const title = card.querySelector('h4').textContent.toLowerCase();
+                const cardType = card.closest('.library-column').classList.contains('type-reading') ? 'reading' :
+                                 card.closest('.library-column').classList.contains('type-listening') ? 'listening' : 'writing';
+                const matchQuery = !query || title.includes(query);
+                const matchType = !type || cardType === type;
+                card.style.display = matchQuery && matchType ? 'block' : 'none';
+            });
+        }
+
+        async function viewPassword(studentId, studentName) {
+            try {
+                const res = await fetch(`/teacher/view-password/${studentId}`);
+                const data = await res.json();
+                if (data.password) {
+                    showConfirm(`Password for ${studentName}:<br><br><strong style="font-size:1.2rem;color:#667eea;">${data.password}</strong><br><br>This is the hashed password from database.`, () => {});
+                } else {
+                    showToast('Error: ' + data.error, 'error');
+                }
+            } catch (err) {
+                showToast('Error fetching password', 'error');
+            }
+        }
     </script>
 </head>
 <body>
@@ -864,6 +891,8 @@
 
         <div class="sidebar-actions">
             <a href="/teacher/add-student" class="sidebar-link primary">Register Student</a>
+            <a href="/teacher/analytics" class="sidebar-link primary" style="background:linear-gradient(135deg,#f97316,#ea580c);">📊 Analytics</a>
+            <a href="/settings" class="sidebar-link secondary">⚙️ Settings</a>
             <a href="/logout" class="sidebar-link secondary">Logout</a>
         </div>
     </aside>
@@ -884,6 +913,15 @@
                 <div>
                     <h2>Tests By Type</h2>
                     <p>Each preview opens the exact student-facing test shell, and each download uses the same HTML renderer.</p>
+                </div>
+                <div style="display:flex;gap:10px;align-items:center;">
+                    <input type="text" id="searchTests" placeholder="Search tests..." style="width:220px;padding:10px 14px;" oninput="filterTests()">
+                    <select id="filterType" onchange="filterTests()" style="width:140px;padding:10px 14px;">
+                        <option value="">All Types</option>
+                        <option value="reading">Reading</option>
+                        <option value="listening">Listening</option>
+                        <option value="writing">Writing</option>
+                    </select>
                 </div>
             </div>
 
@@ -1033,9 +1071,20 @@
                                 <option value="<%= group._id %>"><%= group.name %></option>
                             <% }) %>
                         </select>
+                        <select name="scheduleType" id="scheduleType" onchange="toggleSchedule()">
+                            <option value="now">Available Now</option>
+                            <option value="scheduled">Schedule for Later</option>
+                        </select>
+                        <input type="datetime-local" name="availableFrom" id="availableFrom" style="display:none;">
                         <button type="submit" class="btn btn-primary">Assign Test</button>
                     </form>
                 </div>
+                <script>
+                    function toggleSchedule() {
+                        const type = document.getElementById('scheduleType').value;
+                        document.getElementById('availableFrom').style.display = type === 'scheduled' ? 'block' : 'none';
+                    }
+                </script>
 
                 <div class="panel-card">
                     <h3>Quick Notes</h3>
@@ -1134,6 +1183,7 @@
                                     </td>
                                     <td>
                                         <div class="action-row">
+                                            <button class="btn btn-secondary" onclick="viewPassword('<%= student._id %>', '<%= student.username %>')" style="padding:8px 14px;font-size:0.85rem;">🔑 View Password</button>
                                             <button class="btn btn-danger" onclick="deleteItem('student', '<%= student._id %>', '<%= student.username %>')">Delete</button>
                                         </div>
                                     </td>

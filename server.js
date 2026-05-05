@@ -9,6 +9,7 @@ const multer = require("multer");
 const mime = require('mime-types');
 const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
 const rateLimit = require('express-rate-limit');
+const helmet = require('helmet');
 const csrf = require('csurf');
 const cookieParser = require('cookie-parser');
 const { generateHTMLFromTest, stringifyContent, injectPersistentStateForDownload } = require('./utils/htmlExporter');
@@ -19,11 +20,13 @@ const CONSTANTS = require('./utils/constants');
 const { validateUsername, validatePassword, validateTestTitle, validateTestType, validateObjectId, safeJSONParse, sanitizeString } = require('./utils/validation');
 const logger = require('./utils/logger');
 
-console.log('[B2 Config] ENDPOINT:', process.env.B2_ENDPOINT);
-console.log('[B2 Config] BUCKET:', process.env.B2_BUCKET);
-console.log('[B2 Config] PUBLIC_URL:', process.env.B2_PUBLIC_URL);
-console.log('[B2 Config] KEY_ID:', process.env.B2_KEY_ID ? 'SET' : 'MISSING');
-console.log('[B2 Config] APP_KEY:', process.env.B2_APP_KEY ? 'SET' : 'MISSING');
+if (process.env.NODE_ENV !== 'production') {
+    console.log('[B2 Config] ENDPOINT:', process.env.B2_ENDPOINT);
+    console.log('[B2 Config] BUCKET:', process.env.B2_BUCKET);
+    console.log('[B2 Config] PUBLIC_URL:', process.env.B2_PUBLIC_URL);
+    console.log('[B2 Config] KEY_ID:', process.env.B2_KEY_ID ? 'SET' : 'MISSING');
+    console.log('[B2 Config] APP_KEY:', process.env.B2_APP_KEY ? 'SET' : 'MISSING');
+}
 
 const s3 = new S3Client({
     endpoint: process.env.B2_ENDPOINT,
@@ -46,6 +49,11 @@ async function uploadToB2(buffer, filename, mimetype) {
     return `${process.env.B2_PUBLIC_URL}/${filename}`;
 }
 const app = express();
+
+app.disable('x-powered-by');
+app.use(helmet({
+    contentSecurityPolicy: false
+}));
 
 // --- 1. DATABASE CONNECTION ---
 mongoose.connect(process.env.MONGO_URI)
@@ -398,11 +406,11 @@ app.get('/', (req, res) => {
     res.render('index', { user: req.session.username });
 });
 
-app.get('/login', (req, res) => {
-    res.render('login', { csrfToken: '' });
+app.get('/login', csrfProtection, (req, res) => {
+    res.render('login', { csrfToken: req.csrfToken() });
 });
 
-app.post('/login', loginLimiter, async (req, res) => {
+app.post('/login', loginLimiter, csrfProtection, async (req, res) => {
     const { username, password } = req.body;
     try {
         const user = await User.findOne({ username });
@@ -1655,12 +1663,12 @@ app.get('/teacher/analytics', isTeacher, async (req, res) => {
 });
 
 // --- FEEDBACK SYSTEM ---
-app.get('/student/feedback', async (req, res) => {
+app.get('/student/feedback', csrfProtection, async (req, res) => {
     if (!req.session.userId) return res.redirect('/login');
-    res.render('feedback', { csrfToken: '' });
+    res.render('feedback', { csrfToken: req.csrfToken() });
 });
 
-app.post('/student/feedback', async (req, res) => {
+app.post('/student/feedback', csrfProtection, async (req, res) => {
     if (!req.session.userId) return res.status(401).json({ success: false, message: 'Not logged in' });
     try {
         const { testType, questionType, issueDescription } = req.body;
@@ -1760,6 +1768,21 @@ app.get('/admin/logs', isAdmin, async (req, res) => {
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
+});
+
+app.use((err, req, res, next) => {
+    if (err && err.code === 'EBADCSRFTOKEN') {
+        const wantsJson = req.xhr
+            || String(req.headers.accept || '').includes('application/json')
+            || String(req.headers['content-type'] || '').includes('application/json');
+
+        if (wantsJson) {
+            return res.status(403).json({ success: false, message: 'Invalid CSRF token' });
+        }
+
+        return res.status(403).send('Invalid CSRF token');
+    }
+    return next(err);
 });
 
 const PORT = process.env.PORT || 3000;

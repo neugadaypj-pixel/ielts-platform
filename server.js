@@ -1622,9 +1622,39 @@ app.get('/admin/view-password/:userId', isAdmin, async (req, res) => {
     try {
         const user = await User.findById(req.params.userId).select('username plainPassword role');
         if (!user) return res.status(404).json({ error: 'User not found' });
-        res.json({ username: user.username, role: user.role, password: user.plainPassword || 'Not available' });
+        res.json({ 
+            username: user.username, 
+            role: user.role, 
+            password: user.plainPassword || null,
+            hasPassword: !!user.plainPassword
+        });
     } catch (err) {
         res.status(500).json({ error: err.message });
+    }
+});
+
+app.post('/admin/reset-password/:userId', isAdmin, async (req, res) => {
+    try {
+        const { newPassword } = req.body;
+        
+        if (!newPassword || newPassword.length < 6) {
+            return res.status(400).json({ success: false, message: 'Password must be at least 6 characters' });
+        }
+        
+        const user = await User.findById(req.params.userId);
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
+        
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+        user.password = hashedPassword;
+        user.plainPassword = newPassword;
+        await user.save();
+        
+        logger.info('Password reset by admin', { userId: req.params.userId, adminId: req.session.userId });
+        res.json({ success: true, message: 'Password reset successfully', password: newPassword });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
     }
 });
 
@@ -1636,9 +1666,42 @@ app.get('/teacher/view-password/:studentId', isTeacher, async (req, res) => {
         if (req.session.userRole !== 'admin' && String(student.teacherId) !== String(req.session.userId)) {
             return res.status(403).json({ error: 'Not authorized' });
         }
-        res.json({ username: student.username, password: student.plainPassword || 'Not available' });
+        res.json({ 
+            username: student.username, 
+            password: student.plainPassword || null,
+            hasPassword: !!student.plainPassword
+        });
     } catch (err) {
         res.status(500).json({ error: err.message });
+    }
+});
+
+app.post('/teacher/reset-password/:studentId', isTeacher, async (req, res) => {
+    try {
+        const { newPassword } = req.body;
+        
+        if (!newPassword || newPassword.length < 6) {
+            return res.status(400).json({ success: false, message: 'Password must be at least 6 characters' });
+        }
+        
+        const student = await User.findById(req.params.studentId);
+        if (!student || student.role !== 'student') {
+            return res.status(404).json({ success: false, message: 'Student not found' });
+        }
+        
+        if (req.session.userRole !== 'admin' && String(student.teacherId) !== String(req.session.userId)) {
+            return res.status(403).json({ success: false, message: 'Not authorized' });
+        }
+        
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+        student.password = hashedPassword;
+        student.plainPassword = newPassword;
+        await student.save();
+        
+        logger.info('Password reset by teacher', { studentId: req.params.studentId, teacherId: req.session.userId });
+        res.json({ success: true, message: 'Password reset successfully', password: newPassword });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
     }
 });
 

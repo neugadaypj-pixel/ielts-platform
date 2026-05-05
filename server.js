@@ -98,12 +98,13 @@ app.use(session({
     resave: false,
     saveUninitialized: false,
     store: new MongoStore({
-        mongoUrl: process.env.MONGO_URI
+        mongoUrl: process.env.MONGO_URI,
+        touchAfter: 24 * 3600
     }),
     cookie: {
         maxAge: 1000 * 60 * 60 * 24,
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
+        secure: false,
         sameSite: 'lax'
     }
 }));
@@ -419,13 +420,21 @@ app.post('/login', loginLimiter, csrfProtection, async (req, res) => {
             req.session.userRole = user.role;
             req.session.username = user.username;
 
-            if (user.role === 'admin') return res.redirect('/admin');
-            if (user.role === 'teacher') return res.redirect('/teacher-dashboard');
-            return res.redirect('/student-dashboard');
+            req.session.save((err) => {
+                if (err) {
+                    logger.error('Session save error', { error: err.message });
+                    return res.status(500).send("Login error. Please try again.");
+                }
+                
+                if (user.role === 'admin') return res.redirect('/admin');
+                if (user.role === 'teacher') return res.redirect('/teacher-dashboard');
+                return res.redirect('/student-dashboard');
+            });
         } else {
             res.send("Invalid username or password. <a href='/login'>Try again</a>");
         }
     } catch (err) {
+        logger.error('Login error', { error: err.message });
         res.status(500).send("Login error.");
     }
 });

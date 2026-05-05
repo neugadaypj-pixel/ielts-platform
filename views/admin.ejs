@@ -345,6 +345,75 @@
             .assign-form { grid-template-columns: 1fr; }
             .header { flex-direction: column; align-items: flex-start; }
         }
+
+        /* Dark Mode */
+        body.dark-mode {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            color: #e2e8f0;
+        }
+        body.dark-mode .header, body.dark-mode .section {
+            background: rgba(30, 41, 59, 0.92);
+            box-shadow: 0 18px 40px rgba(0, 0, 0, 0.3);
+        }
+        body.dark-mode h1, body.dark-mode h2, body.dark-mode h3, body.dark-mode h4 {
+            color: #f1f5f9;
+        }
+        body.dark-mode p {
+            color: #94a3b8;
+        }
+        body.dark-mode .library-column {
+            background: linear-gradient(180deg, rgba(30, 41, 59, 0.92) 0%, rgba(15, 23, 42, 0.78) 100%);
+            border-color: #334155;
+        }
+        body.dark-mode .test-card, body.dark-mode .teacher-card {
+            background: rgba(30, 41, 59, 0.98);
+            border-color: #334155;
+        }
+        body.dark-mode .badge, body.dark-mode .pill {
+            background: rgba(51, 65, 85, 0.9);
+            color: #cbd5e1;
+        }
+        body.dark-mode .assign-form {
+            background: rgba(30, 41, 59, 0.92);
+            border-color: #334155;
+        }
+        body.dark-mode input, body.dark-mode select {
+            background: rgba(15, 23, 42, 0.9);
+            border-color: #334155;
+            color: #e2e8f0;
+        }
+        body.dark-mode input:focus, body.dark-mode select:focus {
+            background: rgba(30, 41, 59, 0.95);
+            border-color: #667eea;
+        }
+        body.dark-mode .btn-secondary {
+            background: rgba(51, 65, 85, 0.9);
+            color: #e2e8f0;
+            border-color: #475569;
+        }
+
+        .theme-toggle {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            z-index: 1000;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            border: none;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+            box-shadow: 0 12px 28px rgba(102, 126, 234, 0.3);
+            transition: transform 0.2s ease;
+        }
+        .theme-toggle:hover {
+            transform: translateY(-2px);
+        }
+        body.dark-mode .theme-toggle {
+            background: linear-gradient(135deg, #f59e0b 0%, #f97316 100%);
+        }
     </style>
     <script>
         function showToast(msg, type = 'success') {
@@ -546,6 +615,7 @@
     </script>
 </head>
 <body>
+    <script src="/dark-mode.js"></script>
     <div class="container">
         <header class="header">
             <div>
@@ -726,5 +796,7 @@
             }
         </script>
     </div>
+
+    <button class="theme-toggle" onclick="toggleDarkMode()" title="Toggle Dark Mode">🌙</button>
 </body>
 </html>

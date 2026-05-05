@@ -21,11 +21,13 @@ const { validateUsername, validatePassword, validateTestTitle, validateTestType,
 const logger = require('./utils/logger');
 
 if (process.env.NODE_ENV !== 'production') {
-    console.log('[B2 Config] ENDPOINT:', process.env.B2_ENDPOINT);
-    console.log('[B2 Config] BUCKET:', process.env.B2_BUCKET);
-    console.log('[B2 Config] PUBLIC_URL:', process.env.B2_PUBLIC_URL);
-    console.log('[B2 Config] KEY_ID:', process.env.B2_KEY_ID ? 'SET' : 'MISSING');
-    console.log('[B2 Config] APP_KEY:', process.env.B2_APP_KEY ? 'SET' : 'MISSING');
+    logger.debug('B2 Configuration', {
+        endpoint: process.env.B2_ENDPOINT,
+        bucket: process.env.B2_BUCKET,
+        publicUrl: process.env.B2_PUBLIC_URL,
+        keyId: process.env.B2_KEY_ID ? 'SET' : 'MISSING',
+        appKey: process.env.B2_APP_KEY ? 'SET' : 'MISSING'
+    });
 }
 
 const s3 = new S3Client({
@@ -57,8 +59,8 @@ app.use(helmet({
 
 // --- 1. DATABASE CONNECTION ---
 mongoose.connect(process.env.MONGO_URI)
-  .then(() => console.log("Connected to the Cloud Database! 🚀"))
-  .catch(err => console.log("Database connection error:", err));
+  .then(() => logger.info('Connected to MongoDB successfully'))
+  .catch(err => logger.error('Database connection error', { error: err.message, stack: err.stack }));
 
 // --- 2. MODELS ---
 const User = require('./models/User');
@@ -291,8 +293,12 @@ async function saveStudentSubmission({ req, payload }) {
 }
 
 async function saveValidatedTest({ title, type, content, builderJson, req }) {
-    console.log('[saveValidatedTest] builderJson received:', builderJson ? 'YES (' + String(builderJson).length + ' chars)' : 'NO');
-    console.log('[saveValidatedTest] builderJson value:', String(builderJson || '').slice(0, 200));
+    logger.debug('Saving validated test', {
+        title,
+        type,
+        hasBuilderJson: !!builderJson,
+        builderJsonLength: builderJson ? String(builderJson).length : 0
+    });
     if (!title || !String(title).trim()) {
         throw new Error('Test title is required.');
     }
@@ -488,7 +494,11 @@ app.get('/edit-test/:id', isTeacher, async (req, res) => {
         if (!test) {
             return res.status(404).send("Test not found.");
         }
-        console.log('[edit-test] builderJson in DB:', test.builderJson ? 'YES (' + String(test.builderJson).length + ' chars)' : 'NO');
+        logger.debug('Loading test for editing', {
+            testId: test._id,
+            hasBuilderJson: !!test.builderJson,
+            builderJsonLength: test.builderJson ? String(test.builderJson).length : 0
+        });
 
         // Send builder HTML with the test data pre-loaded
         const builderHtml = getAuthoringPageHtml(test.type, test);
@@ -576,9 +586,10 @@ app.post('/update-test/:id', isTeacher, upload.any(), async (req, res) => {
         if (req.body.builderJson) existingTest.builderJson = req.body.builderJson;
         await existingTest.save();
 
+        logger.info('Test updated successfully', { testId, userId: req.session.userId });
         res.json({ success: true, message: "Test updated successfully." });
     } catch (err) {
-        console.error("Update test error:", err);
+        logger.error('Update test error', { error: err.message, stack: err.stack, userId: req.session.userId });
         res.status(500).json({ success: false, error: err.message || "Database update failed." });
     }
 });
@@ -688,9 +699,10 @@ app.post('/create-test/reading', isAdmin, async (req, res) => {
             req
         });
 
+        logger.info('Reading test created', { testId: newTest._id, userId: req.session.userId });
         res.json({ success: true, message: "Reading test created successfully!", testId: newTest._id });
     } catch (err) {
-        console.error("Reading test save error:", err);
+        logger.error('Reading test save error', { error: err.message, stack: err.stack, userId: req.session.userId });
         res.status(500).json({ success: false, error: err.message });
     }
 });
@@ -720,9 +732,10 @@ app.post('/create-test/writing', isAdmin, async (req, res) => {
             req
         });
 
+        logger.info('Writing test created', { testId: newTest._id, userId: req.session.userId });
         res.json({ success: true, message: "Writing test created successfully!", testId: newTest._id });
     } catch (err) {
-        console.error("Writing test save error:", err);
+        logger.error('Writing test save error', { error: err.message, stack: err.stack, userId: req.session.userId });
         res.status(500).json({ success: false, error: err.message });
     }
 });
@@ -740,9 +753,10 @@ app.post('/create-test/:type', isAdmin, async (req, res) => {
             req
         });
 
+        logger.info('Test saved', { type: testType, userId: req.session.userId });
         res.json({ success: true, message: `Saved ${testType} test successfully.` });
     } catch (err) {
-        console.error("Save Error:", err);
+        logger.error('Save error', { error: err.message, stack: err.stack, type: testType, userId: req.session.userId });
         res.status(500).json({ success: false, error: err.message || "Database save failed." });
     }
 });
@@ -920,7 +934,7 @@ app.post('/teacher/add-student', isTeacher, async (req, res) => {
             redirect: '/teacher-dashboard'
         });
     } catch (err) {
-        console.error('Add student error:', err);
+        logger.error('Add student error', { error: err.message, stack: err.stack, userId: req.session.userId });
         res.status(500).json({ success: false, message: "Error creating student: " + err.message });
     }
 });
@@ -1053,7 +1067,7 @@ app.get('/teacher/progress/:id', isTeacher, async (req, res) => {
             }
         });
     } catch (err) {
-        console.error('Teacher progress error:', err);
+        logger.error('Teacher progress error', { error: err.message, stack: err.stack, userId: req.session.userId });
         res.status(500).send("Error loading test progress.");
     }
 });
@@ -1073,12 +1087,12 @@ app.get('/view-test/:id', async (req, res) => {
             });
             return res.send(html);
         } catch (generatorErr) {
-            console.error('HTML generation error:', generatorErr);
-            console.error('Test data:', access.test);
+            logger.error('HTML generation error', { error: generatorErr.message, stack: generatorErr.stack });
+            
             return res.status(500).send(`Error generating test HTML: ${generatorErr.message}`);
         }
     } catch (err) {
-        console.error('View test error:', err);
+        logger.error('View test error', { error: err.message, stack: err.stack });
         res.status(500).send(`Error loading test: ${err.message}`);
     }
 });
@@ -1147,7 +1161,7 @@ app.get('/download-test/:id', async (req, res) => {
             return res.send(stableHtml);
         } catch (generatorErr) {
             console.error('HTML generation error for download:', generatorErr);
-            console.error('Test data:', access.test);
+            
             return res.status(500).send(`Error generating test HTML: ${generatorErr.message}`);
         }
     } catch (err) {
@@ -1171,7 +1185,7 @@ app.post('/api/test-submissions', async (req, res) => {
             submissionId: result.submission?._id || null
         });
     } catch (err) {
-        console.error('Submission error:', err);
+        logger.error('Submission error', { error: err.message, stack: err.stack });
         res.status(500).json({ success: false, message: err.message });
     }
 });
@@ -1205,7 +1219,7 @@ app.post('/submit-writing-test', async (req, res) => {
             message: "Writing test submitted successfully"
         });
     } catch (err) {
-        console.error('Submission error:', err);
+        logger.error('Submission error', { error: err.message, stack: err.stack });
         res.status(500).json({ success: false, message: err.message });
     }
 });
@@ -1779,22 +1793,15 @@ app.get('/admin/logs', isAdmin, async (req, res) => {
     }
 });
 
-app.use((err, req, res, next) => {
-    if (err && err.code === 'EBADCSRFTOKEN') {
-        const wantsJson = req.xhr
-            || String(req.headers.accept || '').includes('application/json')
-            || String(req.headers['content-type'] || '').includes('application/json');
+// Import error handlers
+const { csrfErrorHandler, errorHandler } = require('./middleware/errorHandler');
 
-        if (wantsJson) {
-            return res.status(403).json({ success: false, message: 'Invalid CSRF token' });
-        }
-
-        return res.status(403).send('Invalid CSRF token');
-    }
-    return next(err);
-});
+// Apply error handlers at the end
+app.use(csrfErrorHandler);
+app.use(errorHandler);
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`Server is cooking at http://localhost:${PORT} 🍲`);
 });
+

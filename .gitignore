@@ -1,3 +1,15 @@
-node_modules
+node_modules/
 .env
+logs/
+*.log
 .DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+
+# Junk files
+console.log*
+{

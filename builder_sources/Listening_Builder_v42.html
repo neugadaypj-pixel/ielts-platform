@@ -916,26 +916,25 @@
             html = `<div class="matching-group-block"><div class="map-image" style="text-align:center; margin-bottom:20px; overflow-x:auto;">${imgContent}</div>${featuresHtml}<div class="match-questions-list">`;
             let currentQ = qNumStart;
             for(let i=0; i<qInputs.length; i++) {
-                if(qInputs[i].value.trim()) {
-                    html += `\n<div class="multi-choice-question match-item" data-q-start="${currentQ}" style="display:flex; justify-content:space-between; align-items:center; overflow:visible;">
-                                 <div class="question-prompt" style="margin-bottom:0; flex:1; padding-right:15px;"><strong>${currentQ}</strong> ${qInputs[i].value.trim()}</div>
-                                 <div class="custom-select-wrapper" id="wrap_q${currentQ}">
-                                    <div class="custom-select-trigger" onclick="toggleCustomSelect(this)">
-                                        <span class="sel-text">Select...</span>
-                                        <span class="sel-arrow">▼</span>
-                                    </div>
-                                    <div class="custom-select-options">
-                                        <div class="custom-option clear-opt" onclick="selectCustomOption(this, '${currentQ}', '')">✕ Clear Answer</div>`;
-                    featureLetters.forEach(L => { 
-                        html += `       <div class="custom-option" onclick="selectCustomOption(this, '${currentQ}', '${L}')"><b>${L}</b></div>`; 
-                    });
-                    html += `       </div>
-                                    <input type="hidden" id="q${currentQ}" value="" ${AC_OFF}>
-                                 </div>
-                             </div>`;
-                    if(aInputs[i].value.trim()) updateAnswerKey(currentQ, aInputs[i].value.trim().toUpperCase());
-                    currentQ++;
-                }
+                const questionText = qInputs[i].value.trim() || "Question text...";
+                html += `\n<div class="multi-choice-question match-item" data-q-start="${currentQ}" style="display:flex; justify-content:space-between; align-items:center; overflow:visible;">
+                             <div class="question-prompt" style="margin-bottom:0; flex:1; padding-right:15px;"><strong>${currentQ}</strong> ${questionText}</div>
+                             <div class="custom-select-wrapper" id="wrap_q${currentQ}">
+                                <div class="custom-select-trigger" onclick="toggleCustomSelect(this)">
+                                    <span class="sel-text">Select...</span>
+                                    <span class="sel-arrow">▼</span>
+                                </div>
+                                <div class="custom-select-options">
+                                    <div class="custom-option clear-opt" onclick="selectCustomOption(this, '${currentQ}', '')">✕ Clear Answer</div>`;
+                featureLetters.forEach(L => { 
+                    html += `       <div class="custom-option" onclick="selectCustomOption(this, '${currentQ}', '${L}')"><b>${L}</b></div>`; 
+                });
+                html += `       </div>
+                                <input type="hidden" id="q${currentQ}" value="" ${AC_OFF}>
+                             </div>
+                         </div>`;
+                if(aInputs[i] && aInputs[i].value.trim()) updateAnswerKey(currentQ, aInputs[i].value.trim().toUpperCase());
+                currentQ++;
             }
             html += `\n</div></div>`;
             document.getElementById(`gen_q_num_${partNum}`).value = currentQ;

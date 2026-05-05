@@ -1586,6 +1586,32 @@ app.post('/remove-student-from-group/:groupId/:studentId', async (req, res) => {
     }
 });
 
+
+// Remove a test from a group
+app.post('/teacher/remove-test-from-group/:groupId/:testId', isTeacher, async (req, res) => {
+    try {
+        const { groupId, testId } = req.params;
+        const groupValidation = validateObjectId(groupId);
+        const testValidation = validateObjectId(testId);
+        if (!groupValidation.valid || !testValidation.valid) {
+            return res.status(CONSTANTS.STATUS.BAD_REQUEST).json({ success: false, message: 'Invalid ID format' });
+        }
+        const group = await Group.findById(groupId);
+        if (!group) {
+            return res.status(CONSTANTS.STATUS.NOT_FOUND).json({ success: false, message: 'Group not found' });
+        }
+        if (req.session.userRole !== CONSTANTS.ROLES.ADMIN && group.teacherId.toString() !== req.session.userId) {
+            return res.status(CONSTANTS.STATUS.FORBIDDEN).json({ success: false, message: 'Not authorized' });
+        }
+        await Group.findByIdAndUpdate(groupId, { $pull: { assignedTests: testId, testSchedule: { testId: testId } } });
+        logger.info('Test removed from group', { userId: req.session.userId, groupId, testId });
+        res.json({ success: true, message: 'Test removed from group successfully', redirect: req.body.redirect || '/teacher-dashboard' });
+    } catch (err) {
+        logger.error('Error removing test from group', { error: err.message });
+        res.status(CONSTANTS.STATUS.INTERNAL_ERROR).json({ success: false, message: 'Error: ' + err.message });
+    }
+});
+
 // --- ADMIN PASSWORD VIEWER ---
 app.get('/admin/view-password/:userId', isAdmin, async (req, res) => {
     try {
@@ -1817,5 +1843,6 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`Server is cooking at http://localhost:${PORT} 🍲`);
 });
+
 
 

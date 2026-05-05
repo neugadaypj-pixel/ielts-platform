@@ -649,6 +649,197 @@
             .test-metrics { grid-template-columns: 1fr; }
             .group-grid { grid-template-columns: 1fr; }
         }
+
+        /* Dark Mode Styles */
+        body.dark-mode {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            color: #e2e8f0;
+        }
+
+        body.dark-mode .sidebar {
+            background: linear-gradient(180deg, #0a0f1e 0%, #1a1f2e 100%);
+        }
+
+        body.dark-mode .page-header,
+        body.dark-mode .section {
+            background: rgba(30, 41, 59, 0.92);
+            box-shadow: 0 18px 42px rgba(0, 0, 0, 0.3);
+        }
+
+        body.dark-mode .page-header h1,
+        body.dark-mode .section-header h2,
+        body.dark-mode .group-title,
+        body.dark-mode .test-card h4,
+        body.dark-mode .folder-name {
+            color: #f1f5f9;
+        }
+
+        body.dark-mode .page-header p,
+        body.dark-mode .section-header p,
+        body.dark-mode .test-card p,
+        body.dark-mode th,
+        body.dark-mode td {
+            color: #94a3b8;
+        }
+
+        body.dark-mode .library-column,
+        body.dark-mode .panel-card {
+            background: linear-gradient(180deg, rgba(30, 41, 59, 0.92) 0%, rgba(15, 23, 42, 0.78) 100%);
+            border-color: #334155;
+        }
+
+        body.dark-mode .test-card,
+        body.dark-mode .group-card {
+            background: rgba(30, 41, 59, 0.98);
+            border-color: #334155;
+            box-shadow: 0 10px 24px rgba(0, 0, 0, 0.3);
+        }
+
+        body.dark-mode .metric,
+        body.dark-mode .meta-edit {
+            background: rgba(15, 23, 42, 0.8);
+            border-color: #334155;
+        }
+
+        body.dark-mode .metric strong,
+        body.dark-mode .panel-card h3 {
+            color: #e2e8f0;
+        }
+
+        body.dark-mode .metric span,
+        body.dark-mode .side-stat-label {
+            color: #94a3b8;
+        }
+
+        body.dark-mode input[type="text"],
+        body.dark-mode select,
+        body.dark-mode .ms-button,
+        body.dark-mode .meta-input {
+            background: rgba(15, 23, 42, 0.9);
+            border-color: #334155;
+            color: #e2e8f0;
+        }
+
+        body.dark-mode input[type="text"]:focus,
+        body.dark-mode select:focus,
+        body.dark-mode .ms-button:focus,
+        body.dark-mode .meta-input:focus {
+            background: rgba(30, 41, 59, 0.95);
+            border-color: #667eea;
+        }
+
+        body.dark-mode .ms-panel {
+            background: rgba(30, 41, 59, 0.98);
+            border-color: #334155;
+            box-shadow: 0 18px 40px rgba(0, 0, 0, 0.4);
+        }
+
+        body.dark-mode .ms-search {
+            background: rgba(15, 23, 42, 0.9);
+            border-color: #334155;
+            color: #e2e8f0;
+        }
+
+        body.dark-mode .ms-option {
+            color: #e2e8f0;
+        }
+
+        body.dark-mode .ms-option:hover {
+            background: rgba(102, 126, 234, 0.2);
+            color: #a5b4fc;
+        }
+
+        body.dark-mode .ms-option.selected {
+            background: #667eea;
+            color: white;
+        }
+
+        body.dark-mode .ghost-note {
+            background: rgba(15, 23, 42, 0.78);
+            border-color: #334155;
+            color: #94a3b8;
+        }
+
+        body.dark-mode .folder-header {
+            background: linear-gradient(135deg, rgba(102,126,234,0.15) 0%, rgba(118,75,162,0.12) 100%);
+            border-color: rgba(102,126,234,0.25);
+        }
+
+        body.dark-mode .type-badge,
+        body.dark-mode .pill.neutral {
+            background: rgba(51, 65, 85, 0.8);
+            color: #cbd5e1;
+            border-color: #475569;
+        }
+
+        body.dark-mode .pill {
+            background: rgba(102, 126, 234, 0.2);
+            color: #a5b4fc;
+        }
+
+        body.dark-mode .tag {
+            background: rgba(102, 126, 234, 0.2);
+            color: #a5b4fc;
+        }
+
+        body.dark-mode .tag.muted {
+            background: rgba(239, 68, 68, 0.2);
+            color: #fca5a5;
+        }
+
+        body.dark-mode .progress-track {
+            background: rgba(51, 65, 85, 0.8);
+        }
+
+        body.dark-mode table {
+            border-color: #334155;
+        }
+
+        body.dark-mode th,
+        body.dark-mode td {
+            border-color: #334155;
+        }
+
+        body.dark-mode .btn-secondary {
+            background: rgba(51, 65, 85, 0.9);
+            color: #e2e8f0;
+            border-color: #475569;
+        }
+
+        body.dark-mode .btn-icon:hover {
+            background: rgba(51, 65, 85, 0.8);
+        }
+
+        .theme-toggle {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            z-index: 1000;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            border: none;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+            box-shadow: 0 12px 28px rgba(102, 126, 234, 0.3);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .theme-toggle:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 16px 32px rgba(102, 126, 234, 0.4);
+        }
+
+        body.dark-mode .theme-toggle {
+            background: linear-gradient(135deg, #f59e0b 0%, #f97316 100%);
+            box-shadow: 0 12px 28px rgba(245, 158, 11, 0.3);
+        }
+
+        body.dark-mode .theme-toggle:hover {
+            box-shadow: 0 16px 32px rgba(245, 158, 11, 0.4);
+        }
     </style>
     <script>
         function toggleMeta(id) {
@@ -719,6 +910,26 @@
         function removeStudentFromGroup(groupId, studentId, studentName) {
             showConfirm(`Remove ${studentName} from this group?`, () => {
                 fetch(`/remove-student-from-group/${groupId}/${studentId}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ redirect: '/teacher-dashboard' })
+                })
+                    .then((response) => response.json())
+                    .then((data) => {
+                        if (data.success) {
+                            showToast(data.message);
+                            setTimeout(() => { window.location.href = data.redirect || '/teacher-dashboard'; }, 800);
+                        } else {
+                            showToast('Error: ' + data.message, 'error');
+                        }
+                    })
+                    .catch((error) => showToast('Error: ' + error.message, 'error'));
+            });
+        }
+
+        function removeTestFromGroup(groupId, testId, testTitle) {
+            showConfirm(`Remove test "${testTitle}" from this group?`, () => {
+                fetch(`/teacher/remove-test-from-group/${groupId}/${testId}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ redirect: '/teacher-dashboard' })
@@ -862,6 +1073,18 @@
                 showToast('Error fetching password', 'error');
             }
         }
+
+        function toggleDarkMode() {
+            document.body.classList.toggle('dark-mode');
+            const isDark = document.body.classList.contains('dark-mode');
+            localStorage.setItem('darkMode', isDark ? 'enabled' : 'disabled');
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            if (localStorage.getItem('darkMode') === 'enabled') {
+                document.body.classList.add('dark-mode');
+            }
+        });
     </script>
 </head>
 <body>
@@ -1122,7 +1345,10 @@
                             <div class="pill-row" style="margin-bottom: 16px;">
                                 <% if (group.assignedTests.length > 0) { %>
                                     <% group.assignedTests.forEach(test => { %>
-                                        <div class="pill"><%= test.title %></div>
+                                        <div class="pill" style="display:flex;align-items:center;gap:6px;">
+                                            <%= test.title %>
+                                            <button type="button" onclick="removeTestFromGroup('<%= group._id %>', '<%= test._id %>', '<%= test.title %>')" style="border:none; background:none; color:#b91c1c; font-weight:900; cursor:pointer; font-size:1.1rem; line-height:1;">×</button>
+                                        </div>
                                     <% }) %>
                                 <% } else { %>
                                     <div class="ghost-note" style="width: 100%;">No tests assigned yet.</div>
@@ -1197,5 +1423,33 @@
             <% } %>
         </section>
     </main>
+
+    <button class="theme-toggle" onclick="toggleDarkMode()" title="Toggle Dark Mode">
+        <span class="light-icon">🌙</span>
+        <span class="dark-icon" style="display:none;">☀️</span>
+    </button>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const toggle = document.querySelector('.theme-toggle');
+            const lightIcon = toggle.querySelector('.light-icon');
+            const darkIcon = toggle.querySelector('.dark-icon');
+            
+            function updateIcon() {
+                if (document.body.classList.contains('dark-mode')) {
+                    lightIcon.style.display = 'none';
+                    darkIcon.style.display = 'inline';
+                } else {
+                    lightIcon.style.display = 'inline';
+                    darkIcon.style.display = 'none';
+                }
+            }
+            
+            updateIcon();
+            toggle.addEventListener('click', () => {
+                setTimeout(updateIcon, 50);
+            });
+        });
+    </script>
 </body>
 </html>

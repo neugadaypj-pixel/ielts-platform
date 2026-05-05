@@ -65,6 +65,9 @@ async function uploadToB2(buffer, filename, mimetype) {
 }
 const app = express();
 
+// Trust proxy - required for Render/Heroku/behind reverse proxy
+app.set('trust proxy', 1);
+
 app.disable('x-powered-by');
 app.use(helmet({ contentSecurityPolicy: false }));
 

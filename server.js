@@ -66,7 +66,7 @@ async function uploadToB2(buffer, filename, mimetype) {
 const app = express();
 
 app.disable('x-powered-by');
-app.use(helmet({ contentSecurityPolicy: false, permissionsPolicy: false }));
+app.use(helmet({ contentSecurityPolicy: false }));
 
 // --- 1. DATABASE CONNECTION ---
 mongoose.connect(process.env.MONGO_URI)
@@ -1836,6 +1836,8 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`Server is cooking at http://localhost:${PORT} 🍲`);
 });
+
+
 
 
 

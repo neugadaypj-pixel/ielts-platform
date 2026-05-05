@@ -112,11 +112,19 @@ app.use(session({
     saveUninitialized: false,
     store: new MongoStore({
         mongoUrl: process.env.MONGO_URI,
-        touchAfter: 24 * 3600, ttl: 24 * 60 * 60, autoRemove: 'native' }),
+        touchAfter: 24 * 3600,
+        ttl: 24 * 60 * 60,
+        autoRemove: 'native'
+    }),
     cookie: {
         maxAge: 1000 * 60 * 60 * 24,
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production', sameSite: 'lax' }, rolling: true, name: 'sessionId' }));
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax'
+    },
+    rolling: true,
+    name: 'sessionId'
+}));
 
 const loginLimiter = rateLimit({
     windowMs: 60 * 1000,

@@ -980,7 +980,7 @@ app.get('/teacher-dashboard', isTeacher, async (req, res) => {
         const skip = (page - 1) * PAGE_SIZE;
 
         const [teacher, groups, allStudents] = await Promise.all([
-            User.findById(req.session.userId).select('_id'),
+            User.findById(req.session.userId).select('_id assignedTests'),
             Group.find({ teacherId: req.session.userId })
                 .populate('students assignedTests')
                 .sort({ name: 1 }),

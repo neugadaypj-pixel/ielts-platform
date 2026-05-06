@@ -287,6 +287,7 @@
 </head>
 <body>
     <script src="/dark-mode.js"></script>
+    <%- include('partials/notifications') %>
     <div class="container">
         <header class="hero">
             <div>
@@ -306,6 +307,9 @@
                 <div>
                     <h2>Your Tests</h2>
                     <p>Each test opens in the same student view your teacher previewed and can resume from saved progress.</p>
+                </div>
+                <div style="display:flex;gap:10px;align-items:center;">
+                    <input type="text" id="searchTests" placeholder="Search tests..." value="<%= pagination.search || '' %>" style="padding:10px 14px;border-radius:12px;border:2px solid #e2e8f0;font-size:0.95rem;" oninput="searchTests()">
                 </div>
             </div>
 
@@ -328,6 +332,36 @@
                                 <div class="test-list">
                                     <% typeTests.forEach(test => { %>
                                         <article class="test-card">
+                                            <% if (test.isLocked) { %>
+                                                <h4>🔒 Scheduled Test</h4>
+                                                <p>This test will be available soon.</p>
+                                                <div class="meta-row">
+                                                    <div class="meta-pill warning">Locked</div>
+                                                    <div class="meta-pill">Available: <%= new Date(test.availableFrom).toLocaleString() %></div>
+                                                </div>
+                                                <div id="countdown-<%= test._id %>" style="margin-top:12px;font-weight:700;color:#667eea;"></div>
+                                                <script>
+                                                (function() {
+                                                    const target = new Date('<%= test.availableFrom %>').getTime();
+                                                    const el = document.getElementById('countdown-<%= test._id %>');
+                                                    function update() {
+                                                        const now = Date.now();
+                                                        const diff = target - now;
+                                                        if (diff <= 0) {
+                                                            el.textContent = 'Available now! Refresh the page.';
+                                                            return;
+                                                        }
+                                                        const days = Math.floor(diff / 86400000);
+                                                        const hours = Math.floor((diff % 86400000) / 3600000);
+                                                        const minutes = Math.floor((diff % 3600000) / 60000);
+                                                        const seconds = Math.floor((diff % 60000) / 1000);
+                                                        el.textContent = `Unlocks in: ${days}d ${hours}h ${minutes}m ${seconds}s`;
+                                                        setTimeout(update, 1000);
+                                                    }
+                                                    update();
+                                                })();
+                                                </script>
+                                            <% } else { %>
                                             <h4><%= test.title %></h4>
                                             <p>Open the live student view and continue from where you left off.</p>
 
@@ -352,6 +386,7 @@
                                             <div class="actions">
                                                 <a href="/view-test/<%= test._id %>" class="btn btn-primary">Open Test</a>
                                             </div>
+                                            <% } %>
                                         </article>
                                     <% }) %>
                                 </div>
@@ -364,7 +399,25 @@
             <% } else { %>
                 <div class="empty">No tests have been assigned to you yet. Your teacher will place them here when they are ready.</div>
             <% } %>
+
+            <% if (pagination.totalPages > 1) { %>
+                <div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-top:24px;flex-wrap:wrap;">
+                    <% if (pagination.page > 1) { %>
+                        <a href="?page=<%= pagination.page - 1 %><%= pagination.search ? '&search=' + pagination.search : '' %>" class="btn btn-primary" style="padding:10px 18px;">← Prev</a>
+                    <% } %>
+                    <span style="font-weight:800;color:#64748b;font-size:0.9rem;">Page <%= pagination.page %> of <%= pagination.totalPages %> (<%= pagination.total %> tests)</span>
+                    <% if (pagination.page < pagination.totalPages) { %>
+                        <a href="?page=<%= pagination.page + 1 %><%= pagination.search ? '&search=' + pagination.search : '' %>" class="btn btn-primary" style="padding:10px 18px;">Next →</a>
+                    <% } %>
+                </div>
+            <% } %>
         </section>
     </div>
+    <script>
+        function searchTests() {
+            const query = document.getElementById('searchTests').value;
+            window.location.href = `/student-dashboard?search=${encodeURIComponent(query)}`;
+        }
+    </script>
 </body>
 </html>

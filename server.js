@@ -526,7 +526,7 @@ app.get('/edit-test/:id', isTeacher, async (req, res) => {
     }
 });
 
-app.post('/update-test/:id', isTeacher, upload.any(), async (req, res) => {
+app.post('/update-test/:id', isTeacher, csrfProtection, upload.any(), async (req, res) => {
     try {
         const testId = req.params.id;
 
@@ -628,7 +628,7 @@ app.post('/upload-test', isAdmin, upload.single('audioFile'), async (req, res) =
 });
 
 // --- LISTENING TEST UPLOAD ---
-app.post('/create-test/listening', isAdmin, upload.any(), async (req, res) => {
+app.post('/create-test/listening', isAdmin, csrfProtection, upload.any(), async (req, res) => {
     try {
         // Validate input
         const titleValidation = validateTestTitle(req.body.title);
@@ -707,7 +707,7 @@ app.post('/create-test/listening', isAdmin, upload.any(), async (req, res) => {
 });
 
 // --- READING TEST CREATION ---
-app.post('/create-test/reading', isAdmin, async (req, res) => {
+app.post('/create-test/reading', isAdmin, csrfProtection, async (req, res) => {
     try {
         const newTest = await saveValidatedTest({
             title: req.body.title,
@@ -726,7 +726,7 @@ app.post('/create-test/reading', isAdmin, async (req, res) => {
 });
 
 // --- WRITING TEST CREATION ---
-app.post('/create-test/writing', isAdmin, async (req, res) => {
+app.post('/create-test/writing', isAdmin, csrfProtection, async (req, res) => {
     try {
         const legacyBody = req.body || {};
         const writingContent = legacyBody.content || {
@@ -1432,7 +1432,7 @@ app.post('/teacher/update-test-meta/:id', isTeacher, async (req, res) => {
 // --- DELETE ROUTES ---
 
 // Delete a test
-app.post('/delete-test/:id', async (req, res) => {
+app.post('/delete-test/:id', csrfProtection, async (req, res) => {
     await handleDelete(req, res, {
         model: Test,
         modelName: 'Test',
@@ -1456,7 +1456,7 @@ app.post('/delete-test/:id', async (req, res) => {
 });
 
 // Delete a student account
-app.post('/delete-student/:id', async (req, res) => {
+app.post('/delete-student/:id', csrfProtection, async (req, res) => {
     await handleDelete(req, res, {
         model: User,
         modelName: 'Student',
@@ -1497,7 +1497,7 @@ app.post('/delete-student/:id', async (req, res) => {
 });
 
 // Delete a teacher account
-app.post('/delete-teacher/:id', async (req, res) => {
+app.post('/delete-teacher/:id', csrfProtection, async (req, res) => {
     await handleDelete(req, res, {
         model: User,
         modelName: 'Teacher',
@@ -1535,7 +1535,7 @@ app.post('/delete-teacher/:id', async (req, res) => {
 });
 
 // Delete a group
-app.post('/delete-group/:id', async (req, res) => {
+app.post('/delete-group/:id', csrfProtection, async (req, res) => {
     await handleDelete(req, res, {
         model: Group,
         modelName: 'Group',

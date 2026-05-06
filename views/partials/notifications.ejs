@@ -1,0 +1,192 @@
+<div id="notification-bell" style="position: fixed; top: 20px; right: 20px; z-index: 9999;">
+    <button id="notif-btn" style="position: relative; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none; border-radius: 50%; width: 50px; height: 50px; cursor: pointer; box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3); transition: all 0.3s ease;">
+        <span style="font-size: 1.5rem;">🔔</span>
+        <span id="notif-badge" style="display: none; position: absolute; top: -5px; right: -5px; background: #ef4444; color: white; border-radius: 50%; width: 20px; height: 20px; font-size: 0.7rem; font-weight: bold; display: flex; align-items: center; justify-content: center;"></span>
+    </button>
+    
+    <div id="notif-panel" style="display: none; position: absolute; top: 60px; right: 0; width: 350px; max-height: 500px; background: white; border-radius: 16px; box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15); overflow: hidden;">
+        <div style="padding: 16px; border-bottom: 2px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+            <h3 style="margin: 0; font-size: 1.1rem; font-weight: 800;">Notifications</h3>
+            <button id="mark-all-read" style="background: rgba(255,255,255,0.2); border: none; padding: 6px 12px; border-radius: 8px; color: white; cursor: pointer; font-size: 0.8rem; font-weight: 600;">Mark all read</button>
+        </div>
+        <div id="notif-list" style="max-height: 400px; overflow-y: auto;">
+            <div style="padding: 40px 20px; text-align: center; color: #94a3b8;">
+                <span style="font-size: 3rem;">📭</span>
+                <p style="margin-top: 10px;">No notifications</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    #notif-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
+    }
+    
+    .notif-item {
+        padding: 16px;
+        border-bottom: 1px solid #e2e8f0;
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+    
+    .notif-item:hover {
+        background: #f8fafc;
+    }
+    
+    .notif-item.unread {
+        background: #eef2ff;
+        border-left: 4px solid #667eea;
+    }
+    
+    .notif-title {
+        font-weight: 700;
+        color: #1f2937;
+        margin-bottom: 4px;
+        font-size: 0.95rem;
+    }
+    
+    .notif-message {
+        color: #64748b;
+        font-size: 0.85rem;
+        line-height: 1.4;
+        margin-bottom: 6px;
+    }
+    
+    .notif-time {
+        color: #94a3b8;
+        font-size: 0.75rem;
+    }
+    
+    body.dark-mode #notif-panel {
+        background: rgba(30, 41, 59, 0.98);
+        border: 1px solid #475569;
+    }
+    
+    body.dark-mode .notif-item {
+        border-bottom-color: #334155;
+    }
+    
+    body.dark-mode .notif-item:hover {
+        background: rgba(51, 65, 85, 0.5);
+    }
+    
+    body.dark-mode .notif-item.unread {
+        background: rgba(102, 126, 234, 0.15);
+        border-left-color: #667eea;
+    }
+    
+    body.dark-mode .notif-title {
+        color: #f1f5f9;
+    }
+    
+    body.dark-mode .notif-message {
+        color: #cbd5e1;
+    }
+    
+    body.dark-mode .notif-time {
+        color: #94a3b8;
+    }
+</style>
+
+<script>
+(function() {
+    const btn = document.getElementById('notif-btn');
+    const panel = document.getElementById('notif-panel');
+    const badge = document.getElementById('notif-badge');
+    const list = document.getElementById('notif-list');
+    const markAllBtn = document.getElementById('mark-all-read');
+    
+    let isOpen = false;
+    
+    function formatTime(date) {
+        const now = new Date();
+        const diff = now - new Date(date);
+        const minutes = Math.floor(diff / 60000);
+        const hours = Math.floor(diff / 3600000);
+        const days = Math.floor(diff / 86400000);
+        
+        if (minutes < 1) return 'Just now';
+        if (minutes < 60) return `${minutes}m ago`;
+        if (hours < 24) return `${hours}h ago`;
+        return `${days}d ago`;
+    }
+    
+    function renderNotifications(notifications) {
+        if (!notifications || notifications.length === 0) {
+            list.innerHTML = '<div style="padding: 40px 20px; text-align: center; color: #94a3b8;"><span style="font-size: 3rem;">📭</span><p style="margin-top: 10px;">No notifications</p></div>';
+            return;
+        }
+        
+        list.innerHTML = notifications.map(n => `
+            <div class="notif-item ${n.isRead ? '' : 'unread'}" data-id="${n._id}">
+                <div class="notif-title">${n.title}</div>
+                <div class="notif-message">${n.message}</div>
+                <div class="notif-time">${formatTime(n.createdAt)}</div>
+            </div>
+        `).join('');
+        
+        document.querySelectorAll('.notif-item').forEach(item => {
+            item.addEventListener('click', () => markAsRead(item.dataset.id));
+        });
+    }
+    
+    async function loadNotifications() {
+        try {
+            const res = await fetch('/api/notifications');
+            const data = await res.json();
+            if (data.success) {
+                renderNotifications(data.notifications);
+                if (data.unreadCount > 0) {
+                    badge.textContent = data.unreadCount > 99 ? '99+' : data.unreadCount;
+                    badge.style.display = 'flex';
+                } else {
+                    badge.style.display = 'none';
+                }
+            }
+        } catch (err) {
+            console.error('Failed to load notifications:', err);
+        }
+    }
+    
+    async function markAsRead(id) {
+        try {
+            await fetch(`/api/notifications/${id}/read`, { method: 'POST' });
+            loadNotifications();
+        } catch (err) {
+            console.error('Failed to mark as read:', err);
+        }
+    }
+    
+    async function markAllRead() {
+        try {
+            await fetch('/api/notifications/mark-all-read', { method: 'POST' });
+            loadNotifications();
+        } catch (err) {
+            console.error('Failed to mark all as read:', err);
+        }
+    }
+    
+    btn.addEventListener('click', () => {
+        isOpen = !isOpen;
+        panel.style.display = isOpen ? 'block' : 'none';
+        if (isOpen) loadNotifications();
+    });
+    
+    markAllBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        markAllRead();
+    });
+    
+    document.addEventListener('click', (e) => {
+        if (!document.getElementById('notification-bell').contains(e.target)) {
+            isOpen = false;
+            panel.style.display = 'none';
+        }
+    });
+    
+    loadNotifications();
+    setInterval(loadNotifications, 30000);
+})();
+</script>

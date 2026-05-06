@@ -885,8 +885,9 @@
         body.dark-mode input[type="time"],
         body.dark-mode textarea {
             background: rgba(15, 23, 42, 0.9) !important;
-            border-color: #334155 !important;
+            border-color: #475569 !important;
             color: #e2e8f0 !important;
+            color-scheme: dark;
         }
 
         body.dark-mode input[type="datetime-local"]:focus,
@@ -895,7 +896,7 @@
         body.dark-mode textarea:focus {
             background: rgba(30, 41, 59, 0.95) !important;
             border-color: #667eea !important;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2) !important;
+            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.2) !important;
         }
 
         /* Dark mode for buttons in forms */
@@ -1530,7 +1531,7 @@
                             </div>
                         </div>
                         
-                        <input type="datetime-local" name="availableFrom" id="availableFrom" style="display:none; margin-top: 12px;">
+                        <input type="datetime-local" name="availableFrom" id="availableFrom" style="display:none; margin-top: 12px; width: 100%; padding: 14px 16px; border-radius: 14px; border: 2px solid #e2e8f0; background: white; font-size: 0.95rem; font-family: inherit; transition: all 0.2s ease;">
                         <button type="submit" class="btn btn-primary" style="margin-top: 16px;">Assign Test</button>
                     </form>
                 </div>

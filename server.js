@@ -82,6 +82,7 @@ const Test = require('./models/Test');
 const Group = require('./models/Group');
 const Submission = require('./models/Submission');
 const Feedback = require('./models/Feedback');
+const Notification = require('./models/Notification');
 
 // --- 3. MIDDLEWARE & SETTINGS ---
 app.set('view engine', 'ejs');
@@ -1247,6 +1248,10 @@ app.post('/submit-writing-test', async (req, res) => {
 app.get('/student-dashboard', async (req, res) => {
     if(!req.session.userId) return res.redirect('/login');
     try {
+        const page = Math.max(1, parseInt(req.query.page) || 1);
+        const search = (req.query.search || '').trim();
+        const PAGE_SIZE = 10;
+
         const [student, submissions] = await Promise.all([
             User.findById(req.session.userId).populate({
                 path: 'groupId',
@@ -1260,26 +1265,54 @@ app.get('/student-dashboard', async (req, res) => {
         );
 
         let allTests = student.groupId ? student.groupId.assignedTests : [];
+        const now = new Date();
+        const scheduledTests = [];
         
-        // Filter by schedule
+        // Process scheduled tests
         if (student.groupId && student.groupId.testSchedule) {
-            const now = new Date();
-            const scheduledTestIds = new Set();
             student.groupId.testSchedule.forEach(schedule => {
-                if (schedule.availableFrom && new Date(schedule.availableFrom) > now) {
-                    scheduledTestIds.add(String(schedule.testId));
+                const availableDate = new Date(schedule.availableFrom);
+                if (availableDate > now) {
+                    scheduledTests.push({
+                        _id: schedule.testId,
+                        title: 'Scheduled Test',
+                        type: 'scheduled',
+                        availableFrom: availableDate,
+                        isLocked: true
+                    });
                 }
             });
+            
+            const scheduledTestIds = new Set(scheduledTests.map(t => String(t._id)));
             allTests = allTests.filter(test => !scheduledTestIds.has(String(test._id)));
         }
 
-        const tests = allTests.map((testDoc) => {
+        // Apply search filter
+        if (search) {
+            allTests = allTests.filter(test => 
+                test.title.toLowerCase().includes(search.toLowerCase())
+            );
+        }
+
+        // Add submissions and combine with scheduled tests
+        const availableTests = allTests.map((testDoc) => {
             const test = typeof testDoc.toObject === 'function' ? testDoc.toObject() : { ...testDoc };
-            return { ...test, submission: submissionsByTestId.get(String(test._id)) || null };
+            return { ...test, submission: submissionsByTestId.get(String(test._id)) || null, isLocked: false };
         });
+
+        const combinedTests = [...availableTests, ...scheduledTests];
+        const total = combinedTests.length;
+        const totalPages = Math.ceil(total / PAGE_SIZE);
+        const tests = combinedTests.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
         
         const groupName = student.groupId ? student.groupId.name : "No Group Assigned";
-        res.render('student-dashboard', { student, tests, testsByType: groupTestsByType(tests), groupName });
+        res.render('student-dashboard', { 
+            student, 
+            tests, 
+            testsByType: groupTestsByType(tests), 
+            groupName,
+            pagination: { page, totalPages, total, search }
+        });
     } catch (err) {
         res.status(500).send("Error loading student dashboard.");
     }
@@ -1851,8 +1884,17 @@ app.post('/admin/feedback/:id/reply', isAdmin, async (req, res) => {
             return res.status(400).json({ success: false, message: 'Reply message is required' });
         }
         
-        await Feedback.findByIdAndUpdate(req.params.id, { 
+        const feedback = await Feedback.findByIdAndUpdate(req.params.id, { 
             adminReply: reply.trim()
+        });
+        
+        // Create notification for student
+        await Notification.create({
+            userId: studentId,
+            type: 'admin_reply',
+            title: 'Admin replied to your feedback',
+            message: reply.trim(),
+            relatedId: req.params.id
         });
         
         logger.info('Reply sent to student', { 
@@ -2040,7 +2082,7 @@ app.get('/settings/export-report', async (req, res) => {
 app.post('/teacher/assign-test-group', isTeacher, async (req, res) => {
     const { testId, groupId, scheduleType, availableFrom } = req.body;
     try {
-        const group = await Group.findById(groupId);
+        const group = await Group.findById(groupId).populate('students');
         if (!group) return res.status(404).send("Group not found.");
         if (req.session.userRole !== 'admin' && String(group.teacherId) !== String(req.session.userId)) {
             return res.status(403).send("Not authorized to assign tests to this group.");
@@ -2054,6 +2096,26 @@ app.post('/teacher/assign-test-group', isTeacher, async (req, res) => {
             await Group.findByIdAndUpdate(groupId, {
                 $push: { testSchedule: { testId, availableFrom: new Date(availableFrom) } }
             });
+            
+            // Notify students about scheduled test
+            const notifications = group.students.map(student => ({
+                userId: student._id,
+                type: 'test_assigned',
+                title: 'New test scheduled',
+                message: `A new test will be available on ${new Date(availableFrom).toLocaleString()}`,
+                relatedId: testId
+            }));
+            await Notification.insertMany(notifications);
+        } else {
+            // Notify students about immediate test
+            const notifications = group.students.map(student => ({
+                userId: student._id,
+                type: 'test_assigned',
+                title: 'New test assigned',
+                message: `A new test "${access.test.title}" has been assigned to your group`,
+                relatedId: testId
+            }));
+            await Notification.insertMany(notifications);
         }
         
         logger.info('Test assigned to group', { testId, groupId, scheduleType, teacherId: req.session.userId });
@@ -2086,6 +2148,46 @@ app.get('/admin/logs', isAdmin, async (req, res) => {
         res.json({ entries, total, page, totalPages, level });
     } catch (err) {
         res.status(500).json({ error: err.message });
+    }
+});
+
+// --- NOTIFICATIONS ---
+app.get('/api/notifications', async (req, res) => {
+    if (!req.session.userId) return res.status(401).json({ success: false });
+    try {
+        const notifications = await Notification.find({ userId: req.session.userId })
+            .sort({ createdAt: -1 })
+            .limit(50);
+        const unreadCount = await Notification.countDocuments({ userId: req.session.userId, isRead: false });
+        res.json({ success: true, notifications, unreadCount });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+app.post('/api/notifications/:id/read', async (req, res) => {
+    if (!req.session.userId) return res.status(401).json({ success: false });
+    try {
+        await Notification.findOneAndUpdate(
+            { _id: req.params.id, userId: req.session.userId },
+            { isRead: true }
+        );
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+app.post('/api/notifications/mark-all-read', async (req, res) => {
+    if (!req.session.userId) return res.status(401).json({ success: false });
+    try {
+        await Notification.updateMany(
+            { userId: req.session.userId, isRead: false },
+            { isRead: true }
+        );
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
     }
 });
 

@@ -267,23 +267,24 @@ async function listBackups() {
 }
 
 // Command line interface
-const command = process.argv[2];
-const argument = process.argv[3];
+if (require.main === module) {
+    const command = process.argv[2];
+    const argument = process.argv[3];
 
-if (command === 'backup') {
-    backupDatabase()
-        .then(() => process.exit(0))
-        .catch(() => process.exit(1));
-} else if (command === 'restore' && argument) {
-    restoreDatabase(argument)
-        .then(() => process.exit(0))
-        .catch(() => process.exit(1));
-} else if (command === 'list') {
-    listBackups()
-        .then(() => process.exit(0))
-        .catch(() => process.exit(1));
-} else {
-    console.log(`
+    if (command === 'backup') {
+        backupDatabase()
+            .then(() => process.exit(0))
+            .catch(() => process.exit(1));
+    } else if (command === 'restore' && argument) {
+        restoreDatabase(argument)
+            .then(() => process.exit(0))
+            .catch(() => process.exit(1));
+    } else if (command === 'list') {
+        listBackups()
+            .then(() => process.exit(0))
+            .catch(() => process.exit(1));
+    } else {
+        console.log(`
 📦 Database Backup & Restore Tool
 
 USAGE:
@@ -303,7 +304,8 @@ AUTOMATED BACKUPS:
 BACKUP LOCATION:
   Backups are stored in Backblaze B2: ${process.env.B2_BUCKET}/backups/
     `);
-    process.exit(0);
+        process.exit(0);
+    }
 }
 
 module.exports = { backupDatabase, restoreDatabase, listBackups };

@@ -1414,6 +1414,145 @@ app.post('/submit-writing-test', apiLimiter, async (req, res) => {
     }
 });
 
+// --- AI CHAT FOR STUDENTS ---
+app.get('/student/ai-chat', async (req, res) => {
+    if(!req.session.userId) return res.redirect('/login');
+    try {
+        const student = await User.findById(req.session.userId).select('username role');
+        if (!student || student.role !== 'student') {
+            return res.status(403).send('Access denied');
+        }
+
+        // Get student stats
+        const submissions = await Submission.find({ studentId: req.session.userId });
+        const stats = {
+            totalTests: submissions.length,
+            readingTests: submissions.filter(s => s.type === 'reading').length,
+            listeningTests: submissions.filter(s => s.type === 'listening').length,
+            writingTests: submissions.filter(s => s.type === 'writing').length,
+            avgScore: submissions.filter(s => s.percentage).length > 0
+                ? Math.round(submissions.filter(s => s.percentage).reduce((sum, s) => sum + s.percentage, 0) / submissions.filter(s => s.percentage).length)
+                : null
+        };
+
+        res.render('ai-chat', { 
+            studentName: student.username,
+            stats 
+        });
+    } catch (err) {
+        logger.error('AI chat page error', { error: err.message });
+        res.status(500).send('Error loading AI chat.');
+    }
+});
+
+app.post('/api/ai-chat', apiLimiter, async (req, res) => {
+    if(!req.session.userId) return res.status(401).json({ success: false, message: 'Not logged in' });
+    
+    try {
+        const student = await User.findById(req.session.userId).select('username role');
+        if (!student || student.role !== 'student') {
+            return res.status(403).json({ success: false, message: 'Access denied' });
+        }
+
+        const { message } = req.body;
+        if (!message || !message.trim()) {
+            return res.status(400).json({ success: false, message: 'Message is required' });
+        }
+
+        // Get all student submissions with test details
+        const submissions = await Submission.find({ studentId: req.session.userId })
+            .populate('testId', 'title type')
+            .sort({ createdAt: -1 })
+            .limit(20);
+
+        // Build context for AI
+        const testHistory = submissions.map((sub, index) => {
+            let details = `\nTest ${index + 1}:\n`;
+            details += `- Title: ${sub.testId?.title || 'Unknown'}\n`;
+            details += `- Type: ${sub.type}\n`;
+            details += `- Date: ${new Date(sub.createdAt).toLocaleDateString()}\n`;
+            
+            if (sub.type === 'writing') {
+                details += `- Task 1 Words: ${sub.wordCount1 || 0}\n`;
+                details += `- Task 2 Words: ${sub.wordCount2 || 0}\n`;
+            } else {
+                details += `- Score: ${sub.score}/${sub.totalQuestions} (${sub.percentage}%)\n`;
+                if (sub.band) details += `- Band: ${sub.band}\n`;
+                if (sub.details?.incorrectSummary) {
+                    details += `- Mistakes: ${sub.details.incorrectSummary.slice(0, 200)}\n`;
+                }
+            }
+            
+            return details;
+        }).join('\n');
+
+        // Calculate statistics
+        const readingTests = submissions.filter(s => s.type === 'reading');
+        const listeningTests = submissions.filter(s => s.type === 'listening');
+        const writingTests = submissions.filter(s => s.type === 'writing');
+        
+        const avgReading = readingTests.filter(s => s.percentage).length > 0
+            ? Math.round(readingTests.filter(s => s.percentage).reduce((sum, s) => sum + s.percentage, 0) / readingTests.filter(s => s.percentage).length)
+            : null;
+        
+        const avgListening = listeningTests.filter(s => s.percentage).length > 0
+            ? Math.round(listeningTests.filter(s => s.percentage).reduce((sum, s) => sum + s.percentage, 0) / listeningTests.filter(s => s.percentage).length)
+            : null;
+
+        // Build AI prompt
+        const prompt = `You are an expert IELTS Study Coach helping a student named ${student.username}.
+
+**Student's Test History (Last ${submissions.length} tests):**
+${testHistory}
+
+**Performance Summary:**
+- Total Tests: ${submissions.length}
+- Reading Tests: ${readingTests.length} (Avg: ${avgReading !== null ? avgReading + '%' : 'N/A'})
+- Listening Tests: ${listeningTests.length} (Avg: ${avgListening !== null ? avgListening + '%' : 'N/A'})
+- Writing Tests: ${writingTests.length}
+
+**Student's Question:**
+${message}
+
+**Instructions:**
+- Be friendly, encouraging, and supportive
+- Provide specific, actionable advice based on their test history
+- Use emojis to make responses engaging
+- Keep responses concise (max 300 words)
+- If they ask about weaknesses, analyze their test history
+- If they ask for study plans, create personalized recommendations
+- Reference specific tests when relevant
+- Be honest but encouraging about areas needing improvement
+
+Provide your response:`;
+
+        // Call Gemini AI
+        const { GoogleGenerativeAI } = require("@google/generative-ai");
+        const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+        
+        const result = await model.generateContent(prompt);
+        const reply = result.response.text();
+
+        logger.info('AI chat response generated', { 
+            studentId: req.session.userId,
+            messageLength: message.length,
+            replyLength: reply.length
+        });
+
+        res.json({ 
+            success: true, 
+            reply: reply
+        });
+    } catch (err) {
+        logger.error('AI chat error', { error: err.message, stack: err.stack });
+        res.status(500).json({ 
+            success: false, 
+            message: 'AI chat error: ' + err.message 
+        });
+    }
+});
+
 // --- AI FEEDBACK VIEWER ---
 app.get('/student/ai-feedback/:submissionId', async (req, res) => {
     if(!req.session.userId) return res.redirect('/login');

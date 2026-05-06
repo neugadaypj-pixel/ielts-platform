@@ -43,11 +43,10 @@ const userSchema = new mongoose.Schema({
         ref: 'Group' 
     }
 }, {
-    timestamps: true // Adds createdAt and updatedAt
+    timestamps: true
 });
 
-// Indexes for better query performance
-userSchema.index({ username: 1 });
+// Index for better query performance
 userSchema.index({ role: 1, teacherId: 1 });
 
 module.exports = mongoose.model('User', userSchema);

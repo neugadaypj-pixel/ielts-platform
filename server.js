@@ -54,6 +54,7 @@ const CONSTANTS = require('./utils/constants');
 const { validateUsername, validatePassword, validateTestTitle, validateTestType, validateObjectId, safeJSONParse, sanitizeString } = require('./utils/validation');
 const logger = require('./utils/logger');
 const xss = require('xss');
+const { analyzeReadingTest, analyzeListeningTest, detectPatterns } = require('./utils/aiAnalysis');
 
 if (process.env.NODE_ENV !== 'production') {
     logger.debug('B2 Configuration', {
@@ -373,6 +374,29 @@ async function saveStudentSubmission({ req, payload }) {
             ...submissionPayload
         });
         await submission.save();
+    }
+
+    // Run AI analysis for Reading and Listening tests (async, don't wait)
+    if (isNewSubmission && (normalizedType === 'reading' || normalizedType === 'listening')) {
+        setImmediate(async () => {
+            try {
+                let aiResult;
+                if (normalizedType === 'reading') {
+                    aiResult = await analyzeReadingTest(submission, access.test);
+                } else if (normalizedType === 'listening') {
+                    aiResult = await analyzeListeningTest(submission, access.test);
+                }
+                
+                if (aiResult && aiResult.success) {
+                    submission.details.aiAnalysis = aiResult.analysis;
+                    submission.details.aiAnalyzedAt = aiResult.analyzedAt;
+                    await submission.save();
+                    logger.info('AI analysis saved', { submissionId: submission._id });
+                }
+            } catch (error) {
+                logger.error('AI analysis failed', { error: error.message, submissionId: submission._id });
+            }
+        });
     }
 
     // NOTIFICATION LOGIC FOR TEACHERS

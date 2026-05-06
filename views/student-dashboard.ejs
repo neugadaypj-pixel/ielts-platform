@@ -283,6 +283,61 @@
             background: rgba(239, 68, 68, 0.2);
             color: #fca5a5;
         }
+
+        /* Floating AI Chat Button */
+        .ai-chat-fab {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 70px;
+            height: 70px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+            cursor: pointer;
+            z-index: 9999;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            animation: pulse 2s infinite;
+        }
+
+        .ai-chat-fab:hover {
+            transform: translateY(-5px) scale(1.05);
+            box-shadow: 0 15px 40px rgba(102, 126, 234, 0.5);
+        }
+
+        .ai-chat-fab:active {
+            transform: translateY(-2px) scale(1);
+        }
+
+        .ai-chat-fab .icon {
+            font-size: 2rem;
+            animation: wave 1s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+            }
+            50% {
+                box-shadow: 0 10px 40px rgba(102, 126, 234, 0.6), 0 0 0 10px rgba(102, 126, 234, 0.1);
+            }
+        }
+
+        @keyframes wave {
+            0%, 100% { transform: rotate(0deg); }
+            25% { transform: rotate(-10deg); }
+            75% { transform: rotate(10deg); }
+        }
+
+        body.dark-mode .ai-chat-fab {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
     </style>
 </head>
 <body>
@@ -298,7 +353,6 @@
                 <% } %>
             </div>
             <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
-                <a href="/student/ai-chat" class="logout" style="background:linear-gradient(135deg,#667eea,#764ba2);color:white;border:none;box-shadow:0 6px 16px rgba(102,126,234,0.3);font-size:1.05rem;padding:14px 24px;">🤖 AI Study Coach</a>
                 <a href="/settings" class="logout">⚙️ Settings</a>
                 <a href="/student/feedback" class="logout" style="background:linear-gradient(135deg,#f97316,#ea580c);color:white;border:none;">🐛 Report Issue</a>
                 <a href="/logout" class="logout">Logout</a>
@@ -424,6 +478,12 @@
             <% } %>
         </section>
     </div>
+
+    <!-- Floating AI Chat Button -->
+    <a href="/student/ai-chat" class="ai-chat-fab" title="AI Study Coach">
+        <span class="icon">🤖</span>
+    </a>
+
     <script>
         function searchTests() {
             const query = document.getElementById('searchTests').value;

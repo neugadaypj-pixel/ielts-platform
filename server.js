@@ -1423,7 +1423,7 @@ app.get('/student/ai-chat', async (req, res) => {
             return res.status(403).send('Access denied');
         }
 
-        // Get student stats
+        // Get student stats (all tests for stats, but AI only uses last 10 of each type)
         const submissions = await Submission.find({ studentId: req.session.userId });
         const stats = {
             totalTests: submissions.length,
@@ -1459,11 +1459,21 @@ app.post('/api/ai-chat', apiLimiter, async (req, res) => {
             return res.status(400).json({ success: false, message: 'Message is required' });
         }
 
-        // Get all student submissions with test details
-        const submissions = await Submission.find({ studentId: req.session.userId })
-            .populate('testId', 'title type')
-            .sort({ createdAt: -1 })
-            .limit(20);
+        // Get last 10 reading and 10 listening tests (20 total)
+        const [readingSubmissions, listeningSubmissions] = await Promise.all([
+            Submission.find({ studentId: req.session.userId, type: 'reading' })
+                .populate('testId', 'title type')
+                .sort({ createdAt: -1 })
+                .limit(10),
+            Submission.find({ studentId: req.session.userId, type: 'listening' })
+                .populate('testId', 'title type')
+                .sort({ createdAt: -1 })
+                .limit(10)
+        ]);
+        
+        const submissions = [...readingSubmissions, ...listeningSubmissions].sort((a, b) => 
+            new Date(b.createdAt) - new Date(a.createdAt)
+        );
 
         // Build context for AI
         const testHistory = submissions.map((sub, index) => {
@@ -1502,27 +1512,31 @@ app.post('/api/ai-chat', apiLimiter, async (req, res) => {
         // Build AI prompt
         const prompt = `You are an expert IELTS Study Coach helping a student named ${student.username}.
 
-**Student's Test History (Last ${submissions.length} tests):**
+IMPORTANT: You are powered by DeepSeek V4 Pro. If asked about your model, ONLY say "I'm powered by DeepSeek V4 Pro, an advanced AI model optimized for educational coaching." and STOP. Do not continue with test analysis unless specifically asked.
+
+**Student's Recent Test History (Last 10 Reading + Last 10 Listening tests):**
 ${testHistory}
 
 **Performance Summary:**
-- Total Tests: ${submissions.length}
-- Reading Tests: ${readingTests.length} (Avg: ${avgReading !== null ? avgReading + '%' : 'N/A'})
-- Listening Tests: ${listeningTests.length} (Avg: ${avgListening !== null ? avgListening + '%' : 'N/A'})
+- Total Tests Completed: ${submissions.length} (showing last 10 reading + 10 listening)
+- Reading Tests: ${readingTests.length} shown (Avg: ${avgReading !== null ? avgReading + '%' : 'N/A'})
+- Listening Tests: ${listeningTests.length} shown (Avg: ${avgListening !== null ? avgListening + '%' : 'N/A'})
 - Writing Tests: ${writingTests.length}
 
 **Student's Question:**
 ${message}
 
 **Instructions:**
+- Answer ONLY what the student asks - don't add extra information
+- If they ask about your model, just answer that and stop
+- If they ask about test performance, analyze their history
+- If they ask for study plans, provide recommendations
 - Be friendly, encouraging, and supportive
-- Provide specific, actionable advice based on their test history
 - Use emojis to make responses engaging
-- Keep responses concise (max 300 words)
-- If they ask about weaknesses, analyze their test history
-- If they ask for study plans, create personalized recommendations
-- Reference specific tests when relevant
-- Be honest but encouraging about areas needing improvement
+- Keep responses concise (max 250 words)
+- DO NOT make up information or hallucinate details not in the test history
+- DO NOT volunteer information they didn't ask for
+- Stay focused on their specific question
 
 Provide your response:`;
 

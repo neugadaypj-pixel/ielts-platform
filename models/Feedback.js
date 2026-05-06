@@ -7,7 +7,8 @@ const feedbackSchema = new mongoose.Schema({
     questionType: { type: String, default: '' },
     issueDescription: { type: String, required: true },
     status: { type: String, enum: ['open', 'resolved'], default: 'open' },
-    adminNotes: { type: String, default: '' }
+    adminNotes: { type: String, default: '' },
+    adminReply: { type: String, default: '' }
 }, {
     timestamps: true
 });

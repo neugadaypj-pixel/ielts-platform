@@ -21,17 +21,17 @@
         .badge.open { background: #fee2e2; color: #dc2626; }
         .badge.resolved { background: #dcfce7; color: #166534; }
         .feedback-content { margin: 16px 0; line-height: 1.6; }
-        .resolve-form { margin-top: 16px; padding-top: 16px; border-top: 1px solid #e2e8f0; }
+        .resolve-form { margin-top: 16px; padding-top: 16px; border-top: 1px solid #e2e8f0; display: grid; gap: 12px; }
         textarea {
             width: 100%;
             padding: 12px;
             border-radius: 12px;
             border: 2px solid #e2e8f0;
             font-family: inherit;
-            margin-bottom: 12px;
             min-height: 100px;
             font-size: 0.95rem;
         }
+        .btn-group { display: flex; gap: 10px; flex-wrap: wrap; }
 
         /* Dark Mode Styles */
         body.dark-mode {
@@ -145,9 +145,19 @@
         body.dark-mode .feedback-card > div[style*="background:#f8fafc"] strong {
             color: #f1f5f9 !important;
         }
+
+        body.dark-mode .feedback-card > div[style*="background:#eef2ff"] {
+            background: rgba(102, 126, 234, 0.15) !important;
+            border-left-color: #667eea !important;
+        }
+
+        body.dark-mode .feedback-card > div[style*="background:#eef2ff"] strong {
+            color: #a5b4fc !important;
+        }
     </style>
 </head>
 <body>
+    <script src="/dark-mode.js"></script>
     <div class="container">
         <div class="header">
             <div>
@@ -183,12 +193,23 @@
                         <% if (item.status === 'open') { %>
                             <div class="resolve-form">
                                 <textarea id="notes-<%= item._id %>" placeholder="Add admin notes (optional)..."></textarea>
-                                <button class="btn" style="background:linear-gradient(135deg,#10b981,#059669);color:white;" onclick="resolve('<%= item._id %>')">Mark as Resolved</button>
+                                <textarea id="reply-<%= item._id %>" placeholder="Message back to <%= item.studentName %> (optional)..."></textarea>
+                                <div class="btn-group">
+                                    <button class="btn" style="background:linear-gradient(135deg,#10b981,#059669);color:white;" onclick="resolve('<%= item._id %>')">Mark as Resolved</button>
+                                    <button class="btn" style="background:linear-gradient(135deg,#667eea,#764ba2);color:white;" onclick="sendReply('<%= item._id %>', '<%= item.studentId %>')">Send Reply</button>
+                                </div>
                             </div>
-                        <% } else if (item.adminNotes) { %>
-                            <div style="margin-top:12px;padding:12px;background:#f8fafc;border-radius:12px;font-size:0.9rem;">
-                                <strong>Admin Notes:</strong> <%= item.adminNotes %>
-                            </div>
+                        <% } else { %>
+                            <% if (item.adminNotes) { %>
+                                <div style="margin-top:12px;padding:12px;background:#f8fafc;border-radius:12px;font-size:0.9rem;">
+                                    <strong>Admin Notes:</strong> <%= item.adminNotes %>
+                                </div>
+                            <% } %>
+                            <% if (item.adminReply) { %>
+                                <div style="margin-top:12px;padding:12px;background:#eef2ff;border-radius:12px;font-size:0.9rem;border-left:4px solid #667eea;">
+                                    <strong>Reply to Student:</strong> <%= item.adminReply %>
+                                </div>
+                            <% } %>
                         <% } %>
                     </div>
                 <% }) %>
@@ -199,13 +220,33 @@
     <script>
         async function resolve(id) {
             const notes = document.getElementById('notes-' + id).value;
+            const reply = document.getElementById('reply-' + id).value;
             const res = await fetch(`/admin/feedback/${id}/resolve`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ adminNotes: notes })
+                body: JSON.stringify({ adminNotes: notes, adminReply: reply })
             });
             if (res.ok) location.reload();
             else alert('Error resolving feedback');
+        }
+
+        async function sendReply(feedbackId, studentId) {
+            const reply = document.getElementById('reply-' + feedbackId).value;
+            if (!reply.trim()) {
+                alert('Please enter a reply message');
+                return;
+            }
+            const res = await fetch(`/admin/feedback/${feedbackId}/reply`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ reply, studentId })
+            });
+            if (res.ok) {
+                alert('Reply sent successfully!');
+                location.reload();
+            } else {
+                alert('Error sending reply');
+            }
         }
     </script>
 </body>

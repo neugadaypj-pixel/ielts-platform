@@ -1831,10 +1831,36 @@ app.get('/admin/feedback', isAdmin, async (req, res) => {
 
 app.post('/admin/feedback/:id/resolve', isAdmin, async (req, res) => {
     try {
-        const { adminNotes } = req.body;
-        await Feedback.findByIdAndUpdate(req.params.id, { status: 'resolved', adminNotes });
+        const { adminNotes, adminReply } = req.body;
+        await Feedback.findByIdAndUpdate(req.params.id, { 
+            status: 'resolved', 
+            adminNotes,
+            adminReply: adminReply || null
+        });
         logger.info('Feedback resolved', { feedbackId: req.params.id, adminId: req.session.userId });
         res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+app.post('/admin/feedback/:id/reply', isAdmin, async (req, res) => {
+    try {
+        const { reply, studentId } = req.body;
+        if (!reply || !reply.trim()) {
+            return res.status(400).json({ success: false, message: 'Reply message is required' });
+        }
+        
+        await Feedback.findByIdAndUpdate(req.params.id, { 
+            adminReply: reply.trim()
+        });
+        
+        logger.info('Reply sent to student', { 
+            feedbackId: req.params.id, 
+            studentId, 
+            adminId: req.session.userId 
+        });
+        res.json({ success: true, message: 'Reply sent successfully' });
     } catch (err) {
         res.status(500).json({ success: false, message: err.message });
     }

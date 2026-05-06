@@ -446,25 +446,53 @@
 
         .ms-search {
             width: 100%;
-            padding: 10px 12px;
-            border-radius: 14px;
+            padding: 12px 14px;
+            border-radius: 12px;
             border: 1px solid #e2e8f0;
             background: #f8fafc;
             font-family: inherit;
+            font-size: 0.95rem;
+            transition: all 0.2s ease;
         }
 
-        .ms-options { margin-top: 10px; max-height: 220px; overflow: auto; border-radius: 14px; }
+        .ms-search:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .ms-options {
+            margin-top: 8px;
+            max-height: 300px;
+            overflow-y: auto;
+            border-radius: 12px;
+            background: white;
+        }
 
         .ms-option {
-            padding: 10px 12px;
-            border-radius: 12px;
+            padding: 12px 14px;
+            border-radius: 8px;
             cursor: pointer;
-            font-weight: 700;
+            font-weight: 600;
             color: #334155;
+            transition: all 0.2s ease;
+            border-left: 3px solid transparent;
+            margin: 4px 6px;
         }
 
-        .ms-option:hover { background: #eef2ff; color: #4338ca; }
-        .ms-option.selected { background: #667eea; color: white; }
+        .ms-option:hover {
+            background: linear-gradient(135deg, rgba(102,126,234,0.08) 0%, rgba(118,75,162,0.04) 100%);
+            color: #667eea;
+            border-left-color: #667eea;
+            transform: translateX(2px);
+        }
+
+        .ms-option.selected {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-weight: 700;
+            border-left-color: #fff;
+        }
 
         .group-grid {
             display: grid;
@@ -729,29 +757,40 @@
         }
 
         body.dark-mode .ms-panel {
-            background: rgba(30, 41, 59, 0.98);
-            border-color: #334155;
-            box-shadow: 0 18px 40px rgba(0, 0, 0, 0.4);
+            background: rgba(15, 23, 42, 0.99) !important;
+            border-color: #475569 !important;
+            box-shadow: 0 18px 40px rgba(0, 0, 0, 0.6) !important;
         }
 
         body.dark-mode .ms-search {
-            background: rgba(15, 23, 42, 0.9);
-            border-color: #334155;
-            color: #e2e8f0;
+            background: rgba(30, 41, 59, 0.95) !important;
+            border-color: #475569 !important;
+            color: #e2e8f0 !important;
+        }
+
+        body.dark-mode .ms-search::placeholder {
+            color: #64748b !important;
+        }
+
+        body.dark-mode .ms-options {
+            background: rgba(15, 23, 42, 0.98) !important;
         }
 
         body.dark-mode .ms-option {
-            color: #e2e8f0;
+            color: #cbd5e1 !important;
+            background: transparent !important;
         }
 
         body.dark-mode .ms-option:hover {
-            background: rgba(102, 126, 234, 0.2);
-            color: #a5b4fc;
+            background: linear-gradient(135deg, rgba(102,126,234,0.2) 0%, rgba(118,75,162,0.1) 100%) !important;
+            color: #a5f4fc !important;
+            border-left-color: #667eea !important;
         }
 
         body.dark-mode .ms-option.selected {
-            background: #667eea;
-            color: white;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+            color: #fff !important;
+            border-left-color: #fff !important;
         }
 
         body.dark-mode .ghost-note {
@@ -1491,10 +1530,16 @@
                 </div>
                 <script>
                     function toggleSchedule() {
-                        const type = document.querySelector('input[name="scheduleType"]:checked').value;
-                        document.getElementById('availableFrom').style.display = type === 'scheduled' ? 'block' : 'none';
+                        const radios = document.querySelectorAll('input[name="scheduleType"]');
+                        const availableFromInput = document.getElementById('availableFrom');
+                        const selectedRadio = document.querySelector('input[name="scheduleType"]:checked');
                         
-                        // Update UI styling
+                        if (!selectedRadio) return;
+                        
+                        const type = selectedRadio.value;
+                        availableFromInput.style.display = type === 'scheduled' ? 'block' : 'none';
+                        availableFromInput.required = type === 'scheduled';
+                        
                         const nowLabel = document.getElementById('now-label');
                         const scheduledLabel = document.getElementById('scheduled-label');
                         
@@ -1503,7 +1548,6 @@
                             nowLabel.style.borderColor = '#667eea';
                             nowLabel.style.color = '#667eea';
                             nowLabel.style.boxShadow = '0 0 0 3px rgba(102, 126, 234, 0.1)';
-                            
                             scheduledLabel.style.background = 'transparent';
                             scheduledLabel.style.borderColor = 'transparent';
                             scheduledLabel.style.color = '#64748b';
@@ -1513,7 +1557,6 @@
                             scheduledLabel.style.borderColor = '#667eea';
                             scheduledLabel.style.color = '#667eea';
                             scheduledLabel.style.boxShadow = '0 0 0 3px rgba(102, 126, 234, 0.1)';
-                            
                             nowLabel.style.background = 'transparent';
                             nowLabel.style.borderColor = 'transparent';
                             nowLabel.style.color = '#64748b';
@@ -1521,7 +1564,10 @@
                         }
                     }
                     
-                    // Initialize styling on page load
+                    document.querySelectorAll('input[name="scheduleType"]').forEach(radio => {
+                        radio.addEventListener('change', toggleSchedule);
+                    });
+                    
                     window.addEventListener('DOMContentLoaded', toggleSchedule);
                 </script>
 

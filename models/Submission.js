@@ -26,5 +26,9 @@ const submissionSchema = new mongoose.Schema({
 
 submissionSchema.index({ testId: 1, studentId: 1 }, { unique: true });
 submissionSchema.index({ teacherId: 1, type: 1 });
+submissionSchema.index({ studentId: 1, testId: 1 }); // Find student's specific test
+submissionSchema.index({ teacherId: 1, createdAt: -1 }); // Teacher dashboard sorted by date
+submissionSchema.index({ groupId: 1, testId: 1 }); // Group progress tracking
+submissionSchema.index({ testId: 1, percentage: -1 }); // Find top scores per test
 
 module.exports = mongoose.model('Submission', submissionSchema);

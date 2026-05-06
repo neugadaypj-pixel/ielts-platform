@@ -56,7 +56,9 @@ const testSchema = new mongoose.Schema({
 });
 
 // Indexes for better query performance
-testSchema.index({ createdBy: 1, type: 1 });
+testSchema.index({ createdBy: 1, type: 1 }); // Teacher's tests by type
+testSchema.index({ type: 1, createdAt: -1 }); // All tests by type, sorted by date
 testSchema.index({ title: 'text' }); // Text search on title
+testSchema.index({ createdBy: 1, createdAt: -1 }); // Teacher's tests sorted by date
 
 module.exports = mongoose.model('Test', testSchema);

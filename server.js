@@ -36,8 +36,18 @@ const rateLimit = require('express-rate-limit');
 const helmet = require('helmet');
 const csrf = require('csurf');
 const cookieParser = require('cookie-parser');
+const cron = require('node-cron');
+const NodeCache = require('node-cache');
 const { generateHTMLFromTest, stringifyContent, injectPersistentStateForDownload } = require('./utils/htmlExporter');
 const { getAuthoringPageHtml } = require('./utils/builderAuthoring');
+const { backupDatabase } = require('./backup-database');
+
+// Initialize cache (TTL = 10 minutes)
+const cache = new NodeCache({ 
+    stdTTL: 600, // 10 minutes
+    checkperiod: 120, // Check for expired keys every 2 minutes
+    useClones: false // Don't clone objects (faster)
+});
 
 // Import utilities
 const CONSTANTS = require('./utils/constants');
@@ -150,6 +160,33 @@ const loginLimiter = rateLimit({
     legacyHeaders: false
 });
 
+// Strict limiter for sensitive operations
+const strictLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 5, // 5 requests per 15 minutes
+    message: "Too many attempts. Please try again later.",
+    standardHeaders: true,
+    legacyHeaders: false
+});
+
+// Moderate limiter for API endpoints
+const apiLimiter = rateLimit({
+    windowMs: 60 * 1000, // 1 minute
+    max: 60, // 60 requests per minute
+    message: "Too many requests. Please slow down.",
+    standardHeaders: true,
+    legacyHeaders: false
+});
+
+// Test creation limiter
+const testCreationLimiter = rateLimit({
+    windowMs: 60 * 1000, // 1 minute
+    max: 10, // 10 tests per minute
+    message: "Too many tests created. Please wait a moment.",
+    standardHeaders: true,
+    legacyHeaders: false
+});
+
 const csrfProtection = csrf({ cookie: true });
 
 // --- 4. AUTHENTICATION GATEKEEPERS ---
@@ -204,6 +241,15 @@ function roundPercentage(score, totalQuestions) {
 }
 
 async function getAccessibleTest(req, testId) {
+    // Check cache first
+    const cacheKey = `test_access_${testId}_${req.session.userId}`;
+    let cachedResult = cache.get(cacheKey);
+    
+    if (cachedResult) {
+        logger.debug('Cache HIT for test access', { testId, userId: req.session.userId });
+        return cachedResult;
+    }
+    
     const [user, test] = await Promise.all([
         User.findById(req.session.userId).select('role assignedTests groupId teacherId username'),
         Test.findById(testId)
@@ -214,7 +260,9 @@ async function getAccessibleTest(req, testId) {
     }
 
     if (user.role === 'admin') {
-        return { user, test, isAllowed: true };
+        const result = { user, test, isAllowed: true };
+        cache.set(cacheKey, result, 300); // Cache for 5 minutes
+        return result;
     }
 
     if (user.role === 'teacher') {
@@ -230,11 +278,13 @@ async function getAccessibleTest(req, testId) {
             }));
         }
 
-        return {
+        const result = {
             user,
             test,
             isAllowed: ownsTest || hasDirectAssignment || hasGroupAssignment
         };
+        cache.set(cacheKey, result, 300); // Cache for 5 minutes
+        return result;
     }
 
     if (user.role === 'student' && user.groupId) {
@@ -243,7 +293,9 @@ async function getAccessibleTest(req, testId) {
             assignedTests: test._id
         }));
 
-        return { user, test, isAllowed: hasGroupAccess };
+        const result = { user, test, isAllowed: hasGroupAccess };
+        cache.set(cacheKey, result, 300); // Cache for 5 minutes
+        return result;
     }
 
     return { user, test, isAllowed: false };
@@ -664,6 +716,15 @@ app.post('/update-test/:id', isTeacher, csrfProtection, upload.any(), async (req
         if (req.body.builderJson) existingTest.builderJson = req.body.builderJson;
         await existingTest.save();
 
+        // Clear cache for this test
+        cache.del(`test_html_${testId}`);
+        cache.keys().forEach(key => {
+            if (key.startsWith(`test_access_${testId}_`)) {
+                cache.del(key);
+            }
+        });
+        logger.debug('Cache cleared for updated test', { testId });
+
         logger.info('Test updated successfully', { testId, userId: req.session.userId });
         res.json({ success: true, message: "Test updated successfully." });
     } catch (err) {
@@ -688,7 +749,7 @@ app.post('/upload-test', isAdmin, upload.single('audioFile'), async (req, res) =
 });
 
 // --- LISTENING TEST UPLOAD ---
-app.post('/create-test/listening', isAdmin, csrfProtection, upload.any(), async (req, res) => {
+app.post('/create-test/listening', isAdmin, csrfProtection, testCreationLimiter, upload.any(), async (req, res) => {
     try {
         // Validate input
         const titleValidation = validateTestTitle(req.body.title);
@@ -767,7 +828,7 @@ app.post('/create-test/listening', isAdmin, csrfProtection, upload.any(), async 
 });
 
 // --- READING TEST CREATION ---
-app.post('/create-test/reading', isAdmin, csrfProtection, async (req, res) => {
+app.post('/create-test/reading', isAdmin, csrfProtection, testCreationLimiter, async (req, res) => {
     try {
         const newTest = await saveValidatedTest({
             title: req.body.title,
@@ -786,7 +847,7 @@ app.post('/create-test/reading', isAdmin, csrfProtection, async (req, res) => {
 });
 
 // --- WRITING TEST CREATION ---
-app.post('/create-test/writing', isAdmin, csrfProtection, async (req, res) => {
+app.post('/create-test/writing', isAdmin, csrfProtection, testCreationLimiter, async (req, res) => {
     try {
         const legacyBody = req.body || {};
         const writingContent = legacyBody.content || {
@@ -843,7 +904,7 @@ app.get('/admin/add-teacher', isAdmin, (req, res) => {
     res.render('add-teacher');
 });
 
-app.post('/admin/add-teacher', isAdmin, async (req, res) => {
+app.post('/admin/add-teacher', isAdmin, strictLimiter, async (req, res) => {
     try {
         const { username, password } = req.body;
 
@@ -866,7 +927,7 @@ app.post('/admin/add-teacher', isAdmin, async (req, res) => {
     }
 });
 
-app.post('/admin/assign-test', isAdmin, async (req, res) => {
+app.post('/admin/assign-test', isAdmin, strictLimiter, async (req, res) => {
     const { teacherId, testId } = req.body;
     try {
         const teacherValidation = validateObjectId(teacherId);
@@ -892,18 +953,37 @@ app.get('/teacher-dashboard', isTeacher, async (req, res) => {
     try {
         const page = Math.max(1, parseInt(req.query.page) || 1);
         const PAGE_SIZE = 20;
+        const skip = (page - 1) * PAGE_SIZE;
 
-        const [teacher, groups, allStudents, submissions] = await Promise.all([
-            User.findById(req.session.userId).populate({
-                path: 'assignedTests',
-                options: { sort: { type: 1, title: 1 } }
-            }),
+        const [teacher, groups, allStudents] = await Promise.all([
+            User.findById(req.session.userId).select('_id'),
             Group.find({ teacherId: req.session.userId })
                 .populate('students assignedTests')
                 .sort({ name: 1 }),
-            User.find({ teacherId: req.session.userId, role: 'student' }).sort({ username: 1 }),
-            Submission.find({ teacherId: req.session.userId }).select('testId studentId lastSubmittedAt')
+            User.find({ teacherId: req.session.userId, role: 'student' }).sort({ username: 1 })
         ]);
+
+        // Get total count for pagination
+        const totalTests = await Test.countDocuments({ 
+            _id: { $in: teacher.assignedTests || [] } 
+        });
+        const totalPages = Math.ceil(totalTests / PAGE_SIZE);
+
+        // Fetch only the tests for current page
+        const tests = await Test.find({ 
+            _id: { $in: teacher.assignedTests || [] } 
+        })
+        .sort({ title: 1 })
+        .skip(skip)
+        .limit(PAGE_SIZE)
+        .lean();
+
+        // Get submission stats only for current page tests
+        const testIds = tests.map(t => t._id);
+        const submissions = await Submission.find({ 
+            teacherId: req.session.userId,
+            testId: { $in: testIds }
+        }).select('testId studentId lastSubmittedAt');
 
         const groupStatsByTestId = new Map();
         groups.forEach((group) => {
@@ -936,30 +1016,22 @@ app.get('/teacher-dashboard', isTeacher, async (req, res) => {
             }
         });
 
-        const allTests = (teacher?.assignedTests || [])
-            .filter((testDoc) => testDoc != null)
-            .map((testDoc) => {
-                const test = typeof testDoc.toObject === 'function' ? testDoc.toObject() : { ...testDoc };
-                const groupStats = groupStatsByTestId.get(String(test._id));
-                const submissionStats = submissionStatsByTestId.get(String(test._id));
-                return {
-                    ...test,
-                    assignedGroupCount: groupStats ? groupStats.groupCount : 0,
-                    assignedStudentCount: groupStats ? groupStats.studentIds.size : 0,
-                    completedStudentCount: submissionStats ? submissionStats.completedCount : 0,
-                    latestSubmissionAt: submissionStats ? submissionStats.latestSubmissionAt : null
-                };
-            })
-            .sort((left, right) => left.title.localeCompare(right.title));
-
-        const totalTests = allTests.length;
-        const totalPages = Math.ceil(totalTests / PAGE_SIZE);
-        const tests = allTests.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+        const enrichedTests = tests.map((test) => {
+            const groupStats = groupStatsByTestId.get(String(test._id));
+            const submissionStats = submissionStatsByTestId.get(String(test._id));
+            return {
+                ...test,
+                assignedGroupCount: groupStats ? groupStats.groupCount : 0,
+                assignedStudentCount: groupStats ? groupStats.studentIds.size : 0,
+                completedStudentCount: submissionStats ? submissionStats.completedCount : 0,
+                latestSubmissionAt: submissionStats ? submissionStats.latestSubmissionAt : null
+            };
+        });
 
         res.render('teacher-dashboard', {
-            teacher,
-            tests,
-            testsByType: groupTestsByType(tests),
+            teacher: { _id: teacher._id, assignedTests: [] }, // Don't send all tests
+            tests: enrichedTests,
+            testsByType: groupTestsByType(enrichedTests),
             allStudents,
             groups,
             stats: {
@@ -1154,15 +1226,31 @@ app.get('/teacher/progress/:id', isTeacher, async (req, res) => {
 app.get('/view-test/:id', async (req, res) => {
     if(!req.session.userId) return res.redirect('/login');
     try {
+        // Check cache first
+        const cacheKey = `test_html_${req.params.id}`;
+        let html = cache.get(cacheKey);
+        
+        if (html) {
+            logger.debug('Cache HIT for test', { testId: req.params.id });
+            return res.send(html);
+        }
+        
+        logger.debug('Cache MISS for test', { testId: req.params.id });
+        
         const access = await getAccessibleTest(req, req.params.id);
         if (!access.test) return res.status(404).send("Test not found.");
         if (!access.isAllowed) return res.status(403).send("Not authorized to view this test.");
 
         try {
-            const html = generateHTMLFromTest(access.test, {
+            html = generateHTMLFromTest(access.test, {
                 groqApiKey: process.env.GROQ_API_KEY || '',
                 studentName: access.user ? (access.user.username || '') : ''
             });
+            
+            // Cache the generated HTML
+            cache.set(cacheKey, html);
+            logger.debug('Cached test HTML', { testId: req.params.id });
+            
             return res.send(html);
         } catch (generatorErr) {
             logger.error('HTML generation error', { error: generatorErr.message, stack: generatorErr.stack });
@@ -1249,7 +1337,7 @@ app.get('/download-test/:id', async (req, res) => {
 });
 
 // --- SUBMISSION CAPTURE ---
-app.post('/api/test-submissions', async (req, res) => {
+app.post('/api/test-submissions', apiLimiter, async (req, res) => {
     if(!req.session.userId) return res.status(401).json({ success: false, message: "Not logged in" });
     try {
         const result = await saveStudentSubmission({
@@ -1268,7 +1356,7 @@ app.post('/api/test-submissions', async (req, res) => {
     }
 });
 
-app.post('/submit-writing-test', async (req, res) => {
+app.post('/submit-writing-test', apiLimiter, async (req, res) => {
     if(!req.session.userId) return res.status(401).json({ success: false, message: "Not logged in" });
     try {
         const { testId, studentName, task1, task2, wordCount1, wordCount2, timeTaken } = req.body;
@@ -1409,7 +1497,7 @@ function pushToTeachers(testId) {
     clients.forEach(res => { try { res.write(payload); } catch(e) {} });
 }
 
-app.post('/api/heartbeat', async (req, res) => {
+app.post('/api/heartbeat', apiLimiter, async (req, res) => {
     if (!req.session.userId) return res.status(401).json({ ok: false });
     const { testId, studentName, answeredCount, totalCount, currentPart, timeRemaining, type, task1Preview, task2Preview, wordCount1, wordCount2 } = req.body;
     if (!testId || !studentName) return res.json({ ok: false });
@@ -1510,6 +1598,15 @@ app.post('/delete-test/:id', csrfProtection, async (req, res) => {
             await Group.updateMany({ assignedTests: test._id }, { $pull: { assignedTests: test._id } });
             await User.updateMany({ assignedTests: test._id }, { $pull: { assignedTests: test._id } });
             await Submission.deleteMany({ testId: test._id });
+            
+            // Clear cache for this test
+            cache.del(`test_html_${test._id}`);
+            cache.keys().forEach(key => {
+                if (key.startsWith(`test_access_${test._id}_`)) {
+                    cache.del(key);
+                }
+            });
+            logger.debug('Cache cleared for deleted test', { testId: test._id });
         }
     });
 });
@@ -2230,8 +2327,38 @@ app.get('/admin/logs', isAdmin, async (req, res) => {
     }
 });
 
+// --- CACHE STATISTICS (Admin only) ---
+app.get('/admin/cache-stats', isAdmin, (req, res) => {
+    const stats = cache.getStats();
+    const keys = cache.keys();
+    
+    res.json({
+        success: true,
+        stats: {
+            keys: stats.keys,
+            hits: stats.hits,
+            misses: stats.misses,
+            hitRate: stats.hits > 0 ? ((stats.hits / (stats.hits + stats.misses)) * 100).toFixed(2) + '%' : '0%',
+            ksize: stats.ksize,
+            vsize: stats.vsize
+        },
+        cachedKeys: keys.map(key => ({
+            key,
+            ttl: cache.getTtl(key)
+        }))
+    });
+});
+
+// --- CLEAR CACHE (Admin only) ---
+app.post('/admin/clear-cache', isAdmin, (req, res) => {
+    const keyCount = cache.keys().length;
+    cache.flushAll();
+    logger.info('Cache cleared by admin', { userId: req.session.userId, keysCleared: keyCount });
+    res.json({ success: true, message: `Cleared ${keyCount} cached items` });
+});
+
 // --- NOTIFICATIONS ---
-app.get('/api/notifications', async (req, res) => {
+app.get('/api/notifications', apiLimiter, async (req, res) => {
     if (!req.session.userId) return res.status(401).json({ success: false });
     try {
         const notifications = await Notification.find({ userId: req.session.userId })
@@ -2270,6 +2397,25 @@ app.post('/api/notifications/mark-all-read', async (req, res) => {
     }
 });
 
+// --- MANUAL BACKUP ENDPOINT (Admin only) ---
+app.post('/admin/backup-database', isAdmin, async (req, res) => {
+    try {
+        console.log('🔄 Manual backup triggered by admin:', req.session.username);
+        const result = await backupDatabase();
+        res.json({ 
+            success: true, 
+            message: 'Backup completed successfully',
+            filename: result.filename,
+            size: `${(result.size / 1024 / 1024).toFixed(2)} MB`
+        });
+    } catch (error) {
+        res.status(500).json({ 
+            success: false, 
+            message: 'Backup failed: ' + error.message 
+        });
+    }
+});
+
 // Import error handlers
 const { csrfErrorHandler, errorHandler } = require('./middleware/errorHandler');
 
@@ -2285,6 +2431,20 @@ app.use(errorHandler);
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`Server is cooking at http://localhost:${PORT} 🍲`);
+    
+    // Schedule automated daily backups at 2 AM
+    if (process.env.NODE_ENV === 'production') {
+        cron.schedule('0 2 * * *', async () => {
+            console.log('🔄 Running scheduled database backup...');
+            try {
+                await backupDatabase();
+                console.log('✅ Scheduled backup completed');
+            } catch (error) {
+                console.error('❌ Scheduled backup failed:', error.message);
+            }
+        });
+        console.log('⏰ Automated daily backups scheduled for 2:00 AM');
+    }
 });
 
 

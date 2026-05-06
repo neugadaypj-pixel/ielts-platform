@@ -434,64 +434,71 @@
             left: 0;
             right: 0;
             z-index: 20;
-            border-radius: 18px;
-            border: 1px solid #e2e8f0;
-            background: rgba(255,255,255,0.98);
-            box-shadow: 0 18px 40px rgba(15, 23, 42, 0.12);
-            padding: 10px;
+            border-radius: 20px;
+            border: 2px solid #e2e8f0;
+            background: white;
+            box-shadow: 0 20px 50px rgba(15, 23, 42, 0.15), 0 0 0 1px rgba(102, 126, 234, 0.1);
+            padding: 14px;
             display: none;
+            backdrop-filter: blur(10px);
         }
 
         .ms-panel.open { display: block; }
 
         .ms-search {
             width: 100%;
-            padding: 12px 14px;
-            border-radius: 12px;
-            border: 1px solid #e2e8f0;
+            padding: 14px 16px;
+            border-radius: 14px;
+            border: 2px solid #e2e8f0;
             background: #f8fafc;
             font-family: inherit;
             font-size: 0.95rem;
             transition: all 0.2s ease;
+            font-weight: 600;
         }
 
         .ms-search:focus {
             outline: none;
             border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-        }
-
-        .ms-options {
-            margin-top: 8px;
-            max-height: 300px;
-            overflow-y: auto;
-            border-radius: 12px;
+            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.12);
             background: white;
         }
 
+        .ms-options {
+            margin-top: 10px;
+            max-height: 320px;
+            overflow-y: auto;
+            border-radius: 14px;
+            background: #f8fafc;
+            padding: 6px;
+        }
+
         .ms-option {
-            padding: 12px 14px;
-            border-radius: 8px;
+            padding: 14px 16px;
+            border-radius: 10px;
             cursor: pointer;
-            font-weight: 600;
+            font-weight: 700;
             color: #334155;
             transition: all 0.2s ease;
-            border-left: 3px solid transparent;
-            margin: 4px 6px;
+            border-left: 4px solid transparent;
+            margin: 3px 0;
+            background: white;
         }
 
         .ms-option:hover {
-            background: linear-gradient(135deg, rgba(102,126,234,0.08) 0%, rgba(118,75,162,0.04) 100%);
+            background: linear-gradient(135deg, rgba(102,126,234,0.12) 0%, rgba(118,75,162,0.08) 100%);
             color: #667eea;
             border-left-color: #667eea;
-            transform: translateX(2px);
+            transform: translateX(4px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
         }
 
         .ms-option.selected {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
-            font-weight: 700;
+            font-weight: 800;
             border-left-color: #fff;
+            box-shadow: 0 6px 16px rgba(102, 126, 234, 0.3);
         }
 
         .group-grid {
@@ -716,6 +723,19 @@
             border-color: #334155;
         }
 
+        /* Preserve test type colors in dark mode */
+        body.dark-mode .type-reading {
+            border-top-color: #60a5fa !important;
+        }
+
+        body.dark-mode .type-listening {
+            border-top-color: #34d399 !important;
+        }
+
+        body.dark-mode .type-writing {
+            border-top-color: #fb923c !important;
+        }
+
         body.dark-mode .test-card,
         body.dark-mode .group-card {
             background: rgba(30, 41, 59, 0.98);
@@ -757,9 +777,9 @@
         }
 
         body.dark-mode .ms-panel {
-            background: rgba(15, 23, 42, 0.99) !important;
+            background: rgba(15, 23, 42, 0.98) !important;
             border-color: #475569 !important;
-            box-shadow: 0 18px 40px rgba(0, 0, 0, 0.6) !important;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(102, 126, 234, 0.3) !important;
         }
 
         body.dark-mode .ms-search {
@@ -773,24 +793,24 @@
         }
 
         body.dark-mode .ms-options {
-            background: rgba(15, 23, 42, 0.98) !important;
+            background: rgba(30, 41, 59, 0.95) !important;
         }
 
         body.dark-mode .ms-option {
             color: #cbd5e1 !important;
-            background: transparent !important;
+            background: rgba(15, 23, 42, 0.8) !important;
         }
 
         body.dark-mode .ms-option:hover {
-            background: linear-gradient(135deg, rgba(102,126,234,0.2) 0%, rgba(118,75,162,0.1) 100%) !important;
+            background: linear-gradient(135deg, rgba(102,126,234,0.3) 0%, rgba(118,75,162,0.2) 100%) !important;
             color: #a5f4fc !important;
-            border-left-color: #667eea !important;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.25) !important;
         }
 
         body.dark-mode .ms-option.selected {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
             color: #fff !important;
-            border-left-color: #fff !important;
+            box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4) !important;
         }
 
         body.dark-mode .ghost-note {
@@ -907,9 +927,9 @@
         }
 
         body.dark-mode .ms-panel {
-            background: rgba(15, 23, 42, 0.99) !important;
+            background: rgba(15, 23, 42, 0.98) !important;
             border-color: #475569 !important;
-            box-shadow: 0 18px 40px rgba(0, 0, 0, 0.6) !important;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(102, 126, 234, 0.3) !important;
         }
 
         body.dark-mode .ms-search {
@@ -969,17 +989,11 @@
             color: #cbd5e1 !important;
         }
 
-        body.dark-mode input[type="radio"]:checked + span {
-            color: inherit !important;
-        }
-
-        body.dark-mode #now-label {
-            background: rgba(15, 23, 42, 0.9) !important;
-            border-color: #334155 !important;
-        }
-
-        body.dark-mode #now-label input[type="radio"]:checked + span {
-            color: #a5f4fc !important;
+        body.dark-mode #now-label[style*="linear-gradient"],
+        body.dark-mode #scheduled-label[style*="linear-gradient"] {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+            color: white !important;
+            border-color: #667eea !important;
         }
 
     </style>
@@ -1512,14 +1526,16 @@
                         <!-- Modern Schedule Type Selector -->
                         <div style="margin-top: 16px;">
                             <label style="font-weight: 700; margin-bottom: 12px; display: block; color: #475569;">Access Type</label>
-                            <div style="display: flex; gap: 10px; background: rgba(241,245,249,0.6); padding: 8px; border-radius: 14px; border: 2px solid #e2e8f0;">
-                                <label style="flex: 1; margin: 0; cursor: pointer; padding: 10px 14px; border-radius: 10px; text-align: center; font-weight: 600; transition: all 0.3s ease; background: white; border: 2px solid #e2e8f0;" id="now-label">
-                                    <input type="radio" name="scheduleType" value="now" id="scheduleType" checked style="margin-right: 8px; cursor: pointer;">
-                                    <span>📅 Available Now</span>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                                <label style="margin: 0; cursor: pointer; padding: 16px; border-radius: 14px; text-align: center; font-weight: 700; transition: all 0.3s ease; background: white; border: 2px solid #e2e8f0; display: flex; flex-direction: column; align-items: center; gap: 8px;" id="now-label">
+                                    <input type="radio" name="scheduleType" value="now" id="scheduleType" checked style="display: none;">
+                                    <span style="font-size: 1.5rem;">📅</span>
+                                    <span style="font-size: 0.9rem;">Available Now</span>
                                 </label>
-                                <label style="flex: 1; margin: 0; cursor: pointer; padding: 10px 14px; border-radius: 10px; text-align: center; font-weight: 600; transition: all 0.3s ease;" id="scheduled-label" onclick="toggleSchedule()">
-                                    <input type="radio" name="scheduleType" value="scheduled" style="margin-right: 8px; cursor: pointer;" onchange="toggleSchedule()">
-                                    <span>⏰ Schedule for Later</span>
+                                <label style="margin: 0; cursor: pointer; padding: 16px; border-radius: 14px; text-align: center; font-weight: 700; transition: all 0.3s ease; background: white; border: 2px solid #e2e8f0; display: flex; flex-direction: column; align-items: center; gap: 8px;" id="scheduled-label">
+                                    <input type="radio" name="scheduleType" value="scheduled" style="display: none;">
+                                    <span style="font-size: 1.5rem;">⏰</span>
+                                    <span style="font-size: 0.9rem;">Schedule for Later</span>
                                 </label>
                             </div>
                         </div>
@@ -1544,28 +1560,42 @@
                         const scheduledLabel = document.getElementById('scheduled-label');
                         
                         if (type === 'now') {
-                            nowLabel.style.background = 'white';
+                            nowLabel.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
                             nowLabel.style.borderColor = '#667eea';
-                            nowLabel.style.color = '#667eea';
-                            nowLabel.style.boxShadow = '0 0 0 3px rgba(102, 126, 234, 0.1)';
-                            scheduledLabel.style.background = 'transparent';
-                            scheduledLabel.style.borderColor = 'transparent';
+                            nowLabel.style.color = 'white';
+                            nowLabel.style.transform = 'scale(1.02)';
+                            nowLabel.style.boxShadow = '0 8px 20px rgba(102, 126, 234, 0.3)';
+                            scheduledLabel.style.background = 'white';
+                            scheduledLabel.style.borderColor = '#e2e8f0';
                             scheduledLabel.style.color = '#64748b';
+                            scheduledLabel.style.transform = 'scale(1)';
                             scheduledLabel.style.boxShadow = 'none';
                         } else {
-                            scheduledLabel.style.background = 'white';
+                            scheduledLabel.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
                             scheduledLabel.style.borderColor = '#667eea';
-                            scheduledLabel.style.color = '#667eea';
-                            scheduledLabel.style.boxShadow = '0 0 0 3px rgba(102, 126, 234, 0.1)';
-                            nowLabel.style.background = 'transparent';
-                            nowLabel.style.borderColor = 'transparent';
+                            scheduledLabel.style.color = 'white';
+                            scheduledLabel.style.transform = 'scale(1.02)';
+                            scheduledLabel.style.boxShadow = '0 8px 20px rgba(102, 126, 234, 0.3)';
+                            nowLabel.style.background = 'white';
+                            nowLabel.style.borderColor = '#e2e8f0';
                             nowLabel.style.color = '#64748b';
+                            nowLabel.style.transform = 'scale(1)';
                             nowLabel.style.boxShadow = 'none';
                         }
                     }
                     
                     document.querySelectorAll('input[name="scheduleType"]').forEach(radio => {
                         radio.addEventListener('change', toggleSchedule);
+                    });
+                    
+                    document.getElementById('now-label').addEventListener('click', function() {
+                        document.querySelector('input[name="scheduleType"][value="now"]').checked = true;
+                        toggleSchedule();
+                    });
+                    
+                    document.getElementById('scheduled-label').addEventListener('click', function() {
+                        document.querySelector('input[name="scheduleType"][value="scheduled"]').checked = true;
+                        toggleSchedule();
                     });
                     
                     window.addEventListener('DOMContentLoaded', toggleSchedule);

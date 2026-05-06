@@ -1526,32 +1526,43 @@ ${message}
 
 Provide your response:`;
 
-        // Call Gemini AI with retry logic
-        const { GoogleGenerativeAI } = require("@google/generative-ai");
-        const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-        const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-        
+        // Call DeepSeek AI with retry logic
         let result;
         let retries = 3;
-        let delay = 1000; // Start with 1 second
+        let delay = 1000;
         
         for (let i = 0; i < retries; i++) {
             try {
-                result = await model.generateContent(prompt);
-                break; // Success, exit loop
-            } catch (error) {
-                if (i === retries - 1) throw error; // Last retry, throw error
-                if (error.message.includes('503') || error.message.includes('high demand')) {
-                    logger.info(`AI chat retry ${i + 1}/${retries} after ${delay}ms`);
-                    await new Promise(resolve => setTimeout(resolve, delay));
-                    delay *= 2; // Exponential backoff
-                } else {
-                    throw error; // Different error, don't retry
+                const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${process.env.DEEPSEEK_API_KEY}`
+                    },
+                    body: JSON.stringify({
+                        model: 'deepseek-chat',
+                        messages: [{ role: 'user', content: prompt }],
+                        temperature: 0.7,
+                        max_tokens: 2000
+                    })
+                });
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error?.message || 'DeepSeek API error');
                 }
+                
+                result = await response.json();
+                break;
+            } catch (error) {
+                if (i === retries - 1) throw error;
+                logger.info(`AI chat retry ${i + 1}/${retries} after ${delay}ms`);
+                await new Promise(resolve => setTimeout(resolve, delay));
+                delay *= 2;
             }
         }
         
-        const reply = result.response.text();
+        const reply = result.choices[0].message.content;
 
         logger.info('AI chat response generated', { 
             studentId: req.session.userId,

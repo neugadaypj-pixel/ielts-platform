@@ -1,14 +1,32 @@
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const logger = require('./logger');
 
-// Initialize Gemini AI
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-
 /**
- * Analyze Reading Test Submission
- * Detects weaknesses, patterns, and provides personalized recommendations
+ * Call DeepSeek AI API
  */
+async function callDeepSeek(prompt) {
+    const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${process.env.DEEPSEEK_API_KEY}`
+        },
+        body: JSON.stringify({
+            model: 'deepseek-chat',
+            messages: [{ role: 'user', content: prompt }],
+            temperature: 0.3,
+            max_tokens: 2000
+        })
+    });
+    
+    if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error?.message || 'DeepSeek API error');
+    }
+    
+    const data = await response.json();
+    return data.choices[0].message.content;
+}
 async function analyzeReadingTest(submission, test) {
     try {
         const incorrectAnswers = submission.details?.incorrectSummary || 'Not available';
@@ -56,10 +74,9 @@ Improve from ${submission.percentage}% to [realistic target]% in 4 weeks
 
 Keep it concise, actionable, and encouraging. Focus on specific IELTS Reading strategies.`;
 
-        const result = await model.generateContent(prompt);
-        const analysis = result.response.text();
+        const analysis = await callDeepSeek(prompt);
         
-        logger.info('Reading test analyzed by AI', { 
+        logger.info('Reading test analyzed by DeepSeek AI', { 
             submissionId: submission._id,
             score: submission.score 
         });
@@ -68,7 +85,7 @@ Keep it concise, actionable, and encouraging. Focus on specific IELTS Reading st
             success: true,
             analysis: analysis,
             analyzedAt: new Date(),
-            model: 'gemini-1.5-flash'
+            model: 'deepseek-chat'
         };
     } catch (error) {
         logger.error('AI Reading analysis failed', { 
@@ -138,10 +155,9 @@ Improve from ${submission.percentage}% to [realistic target]% in 4 weeks
 
 Keep it concise, actionable, and encouraging. Focus on specific IELTS Listening strategies.`;
 
-        const result = await model.generateContent(prompt);
-        const analysis = result.response.text();
+        const analysis = await callDeepSeek(prompt);
         
-        logger.info('Listening test analyzed by AI', { 
+        logger.info('Listening test analyzed by DeepSeek AI', { 
             submissionId: submission._id,
             score: submission.score 
         });
@@ -150,7 +166,7 @@ Keep it concise, actionable, and encouraging. Focus on specific IELTS Listening 
             success: true,
             analysis: analysis,
             analyzedAt: new Date(),
-            model: 'gemini-1.5-flash'
+            model: 'deepseek-chat'
         };
     } catch (error) {
         logger.error('AI Listening analysis failed', { 
@@ -213,10 +229,9 @@ ${submissionSummary}
 
 Keep it encouraging but honest. Focus on actionable insights.`;
 
-        const result = await model.generateContent(prompt);
-        const patterns = result.response.text();
+        const patterns = await callDeepSeek(prompt);
         
-        logger.info('Pattern analysis completed', { 
+        logger.info('Pattern analysis completed by DeepSeek AI', { 
             studentId,
             testsAnalyzed: submissions.length 
         });

@@ -295,19 +295,67 @@ async function saveStudentSubmission({ req, payload }) {
         details
     };
 
+    let submission;
+    const isNewSubmission = !existing;
+
     if (existing) {
         Object.assign(existing, submissionPayload);
         await existing.save();
-        return { ignored: false, submission: existing };
+        submission = existing;
+    } else {
+        submission = new Submission({
+            testId: access.test._id,
+            studentId: student._id,
+            ...submissionPayload
+        });
+        await submission.save();
     }
 
-    const submission = new Submission({
-        testId: access.test._id,
-        studentId: student._id,
-        ...submissionPayload
-    });
+    // NOTIFICATION LOGIC FOR TEACHERS
+    if (student.teacherId && isNewSubmission) {
+        // 1. Notify teacher about new submission
+        await Notification.create({
+            userId: student.teacherId,
+            type: 'test_submitted',
+            title: 'New Test Submission',
+            message: `${student.username} completed "${access.test.title}"`,
+            relatedId: access.test._id
+        });
 
-    await submission.save();
+        // 2. Check if all students in group completed the test
+        if (student.groupId) {
+            const group = await Group.findById(student.groupId).populate('students');
+            if (group) {
+                const totalStudents = group.students.length;
+                const completedCount = await Submission.countDocuments({
+                    testId: access.test._id,
+                    groupId: student.groupId
+                });
+
+                if (completedCount === totalStudents) {
+                    await Notification.create({
+                        userId: student.teacherId,
+                        type: 'group_completed',
+                        title: 'Group Completed Test',
+                        message: `All students in "${group.name}" completed "${access.test.title}"`,
+                        relatedId: access.test._id
+                    });
+                }
+            }
+        }
+
+        // 3. Low score alert (if score is below 50%)
+        if (submissionPayload.percentage && submissionPayload.percentage < 50) {
+            await Notification.create({
+                userId: student.teacherId,
+                type: 'low_score_alert',
+                title: 'Low Score Alert',
+                message: `${student.username} scored ${submissionPayload.percentage}% on "${access.test.title}"`,
+                relatedId: access.test._id
+            });
+        }
+    }
+
     return { ignored: false, submission };
 }
 
@@ -2106,6 +2154,15 @@ app.post('/teacher/assign-test-group', isTeacher, async (req, res) => {
                 relatedId: testId
             }));
             await Notification.insertMany(notifications);
+            
+            // Notify teacher about successful scheduling
+            await Notification.create({
+                userId: req.session.userId,
+                type: 'general',
+                title: 'Test Scheduled',
+                message: `Test "${access.test.title}" scheduled for group "${group.name}" on ${new Date(availableFrom).toLocaleString()}`,
+                relatedId: testId
+            });
         } else {
             // Notify students about immediate test
             const notifications = group.students.map(student => ({
@@ -2116,6 +2173,15 @@ app.post('/teacher/assign-test-group', isTeacher, async (req, res) => {
                 relatedId: testId
             }));
             await Notification.insertMany(notifications);
+            
+            // Notify teacher about successful assignment
+            await Notification.create({
+                userId: req.session.userId,
+                type: 'general',
+                title: 'Test Assigned',
+                message: `Test "${access.test.title}" assigned to group "${group.name}" (${group.students.length} students)`,
+                relatedId: testId
+            });
         }
         
         logger.info('Test assigned to group', { testId, groupId, scheduleType, teacherId: req.session.userId });

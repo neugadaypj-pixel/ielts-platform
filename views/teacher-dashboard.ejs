@@ -434,71 +434,64 @@
             left: 0;
             right: 0;
             z-index: 20;
-            border-radius: 20px;
-            border: 2px solid #e2e8f0;
-            background: white;
-            box-shadow: 0 20px 50px rgba(15, 23, 42, 0.15), 0 0 0 1px rgba(102, 126, 234, 0.1);
-            padding: 14px;
+            border-radius: 18px;
+            border: 1px solid #e2e8f0;
+            background: rgba(255,255,255,0.98);
+            box-shadow: 0 18px 40px rgba(15, 23, 42, 0.12);
+            padding: 10px;
             display: none;
-            backdrop-filter: blur(10px);
         }
 
         .ms-panel.open { display: block; }
 
         .ms-search {
             width: 100%;
-            padding: 14px 16px;
-            border-radius: 14px;
-            border: 2px solid #e2e8f0;
+            padding: 12px 14px;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
             background: #f8fafc;
             font-family: inherit;
             font-size: 0.95rem;
             transition: all 0.2s ease;
-            font-weight: 600;
         }
 
         .ms-search:focus {
             outline: none;
             border-color: #667eea;
-            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.12);
-            background: white;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
         }
 
         .ms-options {
-            margin-top: 10px;
-            max-height: 320px;
+            margin-top: 8px;
+            max-height: 300px;
             overflow-y: auto;
-            border-radius: 14px;
-            background: #f8fafc;
-            padding: 6px;
-        }
-
-        .ms-option {
-            padding: 14px 16px;
-            border-radius: 10px;
-            cursor: pointer;
-            font-weight: 700;
-            color: #334155;
-            transition: all 0.2s ease;
-            border-left: 4px solid transparent;
-            margin: 3px 0;
+            border-radius: 12px;
             background: white;
         }
 
+        .ms-option {
+            padding: 12px 14px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            color: #334155;
+            transition: all 0.2s ease;
+            border-left: 3px solid transparent;
+            margin: 4px 6px;
+        }
+
         .ms-option:hover {
-            background: linear-gradient(135deg, rgba(102,126,234,0.12) 0%, rgba(118,75,162,0.08) 100%);
+            background: linear-gradient(135deg, rgba(102,126,234,0.08) 0%, rgba(118,75,162,0.04) 100%);
             color: #667eea;
             border-left-color: #667eea;
-            transform: translateX(4px);
-            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
+            transform: translateX(2px);
         }
 
         .ms-option.selected {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
-            font-weight: 800;
+            font-weight: 700;
             border-left-color: #fff;
-            box-shadow: 0 6px 16px rgba(102, 126, 234, 0.3);
         }
 
         .group-grid {
@@ -777,9 +770,9 @@
         }
 
         body.dark-mode .ms-panel {
-            background: rgba(15, 23, 42, 0.98) !important;
+            background: rgba(15, 23, 42, 0.99) !important;
             border-color: #475569 !important;
-            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(102, 126, 234, 0.3) !important;
+            box-shadow: 0 18px 40px rgba(0, 0, 0, 0.6) !important;
         }
 
         body.dark-mode .ms-search {
@@ -793,24 +786,24 @@
         }
 
         body.dark-mode .ms-options {
-            background: rgba(30, 41, 59, 0.95) !important;
+            background: rgba(15, 23, 42, 0.98) !important;
         }
 
         body.dark-mode .ms-option {
             color: #cbd5e1 !important;
-            background: rgba(15, 23, 42, 0.8) !important;
+            background: transparent !important;
         }
 
         body.dark-mode .ms-option:hover {
-            background: linear-gradient(135deg, rgba(102,126,234,0.3) 0%, rgba(118,75,162,0.2) 100%) !important;
+            background: linear-gradient(135deg, rgba(102,126,234,0.2) 0%, rgba(118,75,162,0.1) 100%) !important;
             color: #a5f4fc !important;
-            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.25) !important;
+            border-left-color: #667eea !important;
         }
 
         body.dark-mode .ms-option.selected {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
             color: #fff !important;
-            box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4) !important;
+            border-left-color: #fff !important;
         }
 
         body.dark-mode .ghost-note {
@@ -927,9 +920,9 @@
         }
 
         body.dark-mode .ms-panel {
-            background: rgba(15, 23, 42, 0.98) !important;
+            background: rgba(15, 23, 42, 0.99) !important;
             border-color: #475569 !important;
-            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(102, 126, 234, 0.3) !important;
+            box-shadow: 0 18px 40px rgba(0, 0, 0, 0.6) !important;
         }
 
         body.dark-mode .ms-search {
@@ -1201,10 +1194,7 @@
 
         window.addEventListener('DOMContentLoaded', () => {
             document.querySelectorAll('select').forEach((el) => {
-                // Don't transform filter dropdowns
-                if (el.id !== 'filterType' && el.id !== 'scheduleType') {
-                    initModernSelect(el);
-                }
+                initModernSelect(el);
             });
         });
 

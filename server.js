@@ -1526,12 +1526,31 @@ ${message}
 
 Provide your response:`;
 
-        // Call Gemini AI
+        // Call Gemini AI with retry logic
         const { GoogleGenerativeAI } = require("@google/generative-ai");
         const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
         const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
         
-        const result = await model.generateContent(prompt);
+        let result;
+        let retries = 3;
+        let delay = 1000; // Start with 1 second
+        
+        for (let i = 0; i < retries; i++) {
+            try {
+                result = await model.generateContent(prompt);
+                break; // Success, exit loop
+            } catch (error) {
+                if (i === retries - 1) throw error; // Last retry, throw error
+                if (error.message.includes('503') || error.message.includes('high demand')) {
+                    logger.info(`AI chat retry ${i + 1}/${retries} after ${delay}ms`);
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                    delay *= 2; // Exponential backoff
+                } else {
+                    throw error; // Different error, don't retry
+                }
+            }
+        }
+        
         const reply = result.response.text();
 
         logger.info('AI chat response generated', { 

@@ -193,6 +193,64 @@
             header { flex-direction: column; gap: 16px; text-align: center; }
             header h1 { font-size: 1.4rem; }
         }
+
+        /* Dark Mode Styles */
+        body.dark-mode {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%) !important;
+            color: #e2e8f0 !important;
+        }
+
+        body.dark-mode header {
+            background: rgba(30, 41, 59, 0.95) !important;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3) !important;
+        }
+
+        body.dark-mode header h1 {
+            background: linear-gradient(135deg, #a5f4fc 0%, #a5b4fc 100%) !important;
+            -webkit-background-clip: text !important;
+            -webkit-text-fill-color: transparent !important;
+        }
+
+        body.dark-mode .timer {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+        }
+
+        body.dark-mode .question-card,
+        body.dark-mode .audio-panel {
+            background: rgba(30, 41, 59, 0.95) !important;
+            border-color: #334155 !important;
+            color: #e2e8f0 !important;
+        }
+
+        body.dark-mode .question-text,
+        body.dark-mode .instructions {
+            color: #cbd5e1 !important;
+        }
+
+        body.dark-mode input[type="text"],
+        body.dark-mode input[type="radio"],
+        body.dark-mode input[type="checkbox"],
+        body.dark-mode textarea,
+        body.dark-mode select {
+            background: rgba(15, 23, 42, 0.95) !important;
+            border-color: #475569 !important;
+            color: #e2e8f0 !important;
+        }
+
+        body.dark-mode input::placeholder,
+        body.dark-mode textarea::placeholder {
+            color: #64748b !important;
+        }
+
+        body.dark-mode label {
+            color: #cbd5e1 !important;
+        }
+
+        body.dark-mode .btn,
+        body.dark-mode button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+            color: white !important;
+        }
     </style>
 </head>
 <body>

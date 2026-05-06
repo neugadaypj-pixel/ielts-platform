@@ -155,6 +155,59 @@
             .grid { grid-template-columns: 1fr; }
             .hero h1 { font-size: 2.3rem; }
         }
+
+        /* Dark Mode Styles */
+        body.dark-mode {
+            background:
+                radial-gradient(circle at top left, rgba(0,0,0,0.3), transparent 30%),
+                linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            color: #e2e8f0;
+        }
+
+        body.dark-mode .back-link {
+            color: #a5f4fc;
+        }
+
+        body.dark-mode .back-link:hover {
+            color: #67e8f9;
+        }
+
+        body.dark-mode .hero h1 {
+            color: #f1f5f9;
+        }
+
+        body.dark-mode .hero p {
+            color: #cbd5e1;
+        }
+
+        body.dark-mode .builder-note {
+            background: rgba(102, 126, 234, 0.15);
+            border-color: rgba(102, 126, 234, 0.3);
+            color: #cbd5e1;
+        }
+
+        body.dark-mode .card {
+            background: rgba(30, 41, 59, 0.95);
+            box-shadow: 0 12px 28px rgba(0, 0, 0, 0.3);
+        }
+
+        body.dark-mode .card h3 {
+            color: #f1f5f9;
+        }
+
+        body.dark-mode .card p {
+            color: #cbd5e1;
+        }
+
+        body.dark-mode .desc {
+            color: #94a3b8;
+        }
+
+        body.dark-mode .footer-note {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.12);
+            color: #cbd5e1;
+        }
     </style>
 </head>
 <body>

@@ -400,6 +400,100 @@
             color: #e2e8f0;
             border-color: #475569;
         }
+        
+        /* Comprehensive dark mode form fixes */
+        body.dark-mode input[type="text"],
+        body.dark-mode input[type="email"],
+        body.dark-mode input[type="password"],
+        body.dark-mode input[type="datetime-local"],
+        body.dark-mode input[type="date"],
+        body.dark-mode input[type="time"],
+        body.dark-mode textarea,
+        body.dark-mode select {
+            background: rgba(15, 23, 42, 0.95) !important;
+            border-color: #475569 !important;
+            color: #e2e8f0 !important;
+        }
+
+        body.dark-mode input::placeholder,
+        body.dark-mode textarea::placeholder {
+            color: #64748b !important;
+        }
+
+        body.dark-mode input:focus,
+        body.dark-mode textarea:focus,
+        body.dark-mode select:focus {
+            background: rgba(30, 41, 59, 0.98) !important;
+            border-color: #667eea !important;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2) !important;
+        }
+
+        body.dark-mode label {
+            color: #cbd5e1 !important;
+        }
+
+        body.dark-mode .ms-button {
+            background: rgba(15, 23, 42, 0.95) !important;
+            border-color: #475569 !important;
+            color: #e2e8f0 !important;
+        }
+
+        body.dark-mode .ms-button:hover {
+            background: rgba(30, 41, 59, 0.99) !important;
+            border-color: #667eea !important;
+        }
+
+        body.dark-mode .ms-panel {
+            background: rgba(15, 23, 42, 0.99) !important;
+            border-color: #475569 !important;
+            box-shadow: 0 18px 40px rgba(0, 0, 0, 0.6) !important;
+        }
+
+        body.dark-mode .ms-search {
+            background: rgba(30, 41, 59, 0.95) !important;
+            border-color: #475569 !important;
+            color: #e2e8f0 !important;
+        }
+
+        body.dark-mode .ms-options {
+            background: rgba(15, 23, 42, 0.98) !important;
+        }
+
+        body.dark-mode .ms-option {
+            color: #cbd5e1 !important;
+            background: transparent !important;
+        }
+
+        body.dark-mode .ms-option:hover {
+            background: rgba(102, 126, 234, 0.25) !important;
+            color: #a5f4fc !important;
+        }
+
+        body.dark-mode .ms-option.selected {
+            background: rgba(102, 126, 234, 0.4) !important;
+            color: #fff !important;
+        }
+
+        body.dark-mode .empty {
+            background: rgba(15, 23, 42, 0.9) !important;
+            border-color: #334155 !important;
+            color: #94a3b8 !important;
+        }
+
+        body.dark-mode th {
+            color: #cbd5e1 !important;
+            background: rgba(30, 41, 59, 0.8) !important;
+        }
+
+        body.dark-mode td {
+            color: #cbd5e1 !important;
+        }
+
+        body.dark-mode .teacher-card,
+        body.dark-mode .student-card {
+            background: rgba(30, 41, 59, 0.98) !important;
+            border-color: #334155 !important;
+        }
     </style>
     <script>
         function showToast(msg, type = 'success') {

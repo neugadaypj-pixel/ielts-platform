@@ -234,6 +234,100 @@
             .editor-grid { grid-template-columns: 1fr; gap: 24px; }
             h1 { font-size: 2rem; }
         }
+
+        /* Dark Mode Styles */
+        body.dark-mode {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            color: #e2e8f0;
+        }
+
+        body.dark-mode .container {
+            background: rgba(30, 41, 59, 0.95);
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.4);
+        }
+
+        body.dark-mode h1 {
+            background: linear-gradient(135deg, #a5f4fc 0%, #a5b4fc 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        body.dark-mode .subtitle {
+            color: #cbd5e1;
+        }
+
+        body.dark-mode .tabs {
+            border-bottom-color: #334155;
+        }
+
+        body.dark-mode .tab {
+            color: #94a3b8;
+        }
+
+        body.dark-mode .tab:hover {
+            color: #667eea;
+            background: rgba(102, 126, 234, 0.1);
+        }
+
+        body.dark-mode .tab.active {
+            color: #667eea;
+            background: rgba(102, 126, 234, 0.15);
+        }
+
+        body.dark-mode .tab-content {
+            background: rgba(15, 23, 42, 0.6);
+        }
+
+        body.dark-mode h3 {
+            color: #f1f5f9;
+        }
+
+        body.dark-mode label {
+            color: #cbd5e1;
+        }
+
+        body.dark-mode input[type="text"],
+        body.dark-mode input[type="number"],
+        body.dark-mode select,
+        body.dark-mode textarea {
+            background: rgba(15, 23, 42, 0.95) !important;
+            border-color: #475569 !important;
+            color: #e2e8f0 !important;
+        }
+
+        body.dark-mode input::placeholder,
+        body.dark-mode textarea::placeholder {
+            color: #64748b !important;
+        }
+
+        body.dark-mode input:focus,
+        body.dark-mode select:focus,
+        body.dark-mode textarea:focus {
+            border-color: #667eea !important;
+            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.2) !important;
+        }
+
+        body.dark-mode .btn-format {
+            background: rgba(15, 23, 42, 0.95);
+            color: #a5b4fc;
+            border-color: #667eea;
+        }
+
+        body.dark-mode .btn-format:hover {
+            background: rgba(30, 41, 59, 0.95);
+        }
+
+        body.dark-mode .info-box {
+            background: rgba(102, 126, 234, 0.15);
+            border-left-color: #667eea;
+            color: #cbd5e1;
+        }
+
+        body.dark-mode .image-preview {
+            border-color: #667eea;
+            background: rgba(102, 126, 234, 0.1);
+        }
     </style>
 </head>
 <body>

@@ -14,10 +14,6 @@ const userSchema = new mongoose.Schema({
         required: true,
         minlength: 6 
     },
-    plainPassword: {
-        type: String,
-        select: false // Don't include by default in queries
-    },
     role: { 
         type: String, 
         enum: ['admin', 'teacher', 'student'], 

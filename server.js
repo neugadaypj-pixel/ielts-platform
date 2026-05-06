@@ -12,6 +12,17 @@ try {
 
 const config = getConfig();
 
+// Initialize Sentry for error monitoring
+const Sentry = require('@sentry/node');
+if (process.env.SENTRY_DSN) {
+    Sentry.init({
+        dsn: process.env.SENTRY_DSN,
+        environment: process.env.NODE_ENV || 'development',
+        tracesSampleRate: 1.0,
+    });
+    console.log('✅ Sentry error monitoring initialized');
+}
+
 const express = require('express');
 const mongoose = require('mongoose');
 const path = require('path');
@@ -32,6 +43,7 @@ const { getAuthoringPageHtml } = require('./utils/builderAuthoring');
 const CONSTANTS = require('./utils/constants');
 const { validateUsername, validatePassword, validateTestTitle, validateTestType, validateObjectId, safeJSONParse, sanitizeString } = require('./utils/validation');
 const logger = require('./utils/logger');
+const xss = require('xss');
 
 if (process.env.NODE_ENV !== 'production') {
     logger.debug('B2 Configuration', {
@@ -845,7 +857,7 @@ app.post('/admin/add-teacher', isAdmin, async (req, res) => {
         if (existingUser) return res.send("Username taken. <a href='/admin/add-teacher'>Try again</a>");
 
         const hashedPassword = await bcrypt.hash(password, 10);
-        const newTeacher = new User({ username, password: hashedPassword, plainPassword: password, role: 'teacher' });
+        const newTeacher = new User({ username, password: hashedPassword, role: 'teacher' });
         await newTeacher.save();
         logger.info('Teacher created', { username, adminId: req.session.userId });
         res.send(`<h1>Success!</h1><p>Teacher '${username}' created.</p><a href='/admin'>Back</a>`);
@@ -989,7 +1001,6 @@ app.post('/teacher/add-student', isTeacher, async (req, res) => {
         const newStudent = new User({
             username: username,
             password: hashedPassword,
-            plainPassword: password,
             role: 'student',
             teacherId: req.session.userId 
         });
@@ -1701,13 +1712,12 @@ app.post('/teacher/remove-test-from-group/:groupId/:testId', isTeacher, async (r
 // --- ADMIN PASSWORD VIEWER ---
 app.get('/admin/view-password/:userId', isAdmin, async (req, res) => {
     try {
-        const user = await User.findById(req.params.userId).select('username plainPassword role');
+        const user = await User.findById(req.params.userId).select('username role');
         if (!user) return res.status(404).json({ error: 'User not found' });
         res.json({ 
             username: user.username, 
             role: user.role, 
-            password: user.plainPassword || null,
-            hasPassword: !!user.plainPassword
+            message: 'Password is encrypted and cannot be viewed. Use reset password instead.'
         });
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -1729,7 +1739,6 @@ app.post('/admin/reset-password/:userId', isAdmin, async (req, res) => {
         
         const hashedPassword = await bcrypt.hash(newPassword, 10);
         user.password = hashedPassword;
-        user.plainPassword = newPassword;
         await user.save();
         
         logger.info('Password reset by admin', { userId: req.params.userId, adminId: req.session.userId });
@@ -1742,15 +1751,14 @@ app.post('/admin/reset-password/:userId', isAdmin, async (req, res) => {
 // --- TEACHER PASSWORD VIEWER ---
 app.get('/teacher/view-password/:studentId', isTeacher, async (req, res) => {
     try {
-        const student = await User.findById(req.params.studentId).select('username plainPassword role teacherId');
+        const student = await User.findById(req.params.studentId).select('username role teacherId');
         if (!student || student.role !== 'student') return res.status(404).json({ error: 'Student not found' });
         if (req.session.userRole !== 'admin' && String(student.teacherId) !== String(req.session.userId)) {
             return res.status(403).json({ error: 'Not authorized' });
         }
         res.json({ 
-            username: student.username, 
-            password: student.plainPassword || null,
-            hasPassword: !!student.plainPassword
+            username: student.username,
+            message: 'Password is encrypted and cannot be viewed. Use reset password instead.'
         });
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -1776,7 +1784,6 @@ app.post('/teacher/reset-password/:studentId', isTeacher, async (req, res) => {
         
         const hashedPassword = await bcrypt.hash(newPassword, 10);
         student.password = hashedPassword;
-        student.plainPassword = newPassword;
         await student.save();
         
         logger.info('Password reset by teacher', { studentId: req.params.studentId, teacherId: req.session.userId });
@@ -1885,12 +1892,16 @@ app.post('/student/feedback', csrfProtection, async (req, res) => {
         const { testType, questionType, issueDescription } = req.body;
         const student = await User.findById(req.session.userId).select('username');
         
+        // Sanitize user input to prevent XSS
+        const sanitizedDescription = xss(issueDescription);
+        const sanitizedQuestionType = xss(questionType || '');
+        
         const feedback = new Feedback({
             studentId: req.session.userId,
             studentName: student.username,
             testType,
-            questionType: questionType || '',
-            issueDescription
+            questionType: sanitizedQuestionType,
+            issueDescription: sanitizedDescription
         });
         await feedback.save();
         logger.info('Feedback submitted', { studentId: req.session.userId, testType });
@@ -1932,8 +1943,11 @@ app.post('/admin/feedback/:id/reply', isAdmin, async (req, res) => {
             return res.status(400).json({ success: false, message: 'Reply message is required' });
         }
         
+        // Sanitize admin reply to prevent XSS
+        const sanitizedReply = xss(reply.trim());
+        
         const feedback = await Feedback.findByIdAndUpdate(req.params.id, { 
-            adminReply: reply.trim()
+            adminReply: sanitizedReply
         });
         
         // Create notification for student
@@ -1941,7 +1955,7 @@ app.post('/admin/feedback/:id/reply', isAdmin, async (req, res) => {
             userId: studentId,
             type: 'admin_reply',
             title: 'Admin replied to your feedback',
-            message: reply.trim(),
+            message: sanitizedReply,
             relatedId: req.params.id
         });
         
@@ -1996,7 +2010,6 @@ app.post('/settings/change-password', async (req, res) => {
         
         const hashedPassword = await bcrypt.hash(newPassword, 10);
         user.password = hashedPassword;
-        user.plainPassword = newPassword;
         await user.save();
         
         logger.info('Password changed', { userId: req.session.userId });
@@ -2259,6 +2272,11 @@ app.post('/api/notifications/mark-all-read', async (req, res) => {
 
 // Import error handlers
 const { csrfErrorHandler, errorHandler } = require('./middleware/errorHandler');
+
+// Apply Sentry error handler before custom error handlers
+if (process.env.SENTRY_DSN) {
+    app.use(Sentry.Handlers.errorHandler());
+}
 
 // Apply error handlers at the end
 app.use(csrfErrorHandler);

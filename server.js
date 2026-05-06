@@ -1414,6 +1414,96 @@ app.post('/submit-writing-test', apiLimiter, async (req, res) => {
     }
 });
 
+// --- AI FEEDBACK VIEWER ---
+app.get('/student/ai-feedback/:submissionId', async (req, res) => {
+    if(!req.session.userId) return res.redirect('/login');
+    try {
+        const submission = await Submission.findOne({
+            _id: req.params.submissionId,
+            studentId: req.session.userId
+        }).populate('testId');
+
+        if (!submission) {
+            return res.status(404).send('Submission not found or you do not have access.');
+        }
+
+        res.render('ai-feedback', { submission, test: submission.testId });
+    } catch (err) {
+        logger.error('AI feedback view error', { error: err.message });
+        res.status(500).send('Error loading AI feedback.');
+    }
+});
+
+// --- TEACHER: AI PATTERN ANALYSIS FOR STUDENT ---
+app.get('/teacher/student-patterns/:studentId', isTeacher, async (req, res) => {
+    try {
+        const student = await User.findById(req.params.studentId).select('username teacherId');
+        if (!student) {
+            return res.status(404).send('Student not found');
+        }
+
+        // Check authorization
+        if (req.session.userRole !== 'admin' && String(student.teacherId) !== String(req.session.userId)) {
+            return res.status(403).send('Not authorized');
+        }
+
+        // Get last 5 submissions
+        const submissions = await Submission.find({ studentId: req.params.studentId })
+            .populate('testId', 'title type')
+            .sort({ createdAt: -1 })
+            .limit(5);
+
+        if (submissions.length < 2) {
+            return res.send(`
+                <!DOCTYPE html>
+                <html><head><title>Pattern Analysis</title></head>
+                <body style="font-family:sans-serif;padding:40px;text-align:center;">
+                    <h1>Not Enough Data</h1>
+                    <p>Student needs at least 2 test submissions for pattern analysis.</p>
+                    <a href="/teacher-dashboard" style="color:#667eea;">Back to Dashboard</a>
+                </body></html>
+            `);
+        }
+
+        // Run AI pattern detection
+        const patternResult = await detectPatterns(req.params.studentId, submissions);
+
+        res.send(`
+            <!DOCTYPE html>
+            <html lang="en">
+            <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>Student Pattern Analysis</title>
+                <style>
+                    body { font-family: 'Segoe UI', sans-serif; background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); padding: 40px; }
+                    .container { max-width: 900px; margin: 0 auto; }
+                    .header { background: white; padding: 30px; border-radius: 20px; margin-bottom: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+                    .header h1 { font-size: 2rem; font-weight: 900; color: #1f2937; margin-bottom: 10px; }
+                    .content { background: white; padding: 32px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); line-height: 1.8; white-space: pre-wrap; }
+                    .back-btn { display: inline-block; padding: 12px 24px; background: #667eea; color: white; text-decoration: none; border-radius: 12px; font-weight: 700; margin-bottom: 20px; }
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <a href="/teacher-dashboard" class="back-btn">← Back to Dashboard</a>
+                    <div class="header">
+                        <h1>🔍 Pattern Analysis: ${student.username}</h1>
+                        <p style="color:#64748b;">AI-powered analysis of ${submissions.length} recent test submissions</p>
+                    </div>
+                    <div class="content">
+                        ${patternResult.success ? patternResult.patterns : 'Pattern analysis unavailable at this time.'}
+                    </div>
+                </div>
+            </body>
+            </html>
+        `);
+    } catch (err) {
+        logger.error('Pattern analysis error', { error: err.message });
+        res.status(500).send('Error generating pattern analysis.');
+    }
+});
+
 // --- STUDENT DASHBOARD ---
 
 app.get('/student-dashboard', async (req, res) => {

@@ -381,10 +381,18 @@
 
                                             <% if (test.submission && test.submission.lastSubmittedAt) { %>
                                                 <p style="margin-bottom: 14px;">Last saved result: <strong><%= new Date(test.submission.lastSubmittedAt).toLocaleString() %></strong></p>
+                                                <% if (test.submission.details?.aiAnalysis && (test.type === 'reading' || test.type === 'listening')) { %>
+                                                    <div style="padding:12px;background:#eef2ff;border-radius:12px;margin-bottom:14px;border-left:4px solid #667eea;">
+                                                        <p style="color:#4338ca;font-weight:700;font-size:0.9rem;margin:0;">🤖 AI Analysis Available</p>
+                                                    </div>
+                                                <% } %>
                                             <% } %>
 
                                             <div class="actions">
                                                 <a href="/view-test/<%= test._id %>" class="btn btn-primary">Open Test</a>
+                                                <% if (test.submission && test.submission.details?.aiAnalysis && (test.type === 'reading' || test.type === 'listening')) { %>
+                                                    <a href="/student/ai-feedback/<%= test.submission._id %>" class="btn" style="background:linear-gradient(135deg,#10b981,#059669);color:white;box-shadow:0 12px 26px rgba(16,185,129,0.26);">🤖 View AI Feedback</a>
+                                                <% } %>
                                             </div>
                                             <% } %>
                                         </article>

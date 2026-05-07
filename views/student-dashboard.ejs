@@ -303,6 +303,16 @@
             text-decoration: none;
             border: 3px solid rgba(255, 255, 255, 0.3);
             animation: pulse 2s infinite;
+            overflow: hidden;
+        }
+
+        .ai-chat-fab::before {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.3) 0%, transparent 60%);
+            animation: shimmer 3s infinite;
         }
 
         .ai-chat-fab:hover {
@@ -315,9 +325,68 @@
         }
 
         .ai-chat-fab .icon {
-            font-size: 2rem;
-            animation: wave 1s ease-in-out infinite;
+            position: relative;
+            z-index: 1;
         }
+
+        .ai-icon {
+            width: 36px;
+            height: 36px;
+            position: relative;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        .ai-icon-brain {
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
+
+        .brain-left, .brain-right {
+            position: absolute;
+            width: 16px;
+            height: 28px;
+            background: white;
+            border-radius: 16px 16px 8px 8px;
+        }
+
+        .brain-left {
+            left: 0;
+            animation: pulse-left 2s ease-in-out infinite;
+        }
+
+        .brain-right {
+            right: 0;
+            animation: pulse-right 2s ease-in-out infinite 0.3s;
+        }
+
+        .brain-line {
+            position: absolute;
+            background: white;
+            border-radius: 2px;
+        }
+
+        .line-1 { width: 8px; height: 2px; top: 8px; left: 4px; }
+        .line-2 { width: 6px; height: 2px; top: 14px; left: 5px; }
+        .line-3 { width: 7px; height: 2px; top: 20px; left: 4px; }
+        .line-4 { width: 8px; height: 2px; top: 8px; right: 4px; }
+        .line-5 { width: 6px; height: 2px; top: 14px; right: 5px; }
+        .line-6 { width: 7px; height: 2px; top: 20px; right: 4px; }
+
+        .spark {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: white;
+            border-radius: 50%;
+            opacity: 0;
+            animation: sparkle 2s ease-in-out infinite;
+        }
+
+        .spark-1 { top: -2px; left: 8px; animation-delay: 0s; }
+        .spark-2 { top: -2px; right: 8px; animation-delay: 0.5s; }
+        .spark-3 { bottom: -2px; left: 12px; animation-delay: 1s; }
+        .spark-4 { bottom: -2px; right: 12px; animation-delay: 1.5s; }
 
         @keyframes pulse {
             0%, 100% {
@@ -328,10 +397,29 @@
             }
         }
 
-        @keyframes wave {
-            0%, 100% { transform: rotate(0deg); }
-            25% { transform: rotate(-10deg); }
-            75% { transform: rotate(10deg); }
+        @keyframes shimmer {
+            0%, 100% { transform: rotate(0deg) scale(1); opacity: 0.3; }
+            50% { transform: rotate(180deg) scale(1.2); opacity: 0.6; }
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-4px); }
+        }
+
+        @keyframes pulse-left {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        @keyframes pulse-right {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        @keyframes sparkle {
+            0%, 100% { opacity: 0; transform: scale(0); }
+            50% { opacity: 1; transform: scale(1.5); }
         }
 
         body.dark-mode .ai-chat-fab {
@@ -481,7 +569,26 @@
 
     <!-- Floating AI Chat Button -->
     <a href="/student/ai-chat" class="ai-chat-fab" title="AI Study Coach">
-        <span class="icon">🤖</span>
+        <div class="icon">
+            <div class="ai-icon">
+                <div class="ai-icon-brain">
+                    <div class="brain-left">
+                        <div class="brain-line line-1"></div>
+                        <div class="brain-line line-2"></div>
+                        <div class="brain-line line-3"></div>
+                    </div>
+                    <div class="brain-right">
+                        <div class="brain-line line-4"></div>
+                        <div class="brain-line line-5"></div>
+                        <div class="brain-line line-6"></div>
+                    </div>
+                    <div class="spark spark-1"></div>
+                    <div class="spark spark-2"></div>
+                    <div class="spark spark-3"></div>
+                    <div class="spark spark-4"></div>
+                </div>
+            </div>
+        </div>
     </a>
 
     <script>

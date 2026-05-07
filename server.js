@@ -1475,19 +1475,31 @@ app.post('/api/ai-chat', apiLimiter, async (req, res) => {
             new Date(b.createdAt) - new Date(a.createdAt)
         );
 
-        // Build context for AI (optimized but detailed)
+        // Build context for AI (complete detailed information)
         const testHistory = submissions.map((sub, index) => {
             const date = new Date(sub.createdAt).toLocaleDateString();
             let details = `Test ${index + 1}: ${sub.testId?.title || 'Unknown'} (${sub.type})\nScore: ${sub.score}/${sub.totalQuestions} (${sub.percentage}%) - ${date}`;
             
+            // Add time management info
+            if (sub.timeRemainingText) {
+                details += `\nTime: ${sub.timeRemainingText}`;
+            }
+            
             if (sub.type === 'writing') {
                 details += `\nWords: Task 1=${sub.wordCount1 || 0}, Task 2=${sub.wordCount2 || 0}`;
-            } else if (sub.details?.incorrectSummary) {
-                details += `\nMistakes: ${sub.details.incorrectSummary.slice(0, 150)}`;
+            } else if (sub.type === 'reading' || sub.type === 'listening') {
+                // Add complete question type breakdown and mistakes
+                if (sub.details?.incorrectSummary) {
+                    details += `\n\nMistakes by Question Type:\n${sub.details.incorrectSummary}`;
+                }
+                // Add summary analysis if available
+                if (sub.details?.summaryText) {
+                    details += `\n\nDetailed Analysis:\n${sub.details.summaryText}`;
+                }
             }
             
             return details;
-        }).join('\n\n');
+        }).join('\n\n---\n\n');
 
         // Calculate statistics
         const readingTests = submissions.filter(s => s.type === 'reading');
@@ -1502,7 +1514,7 @@ app.post('/api/ai-chat', apiLimiter, async (req, res) => {
             ? Math.round(listeningTests.filter(s => s.percentage).reduce((sum, s) => sum + s.percentage, 0) / listeningTests.filter(s => s.percentage).length)
             : null;
 
-        // Build AI prompt (balanced)
+        // Build AI prompt (with complete data access)
         const prompt = `You are an expert IELTS Study Coach helping ${student.username}.
 
 IMPORTANT: You are powered by DeepSeek V4 Pro. Only mention this if specifically asked.
@@ -1516,6 +1528,12 @@ Performance Summary:
 - Listening: ${listeningTests.length} tests (Avg: ${avgListening !== null ? avgListening + '%' : 'N/A'})
 - Writing: ${writingTests.length} tests
 
+You have access to:
+- Complete question type breakdowns (multiple choice, matching, sentence completion, etc.)
+- Time management data (time remaining/spent)
+- Detailed mistake analysis for each test
+- Performance trends across multiple tests
+
 Student's Question: ${message}
 
 Guidelines:
@@ -1524,6 +1542,7 @@ Guidelines:
 - For greetings: warm welcome + ask how to help
 - Don't mention model/capabilities unless asked
 - Provide specific, actionable advice based on test history
+- When analyzing performance, reference specific question types and patterns from the data
 - Don't hallucinate or add unrequested information
 
 Response:`;

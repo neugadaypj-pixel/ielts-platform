@@ -628,8 +628,10 @@ app.get('/create-test/reading', isAdmin, (req, res) => {
     res.send(getAuthoringPageHtml('reading'));
 });
 
-app.get('/create-test/listening', isAdmin, (req, res) => {
-    res.send(getAuthoringPageHtml('listening'));
+app.get('/create-test/listening', isAdmin, csrfProtection, (req, res) => {
+    const html = getAuthoringPageHtml('listening');
+    const htmlWithCsrf = html.replace('<head>', `<head>\n<meta name="csrf-token" content="${req.csrfToken()}">`);
+    res.send(htmlWithCsrf);
 });
 
 app.get('/create-test/writing', isAdmin, (req, res) => {
@@ -637,7 +639,7 @@ app.get('/create-test/writing', isAdmin, (req, res) => {
 });
 
 // --- EDIT TEST ROUTES ---
-app.get('/edit-test/:id', isTeacher, async (req, res) => {
+app.get('/edit-test/:id', isTeacher, csrfProtection, async (req, res) => {
     try {
         const allowed = await canEditTest(req, req.params.id);
         if (!allowed) {
@@ -656,7 +658,8 @@ app.get('/edit-test/:id', isTeacher, async (req, res) => {
 
         // Send builder HTML with the test data pre-loaded
         const builderHtml = getAuthoringPageHtml(test.type, test);
-        res.send(builderHtml);
+        const htmlWithCsrf = builderHtml.replace('<head>', `<head>\n<meta name="csrf-token" content="${req.csrfToken()}">`);
+        res.send(htmlWithCsrf);
     } catch (err) {
         res.status(500).send("Error loading test for editing: " + err.message);
     }

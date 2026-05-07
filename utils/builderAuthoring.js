@@ -264,6 +264,13 @@ ${commonInjectionStyles()}
     const statusEl = document.getElementById('platformSaveStatus');
     const progressEl = document.getElementById('fileUploadProgress');
 
+    function getCookie(name) {
+        const value = '; ' + document.cookie;
+        const parts = value.split('; ' + name + '=');
+        if (parts.length === 2) return parts.pop().split(';').shift();
+        return null;
+    }
+
     function updateStatus(msg, isError = false) {
         statusEl.textContent = msg;
         statusEl.style.color = isError ? '#f44336' : '#34495e';
@@ -330,6 +337,12 @@ ${commonInjectionStyles()}
             answerKey: getVal('answer_key_json'),
             parts: { 1: getVal('q1_text'), 2: getVal('q2_text'), 3: getVal('q3_text'), 4: getVal('q4_text') }
         }));
+
+        // Get CSRF token from meta tag or cookie
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || getCookie('_csrf');
+        if (csrfToken) {
+            formData.append('_csrf', csrfToken);
+        }
 
         updateStatus(isEditMode ? 'Updating test...' : 'Uploading to server and processing...');
 

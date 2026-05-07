@@ -1357,7 +1357,7 @@ function injectQuitButton(html) {
     }
 })();
 </script>`;
-    return replaceLastLiteral(html, '</head>', `${snippet}\n</head>');
+    return replaceLastLiteral(html, '</head>', `${snippet}\n</head>`);
 }
 
 function injectReadingSubmissionHook(html, testDoc) {

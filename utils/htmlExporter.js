@@ -1997,7 +1997,11 @@ function generateWritingHtml(testDoc, parsedContent, options = {}) {
         )
         .replace(
             /model: ['"]llama-3\.3-70b-versatile['"]/g,
-            "model: 'deepseek-chat'"
+            "model: 'deepseek-v4-flash'"
+        )
+        .replace(
+            /model: ['"]llama3-70b-8192['"]/g,
+            "model: 'deepseek-v4-flash'"
         );
 
     generatedHtml = injectThemeStyles(generatedHtml);

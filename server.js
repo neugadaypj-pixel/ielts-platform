@@ -625,7 +625,9 @@ app.get('/create-test', isAdmin, (req, res) => {
 });
 
 app.get('/create-test/reading', isAdmin, csrfProtection, (req, res) => {
-    res.render('create-test-reading', { csrfToken: req.csrfToken() });
+    const html = getAuthoringPageHtml('reading');
+    const htmlWithCsrf = html.replace('<head>', `<head>\n<meta name="csrf-token" content="${req.csrfToken()}">`);
+    res.send(htmlWithCsrf);
 });
 
 app.get('/create-test/listening', isAdmin, csrfProtection, (req, res) => {

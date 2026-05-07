@@ -341,9 +341,7 @@ ${commonInjectionStyles()}
         // Get CSRF token from meta tag or cookie
         const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || getCookie('_csrf');
         console.log('CSRF Token found:', csrfToken ? 'Yes' : 'No');
-        if (csrfToken) {
-            formData.append('_csrf', csrfToken);
-        } else {
+        if (!csrfToken) {
             updateStatus('CSRF token not found. Please refresh the page.', true);
             return;
         }
@@ -355,7 +353,8 @@ ${commonInjectionStyles()}
             const response = await fetch(endpoint, {
                 method: 'POST',
                 headers: {
-                    'Accept': 'application/json'
+                    'Accept': 'application/json',
+                    'csrf-token': csrfToken
                 },
                 body: formData
             });

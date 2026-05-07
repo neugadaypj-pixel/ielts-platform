@@ -1267,7 +1267,7 @@ app.get('/view-test/:id', async (req, res) => {
 
         try {
             html = generateHTMLFromTest(access.test, {
-                groqApiKey: process.env.GROQ_API_KEY || '',
+                deepseekApiKey: process.env.DEEPSEEK_API_KEY || '',
                 studentName: access.user ? (access.user.username || '') : ''
             });
             
@@ -1342,7 +1342,7 @@ app.get('/download-test/:id', async (req, res) => {
                 : access.test;
 
             const html = generateHTMLFromTest(testForDownload, {
-                groqApiKey: process.env.GROQ_API_KEY || ''
+                deepseekApiKey: process.env.DEEPSEEK_API_KEY || ''
             });
             const stableHtml = injectPersistentStateForDownload(html, access.test);
             const safeTitle = access.test.title.replace(/[^a-z0-9]/gi, '_').toLowerCase();
@@ -1459,8 +1459,8 @@ app.post('/api/ai-chat', apiLimiter, async (req, res) => {
             return res.status(400).json({ success: false, message: 'Message is required' });
         }
 
-        // Get last 10 reading and 10 listening tests (20 total)
-        const [readingSubmissions, listeningSubmissions] = await Promise.all([
+        // Get last 10 reading, 10 listening, and 10 writing tests (30 total)
+        const [readingSubmissions, listeningSubmissions, writingSubmissions] = await Promise.all([
             Submission.find({ studentId: req.session.userId, type: 'reading' })
                 .populate('testId', 'title type')
                 .sort({ createdAt: -1 })
@@ -1468,10 +1468,14 @@ app.post('/api/ai-chat', apiLimiter, async (req, res) => {
             Submission.find({ studentId: req.session.userId, type: 'listening' })
                 .populate('testId', 'title type')
                 .sort({ createdAt: -1 })
+                .limit(10),
+            Submission.find({ studentId: req.session.userId, type: 'writing' })
+                .populate('testId', 'title type')
+                .sort({ createdAt: -1 })
                 .limit(10)
         ]);
         
-        const submissions = [...readingSubmissions, ...listeningSubmissions].sort((a, b) => 
+        const submissions = [...readingSubmissions, ...listeningSubmissions, ...writingSubmissions].sort((a, b) => 
             new Date(b.createdAt) - new Date(a.createdAt)
         );
 
@@ -1487,6 +1491,12 @@ app.post('/api/ai-chat', apiLimiter, async (req, res) => {
             
             if (sub.type === 'writing') {
                 details += `\nWords: Task 1=${sub.wordCount1 || 0}, Task 2=${sub.wordCount2 || 0}`;
+                if (sub.details?.task1Preview) {
+                    details += `\nTask 1 Preview: ${sub.details.task1Preview.slice(0, 100)}...`;
+                }
+                if (sub.details?.task2Preview) {
+                    details += `\nTask 2 Preview: ${sub.details.task2Preview.slice(0, 100)}...`;
+                }
             } else if (sub.type === 'reading' || sub.type === 'listening') {
                 // Add complete question type breakdown and mistakes
                 if (sub.details?.incorrectSummary) {
@@ -1513,25 +1523,30 @@ app.post('/api/ai-chat', apiLimiter, async (req, res) => {
         const avgListening = listeningTests.filter(s => s.percentage).length > 0
             ? Math.round(listeningTests.filter(s => s.percentage).reduce((sum, s) => sum + s.percentage, 0) / listeningTests.filter(s => s.percentage).length)
             : null;
+        
+        const avgWriting = writingTests.length > 0
+            ? Math.round(writingTests.reduce((sum, s) => (sum + (s.wordCount1 || 0) + (s.wordCount2 || 0)), 0) / writingTests.length)
+            : null;
 
         // Build AI prompt (with complete data access)
         const prompt = `You are an expert IELTS Study Coach helping ${student.username}.
 
 IMPORTANT: You are powered by DeepSeek V4 Pro. Only mention this if specifically asked.
 
-Student's Recent Test History (Last 10 Reading + 10 Listening):
+Student's Recent Test History (Last 10 Reading + 10 Listening + 10 Writing):
 ${testHistory}
 
 Performance Summary:
 - Total Tests: ${submissions.length}
 - Reading: ${readingTests.length} tests (Avg: ${avgReading !== null ? avgReading + '%' : 'N/A'})
 - Listening: ${listeningTests.length} tests (Avg: ${avgListening !== null ? avgListening + '%' : 'N/A'})
-- Writing: ${writingTests.length} tests
+- Writing: ${writingTests.length} tests (Avg words: ${avgWriting !== null ? avgWriting : 'N/A'})
 
 You have access to:
 - Complete question type breakdowns (multiple choice, matching, sentence completion, etc.)
 - Time management data (time remaining/spent)
 - Detailed mistake analysis for each test
+- Writing task previews and word counts
 - Performance trends across multiple tests
 
 Student's Question: ${message}
@@ -1543,6 +1558,7 @@ Guidelines:
 - Don't mention model/capabilities unless asked
 - Provide specific, actionable advice based on test history
 - When analyzing performance, reference specific question types and patterns from the data
+- For writing, focus on word count consistency and task completion
 - Don't hallucinate or add unrequested information
 
 Response:`;

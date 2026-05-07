@@ -1281,29 +1281,73 @@ function injectListeningHighlightFix(html) {
 
 function injectQuitButton(html) {
     const snippet = `
+<style>
+#platformQuitBtn {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 99999;
+    padding: 12px 24px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    border-radius: 999px;
+    font-weight: 800;
+    font-size: 14px;
+    cursor: pointer;
+    box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+    transition: all 0.3s ease;
+    display: none;
+}
+#platformQuitBtn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 15px 40px rgba(102, 126, 234, 0.5);
+}
+#platformQuitBtn.visible {
+    display: block;
+}
+</style>
 <script>
 (function() {
     function addQuitButton() {
+        if (document.getElementById('platformQuitBtn')) return;
+        
+        const quitBtn = document.createElement('button');
+        quitBtn.id = 'platformQuitBtn';
+        quitBtn.innerHTML = '← Back to Dashboard';
+        quitBtn.onclick = () => window.location.href = '/student-dashboard';
+        document.body.appendChild(quitBtn);
+        
+        // Show button when result modal appears or when answers are checked
         const resultModal = document.getElementById('resultModal');
-        if (!resultModal) return;
-        
-        const observer = new MutationObserver(() => {
-            if (resultModal.style.display === 'flex' && !document.getElementById('platformQuitBtn')) {
-                const quitBtn = document.createElement('button');
-                quitBtn.id = 'platformQuitBtn';
-                quitBtn.className = 'site-theme-btn';
-                quitBtn.textContent = '← Back to Dashboard';
-                quitBtn.style.cssText = 'margin-top: 20px; padding: 14px 28px; font-size: 14px;';
-                quitBtn.onclick = () => window.location.href = '/student-dashboard';
-                
-                const modalContent = resultModal.querySelector('.modal-content, .modern-modal-box');
-                if (modalContent) {
-                    modalContent.appendChild(quitBtn);
+        if (resultModal) {
+            const observer = new MutationObserver(() => {
+                if (resultModal.style.display === 'flex' || resultModal.style.display === 'block') {
+                    quitBtn.classList.add('visible');
                 }
-            }
-        });
+            });
+            observer.observe(resultModal, { attributes: true, attributeFilter: ['style'] });
+        }
         
-        observer.observe(resultModal, { attributes: true, attributeFilter: ['style'] });
+        // Also show after checkAnswers is called
+        const originalCheckAnswers = window.checkAnswers;
+        if (typeof originalCheckAnswers === 'function') {
+            window.checkAnswers = function(...args) {
+                const result = originalCheckAnswers.apply(this, args);
+                setTimeout(() => quitBtn.classList.add('visible'), 500);
+                return result;
+            };
+        }
+        
+        // For writing tests, show after submission
+        const originalSubmitTest = window.submitTest;
+        if (typeof originalSubmitTest === 'function') {
+            window.submitTest = function(...args) {
+                const result = originalSubmitTest.apply(this, args);
+                setTimeout(() => quitBtn.classList.add('visible'), 500);
+                return result;
+            };
+        }
     }
     
     if (document.readyState === 'loading') {
@@ -1313,7 +1357,7 @@ function injectQuitButton(html) {
     }
 })();
 </script>`;
-    return replaceLastLiteral(html, '</body>', `${snippet}\n</body>`);
+    return replaceLastLiteral(html, '</head>', `${snippet}\n</head>');
 }
 
 function injectReadingSubmissionHook(html, testDoc) {
@@ -1941,7 +1985,19 @@ function generateWritingHtml(testDoc, parsedContent, options = {}) {
         )
         .replace(
             /const GROQ_API_KEY = ".*?";/,
-            `const GROQ_API_KEY = "${escapeForBuilderValue(options.groqApiKey || '')}";`
+            `const DEEPSEEK_API_KEY = "${escapeForBuilderValue(options.deepseekApiKey || '')}";`
+        )
+        .replace(
+            /https:\/\/api\.groq\.com\/openai\/v1\/chat\/completions/g,
+            'https://api.deepseek.com/v1/chat/completions'
+        )
+        .replace(
+            /'Authorization': `Bearer \$\{GROQ_API_KEY\}`/g,
+            "'Authorization': `Bearer ${DEEPSEEK_API_KEY}`"
+        )
+        .replace(
+            /model: ['"]llama-3\.3-70b-versatile['"]/g,
+            "model: 'deepseek-chat'"
         );
 
     generatedHtml = injectThemeStyles(generatedHtml);

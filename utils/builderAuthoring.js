@@ -340,8 +340,12 @@ ${commonInjectionStyles()}
 
         // Get CSRF token from meta tag or cookie
         const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || getCookie('_csrf');
+        console.log('CSRF Token found:', csrfToken ? 'Yes' : 'No');
         if (csrfToken) {
             formData.append('_csrf', csrfToken);
+        } else {
+            updateStatus('CSRF token not found. Please refresh the page.', true);
+            return;
         }
 
         updateStatus(isEditMode ? 'Updating test...' : 'Uploading to server and processing...');
@@ -350,10 +354,21 @@ ${commonInjectionStyles()}
             const endpoint = isEditMode ? '/update-test/' + testId : '/create-test/listening';
             const response = await fetch(endpoint, {
                 method: 'POST',
+                headers: {
+                    'Accept': 'application/json'
+                },
                 body: formData
             });
 
-            const data = await response.json();
+            let data;
+            const contentType = response.headers.get('content-type');
+            if (contentType && contentType.includes('application/json')) {
+                data = await response.json();
+            } else {
+                const text = await response.text();
+                throw new Error(text || 'Server returned non-JSON response');
+            }
+
             if (!response.ok || !data.success) {
                 throw new Error(data.error || data.message || 'Unable to save listening test');
             }

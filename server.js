@@ -909,7 +909,7 @@ app.post('/create-test/writing', isAdmin, csrfProtection, testCreationLimiter, a
 });
 
 // --- THE UPGRADED "SAVE" ROUTE ---
-app.post('/create-test/:type', isAdmin, async (req, res) => {
+app.post('/create-test/:type', isAdmin, csrfProtection, async (req, res) => {
     try {
         const { title, content } = req.body;
         const testType = req.params.type; 

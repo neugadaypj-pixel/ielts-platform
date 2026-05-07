@@ -167,9 +167,13 @@ ${commonInjectionStyles()}
 
         try {
             const endpoint = isEditMode ? '/update-test/' + testId : '/create-test/reading';
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || getCookie('_csrf');
             const response = await fetch(endpoint, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'x-csrf-token': csrfToken
+                },
                 body: JSON.stringify({ title, content, type: 'reading', builderJson })
             });
 
@@ -354,7 +358,7 @@ ${commonInjectionStyles()}
                 method: 'POST',
                 headers: {
                     'Accept': 'application/json',
-                    'csrf-token': csrfToken
+                    'x-csrf-token': csrfToken
                 },
                 body: formData
             });
@@ -475,9 +479,13 @@ ${commonInjectionStyles()}
 
         try {
             const endpoint = isEditMode ? '/update-test/' + testId : '/create-test/writing';
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || getCookie('_csrf');
             const response = await fetch(endpoint, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'x-csrf-token': csrfToken
+                },
                 body: JSON.stringify({ title, content, type: 'writing', builderJson })
             });
 

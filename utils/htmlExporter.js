@@ -1984,16 +1984,16 @@ function generateWritingHtml(testDoc, parsedContent, options = {}) {
             `const SESSION_ID = "${stableSessionId}";`
         )
         .replace(
-            /const GROQ_API_KEY = ".*?";/,
+            /const GROQ_API_KEY = ".*?";/g,
             `const DEEPSEEK_API_KEY = "${escapeForBuilderValue(options.deepseekApiKey || '')}";`
+        )
+        .replace(
+            /GROQ_API_KEY/g,
+            'DEEPSEEK_API_KEY'
         )
         .replace(
             /https:\/\/api\.groq\.com\/openai\/v1\/chat\/completions/g,
             'https://api.deepseek.com/v1/chat/completions'
-        )
-        .replace(
-            /'Authorization': `Bearer \$\{GROQ_API_KEY\}`/g,
-            "'Authorization': `Bearer ${DEEPSEEK_API_KEY}`"
         )
         .replace(
             /model: ['"]llama-3\.3-70b-versatile['"]/g,

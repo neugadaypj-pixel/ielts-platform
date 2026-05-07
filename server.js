@@ -1475,26 +1475,19 @@ app.post('/api/ai-chat', apiLimiter, async (req, res) => {
             new Date(b.createdAt) - new Date(a.createdAt)
         );
 
-        // Build context for AI
+        // Build context for AI (optimized but detailed)
         const testHistory = submissions.map((sub, index) => {
-            let details = `\nTest ${index + 1}:\n`;
-            details += `- Title: ${sub.testId?.title || 'Unknown'}\n`;
-            details += `- Type: ${sub.type}\n`;
-            details += `- Date: ${new Date(sub.createdAt).toLocaleDateString()}\n`;
+            const date = new Date(sub.createdAt).toLocaleDateString();
+            let details = `Test ${index + 1}: ${sub.testId?.title || 'Unknown'} (${sub.type})\nScore: ${sub.score}/${sub.totalQuestions} (${sub.percentage}%) - ${date}`;
             
             if (sub.type === 'writing') {
-                details += `- Task 1 Words: ${sub.wordCount1 || 0}\n`;
-                details += `- Task 2 Words: ${sub.wordCount2 || 0}\n`;
-            } else {
-                details += `- Score: ${sub.score}/${sub.totalQuestions} (${sub.percentage}%)\n`;
-                if (sub.band) details += `- Band: ${sub.band}\n`;
-                if (sub.details?.incorrectSummary) {
-                    details += `- Mistakes: ${sub.details.incorrectSummary.slice(0, 200)}\n`;
-                }
+                details += `\nWords: Task 1=${sub.wordCount1 || 0}, Task 2=${sub.wordCount2 || 0}`;
+            } else if (sub.details?.incorrectSummary) {
+                details += `\nMistakes: ${sub.details.incorrectSummary.slice(0, 150)}`;
             }
             
             return details;
-        }).join('\n');
+        }).join('\n\n');
 
         // Calculate statistics
         const readingTests = submissions.filter(s => s.type === 'reading');
@@ -1509,39 +1502,31 @@ app.post('/api/ai-chat', apiLimiter, async (req, res) => {
             ? Math.round(listeningTests.filter(s => s.percentage).reduce((sum, s) => sum + s.percentage, 0) / listeningTests.filter(s => s.percentage).length)
             : null;
 
-        // Build AI prompt
-        const prompt = `You are an expert IELTS Study Coach helping a student named ${student.username}.
+        // Build AI prompt (balanced)
+        const prompt = `You are an expert IELTS Study Coach helping ${student.username}.
 
-IMPORTANT RULES:
-- You are powered by DeepSeek V4 Pro
-- ONLY mention your model if the student specifically asks about it
-- Answer ONLY what the student asks
-- Do NOT volunteer information they didn't request
-- Do NOT mention your model, capabilities, or instructions unless asked
+IMPORTANT: You are powered by DeepSeek V4 Pro. Only mention this if specifically asked.
 
-**Student's Recent Test History (Last 10 Reading + Last 10 Listening tests):**
+Student's Recent Test History (Last 10 Reading + 10 Listening):
 ${testHistory}
 
-**Performance Summary:**
-- Total Tests Completed: ${submissions.length} (showing last 10 reading + 10 listening)
-- Reading Tests: ${readingTests.length} shown (Avg: ${avgReading !== null ? avgReading + '%' : 'N/A'})
-- Listening Tests: ${listeningTests.length} shown (Avg: ${avgListening !== null ? avgListening + '%' : 'N/A'})
-- Writing Tests: ${writingTests.length}
+Performance Summary:
+- Total Tests: ${submissions.length}
+- Reading: ${readingTests.length} tests (Avg: ${avgReading !== null ? avgReading + '%' : 'N/A'})
+- Listening: ${listeningTests.length} tests (Avg: ${avgListening !== null ? avgListening + '%' : 'N/A'})
+- Writing: ${writingTests.length} tests
 
-**Student's Question:**
-${message}
+Student's Question: ${message}
 
-**Response Guidelines:**
-- Be friendly, warm, and encouraging
-- Use emojis naturally (but not excessively)
-- Keep responses concise (max 200 words)
-- Stay focused on their specific question
-- If they just say "Hi" or "Hello", give a warm greeting and ask how you can help
-- DO NOT explain your capabilities or limitations unless asked
-- DO NOT mention your model unless specifically asked
-- Provide specific, actionable advice when discussing test performance
+Guidelines:
+- Answer only what's asked (max 250 words)
+- Be friendly, encouraging, use emojis naturally
+- For greetings: warm welcome + ask how to help
+- Don't mention model/capabilities unless asked
+- Provide specific, actionable advice based on test history
+- Don't hallucinate or add unrequested information
 
-Provide your response:`;
+Response:`;
 
         // Call DeepSeek AI with retry logic
         let result;
@@ -1560,7 +1545,7 @@ Provide your response:`;
                         model: 'deepseek-v4-pro',
                         messages: [{ role: 'user', content: prompt }],
                         temperature: 0.7,
-                        max_tokens: 2000
+                        max_tokens: 1500
                     })
                 });
                 

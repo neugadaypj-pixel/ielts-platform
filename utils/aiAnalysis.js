@@ -15,7 +15,7 @@ async function callDeepSeek(prompt) {
             model: 'deepseek-v4-pro',
             messages: [{ role: 'user', content: prompt }],
             temperature: 0.3,
-            max_tokens: 2000
+            max_tokens: 1500
         })
     });
     
@@ -32,47 +32,39 @@ async function analyzeReadingTest(submission, test) {
         const incorrectAnswers = submission.details?.incorrectSummary || 'Not available';
         const questionTypes = extractQuestionTypes(test);
         
-        const prompt = `You are an expert IELTS Reading instructor. Analyze this student's performance:
+        const prompt = `Expert IELTS Reading instructor analyzing student performance:
 
-**Test Details:**
-- Test Title: ${test.title}
-- Total Questions: ${submission.totalQuestions}
-- Correct Answers: ${submission.score}
-- Incorrect Answers: ${submission.totalQuestions - submission.score}
-- Score: ${submission.percentage}%
-- Time Taken: ${submission.timeRemainingText || 'Not recorded'}
+Test: ${test.title}
+Score: ${submission.score}/${submission.totalQuestions} (${submission.percentage}%)
+Time: ${submission.timeRemainingText || 'Not recorded'}
+Incorrect Answers: ${incorrectAnswers.slice(0, 200)}
+Question Types: ${questionTypes}
 
-**Incorrect Answers:**
-${incorrectAnswers}
-
-**Question Types in Test:**
-${questionTypes}
-
-**Provide a detailed analysis in this EXACT format:**
+Provide detailed analysis:
 
 📊 PERFORMANCE BREAKDOWN:
-[Analyze performance by question type - which types they got right/wrong]
+[Analyze by question type - strengths and weaknesses]
 
 🎯 WEAKNESSES DETECTED:
 1. [Primary weakness with specific examples]
-2. [Secondary weakness with specific examples]
-3. [Tertiary weakness with specific examples]
+2. [Secondary weakness with examples]
+3. [Tertiary weakness with examples]
 
 💡 PERSONALIZED RECOMMENDATIONS:
 1. [Specific actionable advice]
-2. [Specific practice suggestion]
-3. [Specific study resource]
+2. [Practice suggestion]
+3. [Study resource]
 
 📈 4-WEEK IMPROVEMENT PLAN:
-Week 1: [Specific focus area and daily practice]
-Week 2: [Specific focus area and daily practice]
-Week 3: [Specific focus area and daily practice]
-Week 4: [Specific focus area and daily practice]
+Week 1: [Specific focus and daily practice]
+Week 2: [Specific focus and daily practice]
+Week 3: [Specific focus and daily practice]
+Week 4: [Specific focus and daily practice]
 
 🎯 TARGET:
 Improve from ${submission.percentage}% to [realistic target]% in 4 weeks
 
-Keep it concise, actionable, and encouraging. Focus on specific IELTS Reading strategies.`;
+Be concise, actionable, and encouraging.`;
 
         const analysis = await callDeepSeek(prompt);
         
@@ -110,23 +102,15 @@ async function analyzeListeningTest(submission, test) {
         const incorrectAnswers = submission.details?.incorrectSummary || 'Not available';
         const sectionScores = extractSectionScores(submission);
         
-        const prompt = `You are an expert IELTS Listening instructor. Analyze this student's performance:
+        const prompt = `Expert IELTS Listening instructor analyzing student performance:
 
-**Test Details:**
-- Test Title: ${test.title}
-- Total Questions: ${submission.totalQuestions}
-- Correct Answers: ${submission.score}
-- Incorrect Answers: ${submission.totalQuestions - submission.score}
-- Score: ${submission.percentage}%
-- Time Taken: ${submission.timeRemainingText || 'Not recorded'}
+Test: ${test.title}
+Score: ${submission.score}/${submission.totalQuestions} (${submission.percentage}%)
+Time: ${submission.timeRemainingText || 'Not recorded'}
+Section Performance: ${sectionScores}
+Incorrect Answers: ${incorrectAnswers.slice(0, 200)}
 
-**Section Performance:**
-${sectionScores}
-
-**Incorrect Answers:**
-${incorrectAnswers}
-
-**Provide a detailed analysis in this EXACT format:**
+Provide detailed analysis:
 
 📊 SECTION-BY-SECTION ANALYSIS:
 Section 1 (Conversation): [Performance and issues]
@@ -135,9 +119,9 @@ Section 3 (Discussion): [Performance and issues]
 Section 4 (Lecture): [Performance and issues]
 
 🎯 WEAKNESSES DETECTED:
-1. [Primary weakness - e.g., accent recognition, note-taking, focus]
-2. [Secondary weakness with specific examples]
-3. [Tertiary weakness with specific examples]
+1. [Primary weakness with examples]
+2. [Secondary weakness with examples]
+3. [Tertiary weakness with examples]
 
 💡 PERSONALIZED RECOMMENDATIONS:
 1. [Specific listening practice advice]
@@ -145,15 +129,15 @@ Section 4 (Lecture): [Performance and issues]
 3. [Accent exposure recommendation]
 
 📈 4-WEEK IMPROVEMENT PLAN:
-Week 1: [Specific focus - e.g., British accent exposure, 30 min daily]
-Week 2: [Specific focus - e.g., Section 4 practice, note-taking drills]
+Week 1: [Specific focus - e.g., British accent, 30 min daily]
+Week 2: [Specific focus - e.g., Section 4 practice]
 Week 3: [Specific focus - e.g., Multiple choice strategies]
 Week 4: [Full practice tests with review]
 
 🎯 TARGET:
 Improve from ${submission.percentage}% to [realistic target]% in 4 weeks
 
-Keep it concise, actionable, and encouraging. Focus on specific IELTS Listening strategies.`;
+Be concise, actionable, and encouraging.`;
 
         const analysis = await callDeepSeek(prompt);
         
@@ -195,39 +179,36 @@ async function detectPatterns(studentId, submissions) {
             };
         }
         
-        const submissionSummary = submissions.map((sub, index) => `
-Test ${index + 1}:
-- Type: ${sub.type}
-- Score: ${sub.score}/${sub.totalQuestions} (${sub.percentage}%)
-- Date: ${new Date(sub.createdAt).toLocaleDateString()}
-- Weaknesses: ${sub.details?.incorrectSummary || 'Not available'}
-        `).join('\n');
+        const submissionSummary = submissions.map((sub, index) => {
+            const date = new Date(sub.createdAt).toLocaleDateString();
+            const errors = sub.details?.incorrectSummary ? ` | Errors: ${sub.details.incorrectSummary.slice(0, 80)}` : '';
+            return `Test ${index + 1}: ${sub.type} - ${sub.score}/${sub.totalQuestions} (${sub.percentage}%) - ${date}${errors}`;
+        }).join('\n');
         
-        const prompt = `You are an IELTS expert analyzing a student's progress across multiple tests.
+        const prompt = `IELTS expert analyzing student progress across ${submissions.length} tests:
 
-**Student's Last ${submissions.length} Tests:**
 ${submissionSummary}
 
-**Analyze and provide:**
+Provide analysis:
 
 🔍 CONSISTENT WEAKNESSES:
-[List weaknesses that appear in 3+ tests - these are the student's core problems]
+[Weaknesses appearing in 3+ tests - core problems]
 
 📈 IMPROVEMENT TRENDS:
-[What has improved over time? Encourage the student!]
+[What improved over time - encourage student]
 
 ⚠️ STAGNANT AREAS:
-[What hasn't improved? These need urgent attention]
+[What hasn't improved - needs urgent attention]
 
 ✅ STRENGTHS TO MAINTAIN:
-[What is the student consistently good at?]
+[What student is consistently good at]
 
 💡 PRIORITY ACTION PLAN:
 1. [Most urgent area to focus on]
 2. [Second priority]
 3. [Third priority]
 
-Keep it encouraging but honest. Focus on actionable insights.`;
+Be encouraging but honest. Focus on actionable insights.`;
 
         const patterns = await callDeepSeek(prompt);
         

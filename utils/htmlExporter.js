@@ -1279,6 +1279,43 @@ function injectListeningHighlightFix(html) {
     return replaceLastLiteral(html, '</body>', `${snippet}\n</body>`);
 }
 
+function injectQuitButton(html) {
+    const snippet = `
+<script>
+(function() {
+    function addQuitButton() {
+        const resultModal = document.getElementById('resultModal');
+        if (!resultModal) return;
+        
+        const observer = new MutationObserver(() => {
+            if (resultModal.style.display === 'flex' && !document.getElementById('platformQuitBtn')) {
+                const quitBtn = document.createElement('button');
+                quitBtn.id = 'platformQuitBtn';
+                quitBtn.className = 'site-theme-btn';
+                quitBtn.textContent = '← Back to Dashboard';
+                quitBtn.style.cssText = 'margin-top: 20px; padding: 14px 28px; font-size: 14px;';
+                quitBtn.onclick = () => window.location.href = '/student-dashboard';
+                
+                const modalContent = resultModal.querySelector('.modal-content, .modern-modal-box');
+                if (modalContent) {
+                    modalContent.appendChild(quitBtn);
+                }
+            }
+        });
+        
+        observer.observe(resultModal, { attributes: true, attributeFilter: ['style'] });
+    }
+    
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', addQuitButton);
+    } else {
+        addQuitButton();
+    }
+})();
+</script>`;
+    return replaceLastLiteral(html, '</body>', `${snippet}\n</body>`);
+}
+
 function injectReadingSubmissionHook(html, testDoc) {
     const safeTestId = escapeForBuilderValue(testDoc._id);
     const snippet = `
@@ -1815,6 +1852,7 @@ function generateReadingHtml(testDoc, parsedContent, studentName) {
     html = injectThemeController(html, 'reading');
     html = injectReadingHighlightFix(html);
     html = injectReadingSubmissionHook(html, testDoc);
+    html = injectQuitButton(html);
     html = injectStudentName(html, testDoc, studentName);
     html = injectHeartbeat(html, testDoc);
     return html.trim();
@@ -1877,6 +1915,7 @@ function generateListeningHtml(testDoc, parsedContent, studentName) {
     generatedHtml = injectThemeController(generatedHtml, 'listening');
     generatedHtml = injectListeningHighlightFix(generatedHtml);
     generatedHtml = injectListeningSubmissionHook(generatedHtml, testDoc);
+    generatedHtml = injectQuitButton(generatedHtml);
     generatedHtml = injectStudentName(generatedHtml, testDoc, studentName);
     generatedHtml = injectHeartbeat(generatedHtml, testDoc);
     return generatedHtml.trim();
@@ -1909,6 +1948,7 @@ function generateWritingHtml(testDoc, parsedContent, options = {}) {
     generatedHtml = injectWebsiteThemeButton(generatedHtml, 'writing');
     generatedHtml = injectThemeController(generatedHtml, 'writing');
     generatedHtml = injectWritingSubmissionHook(generatedHtml, testDoc);
+    generatedHtml = injectQuitButton(generatedHtml);
     generatedHtml = injectStudentName(generatedHtml, testDoc, studentName);
     generatedHtml = injectHeartbeat(generatedHtml, testDoc);
     return generatedHtml.trim();

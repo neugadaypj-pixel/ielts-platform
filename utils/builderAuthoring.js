@@ -123,6 +123,13 @@ ${commonInjectionStyles()}
 
     const getVal = (id) => (document.getElementById(id) ? document.getElementById(id).value : '');
 
+    function getCookie(name) {
+        const value = '; ' + document.cookie;
+        const parts = value.split('; ' + name + '=');
+        if (parts.length === 2) return parts.pop().split(';').shift();
+        return null;
+    }
+
     function autoFormat(text) {
         if (!text) return '';
         return text.split(/\\n\\s*\\n/).map((para) => {
@@ -449,6 +456,13 @@ ${commonInjectionStyles()}
     }
 
     const getVal = (id) => (document.getElementById(id) ? document.getElementById(id).value : '');
+
+    function getCookie(name) {
+        const value = '; ' + document.cookie;
+        const parts = value.split('; ' + name + '=');
+        if (parts.length === 2) return parts.pop().split(';').shift();
+        return null;
+    }
 
     async function saveToPlatform() {
         const status = document.getElementById('platformSaveStatus');

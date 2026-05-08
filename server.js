@@ -97,7 +97,13 @@ app.use(helmet({ contentSecurityPolicy: false }));
 // --- 1. DATABASE CONNECTION ---
 mongoose.connect(process.env.MONGO_URI)
   .then(() => logger.info('Connected to MongoDB successfully'))
-  .catch(err => logger.error('Database connection error', { error: err.message, stack: err.stack }));
+  .catch(err => {
+    logger.error('Database connection error', { error: err.message, stack: err.stack });
+    process.exit(1);
+  });
+
+mongoose.connection.on('disconnected', () => logger.warn('MongoDB disconnected'));
+mongoose.connection.on('error', err => logger.error('MongoDB connection error', { error: err.message }));
 
 // --- 2. MODELS ---
 const User = require('./models/User');

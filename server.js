@@ -642,8 +642,10 @@ app.get('/create-test/listening', isAdmin, csrfProtection, (req, res) => {
     res.send(htmlWithCsrf);
 });
 
-app.get('/create-test/writing', isAdmin, (req, res) => {
-    res.send(getAuthoringPageHtml('writing'));
+app.get('/create-test/writing', isAdmin, csrfProtection, (req, res) => {
+    const html = getAuthoringPageHtml('writing');
+    const htmlWithCsrf = html.replace('<head>', `<head>\n<meta name="csrf-token" content="${req.csrfToken()}">`);
+    res.send(htmlWithCsrf);
 });
 
 // --- EDIT TEST ROUTES ---

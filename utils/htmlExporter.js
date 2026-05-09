@@ -1980,8 +1980,8 @@ function generateWritingHtml(testDoc, parsedContent, options = {}) {
 
     generatedHtml = generatedHtml
         .replace(
-            /const SESSION_ID = "ielts_writing_\d+";/,
-            `const SESSION_ID = "${stableSessionId}";`
+            /var SESSION_ID = "ielts_writing_\d+";/,
+            `var SESSION_ID = "${stableSessionId}";`
         )
         .replace(
             /const GROQ_API_KEY = ".*?";/g,
@@ -1997,11 +1997,11 @@ function generateWritingHtml(testDoc, parsedContent, options = {}) {
         )
         .replace(
             /model: ['"]llama-3\.3-70b-versatile['"]/g,
-            "model: 'deepseek-v4-flash'"
+            "model: 'deepseek-chat'"
         )
         .replace(
             /model: ['"]llama3-70b-8192['"]/g,
-            "model: 'deepseek-v4-flash'"
+            "model: 'deepseek-chat'"
         );
 
     generatedHtml = injectThemeStyles(generatedHtml);

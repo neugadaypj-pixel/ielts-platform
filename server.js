@@ -95,15 +95,26 @@ app.disable('x-powered-by');
 app.use(helmet({ contentSecurityPolicy: false }));
 
 // --- 1. DATABASE CONNECTION ---
-mongoose.connect(process.env.MONGO_URI)
-  .then(() => logger.info('Connected to MongoDB successfully'))
-  .catch(err => {
-    logger.error('Database connection error', { error: err.message, stack: err.stack });
-    process.exit(1);
-  });
+// Set mongoose connection options for better stability
+mongoose.set('strictQuery', false);
+
+// Connect to MongoDB with proper error handling
+async function connectDatabase() {
+    try {
+        await mongoose.connect(process.env.MONGO_URI, {
+            serverSelectionTimeoutMS: 5000,
+            socketTimeoutMS: 45000,
+        });
+        logger.info('Connected to MongoDB successfully');
+    } catch (err) {
+        logger.error('Database connection error', { error: err.message, stack: err.stack });
+        process.exit(1);
+    }
+}
 
 mongoose.connection.on('disconnected', () => logger.warn('MongoDB disconnected'));
 mongoose.connection.on('error', err => logger.error('MongoDB connection error', { error: err.message }));
+mongoose.connection.on('reconnected', () => logger.info('MongoDB reconnected'));
 
 // --- 2. MODELS ---
 const User = require('./models/User');
@@ -2762,23 +2773,40 @@ app.use(csrfErrorHandler);
 app.use(errorHandler);
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-    console.log(`Server is cooking at http://localhost:${PORT} 🍲`);
-    
-    // Schedule automated daily backups at 2 AM
-    if (process.env.NODE_ENV === 'production') {
-        cron.schedule('0 2 * * *', async () => {
-            console.log('🔄 Running scheduled database backup...');
-            try {
-                await backupDatabase();
-                console.log('✅ Scheduled backup completed');
-            } catch (error) {
-                console.error('❌ Scheduled backup failed:', error.message);
+
+// Start server only after database connection is established
+async function startServer() {
+    try {
+        // Connect to database first
+        await connectDatabase();
+        
+        // Then start the server
+        app.listen(PORT, () => {
+            console.log(`Server is cooking at http://localhost:${PORT} 🍲`);
+            logger.info('Server started successfully', { port: PORT });
+            
+            // Schedule automated daily backups at 2 AM
+            if (process.env.NODE_ENV === 'production') {
+                cron.schedule('0 2 * * *', async () => {
+                    console.log('🔄 Running scheduled database backup...');
+                    try {
+                        await backupDatabase();
+                        console.log('✅ Scheduled backup completed');
+                    } catch (error) {
+                        console.error('❌ Scheduled backup failed:', error.message);
+                    }
+                });
+                console.log('⏰ Automated daily backups scheduled for 2:00 AM');
             }
         });
-        console.log('⏰ Automated daily backups scheduled for 2:00 AM');
+    } catch (error) {
+        logger.error('Failed to start server', { error: error.message });
+        process.exit(1);
     }
-});
+}
+
+// Start the server
+startServer();
 
 
 

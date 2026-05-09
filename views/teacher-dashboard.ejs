@@ -1461,14 +1461,16 @@
                     </div>
                 </div>
 
-                <% // Group tests by folder first const folderMap={}; tests.forEach(test=> {
-                    const folder = test.folder || 'Uncategorized';
-                    if (!folderMap[folder]) folderMap[folder] = [];
-                    folderMap[folder].push(test);
-                    });
-                    const folderNames = Object.keys(folderMap).sort((a, b) => a === 'Uncategorized' ? 1 : b ===
-                    'Uncategorized' ? -1 : a.localeCompare(b));
-                    %>
+                <% 
+    // Group tests by folder first 
+    const folderMap = {}; 
+    tests.forEach(test => {
+        const folder = test.folder || 'Uncategorized';
+        if (!folderMap[folder]) folderMap[folder] = [];
+        folderMap[folder].push(test);
+    });
+    const folderNames = Object.keys(folderMap).sort((a, b) => a === 'Uncategorized' ? 1 : b === 'Uncategorized' ? -1 : a.localeCompare(b));
+%>
 
                     <% if (tests.length===0 && pagination.totalTests===0) { %>
                         <div class="ghost-note">No tests assigned yet.</div>
@@ -1889,7 +1891,7 @@
         </main>
 
 
-        </script>
+       
 </body>
 
 </html>

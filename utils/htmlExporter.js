@@ -144,7 +144,7 @@ function runBuilderGenerateFile(type, fields, globals, seedValue) {
     }
 
     const documentMock = {
-        addEventListener() {},
+        addEventListener() { },
         getElementById(id) {
             if (!elements[id]) {
                 elements[id] = makeElement();
@@ -155,13 +155,13 @@ function runBuilderGenerateFile(type, fields, globals, seedValue) {
             return {
                 href: '',
                 download: '',
-                click() {},
+                click() { },
                 style: {}
             };
         },
         body: {
-            appendChild() {},
-            removeChild() {}
+            appendChild() { },
+            removeChild() { }
         }
     };
 
@@ -190,7 +190,7 @@ function runBuilderGenerateFile(type, fields, globals, seedValue) {
                 return 'blob:captured-test';
             }
         },
-        setTimeout() {},
+        setTimeout() { },
         console,
         Math: createDeterministicMath(seedValue),
         btoa(value) {
@@ -805,7 +805,7 @@ function injectThemeStyles(html) {
 
 function injectWebsiteThemeButton(html, type) {
     const platformBtn = `<button class="part-btn site-theme-btn" data-off-label="Platform Theme" data-on-label="Builder Theme" onclick="toggleSiteTheme()" style="margin-right:10px;">Platform Theme</button>`;
-    
+
     if (type === 'writing') {
         // Find the theme button and add platform theme button after it
         // Note: use [\\s\\S] so it works even if the button markup spans lines.
@@ -1920,28 +1920,28 @@ function generateListeningHtml(testDoc, parsedContent, studentName) {
         /const SESSION_KEY = 'ielts_listening_\d+';/,
         `const SESSION_KEY = '${stableSessionId}';`
     );
-    
+
     // Post-process: Ensure audio URLs are available in the generated HTML
     // This reinforces the audio injection even if the builder stringified different values
     const audioPartsJson = JSON.stringify(content.audioParts || [null, null, null, null]);
     const fullAudioJson = JSON.stringify(content.fullAudio || null);
-    
+
     console.log('[Listening Generation] Audio Parts:', content.audioParts);
     console.log('[Listening Generation] Full Audio:', content.fullAudio);
     console.log('[Listening Generation] Audio Parts JSON:', audioPartsJson);
     console.log('[Listening Generation] Full Audio JSON:', fullAudioJson);
-    
+
     // Force replace audio variables if they contain actual URLs
     if (content.audioParts && content.audioParts.some(url => url)) {
         // Replace the audio data list line with our URLs - handle multiline with greedy match
         const before = generatedHtml.match(/const rawAudioDataList\s*=\s*[\[\s\S]*?\];/);
         console.log('[Listening Generation] Before replacement:', before ? before[0].substring(0, 100) : 'NO MATCH');
-        
+
         generatedHtml = generatedHtml.replace(
             /const rawAudioDataList\s*=\s*[\[\s\S]*?\];/,
             `const rawAudioDataList = ${audioPartsJson};`
         );
-        
+
         const after = generatedHtml.match(/const rawAudioDataList\s*=\s*[\[\s\S]*?\];/);
         console.log('[Listening Generation] After replacement:', after ? after[0].substring(0, 100) : 'NO MATCH');
     }

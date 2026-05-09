@@ -618,9 +618,9 @@
             color: #e0e0e0 !important;
         }
     </style>
-    <script src="/time-warning.js"></script>
-    <script src="/writing-autosave.js"></script>
-    <script src="/loading-spinner.js"></script>
+    <script src="/time-warning.js" defer></script>
+    <script src="/writing-autosave.js" defer></script>
+    <script src="/loading-spinner.js" defer></script>
 </head>
 <body>
     <div id="customAlert" class="custom-alert"></div>
@@ -723,12 +723,12 @@
     </div>
 
 <script>
-    let time = <%= timeLimit * 60 %>;
-    let isSubmitted = false;
-    let isTimeUpLocked = false;
-    let currentTask = 1;
-    const SESSION_ID = "writing_<%= testId %>";
-    const GROQ_API_KEY = '<%= groqApiKey || "" %>';
+    var time = Number("<%= typeof timeLimit !== 'undefined' && timeLimit ? timeLimit * 60 : 3600 %>");
+    var isSubmitted = false;
+    var isTimeUpLocked = false;
+    var currentTask = 1;
+    var SESSION_ID = "writing_<%= typeof testId !== 'undefined' ? testId : 'default' %>";
+    var GROQ_API_KEY = '<%= typeof groqApiKey !== "undefined" ? groqApiKey : "" %>';
 
     const resizer = document.getElementById('resizer');
     const leftSide = document.getElementById('promptPanel');

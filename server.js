@@ -2839,6 +2839,43 @@ if (process.env.SENTRY_DSN) {
 app.use(csrfErrorHandler);
 app.use(errorHandler);
 
+// --- FORCE CACHE CLEAR (for testing/debugging) ---
+app.get('/force-clear-cache', (req, res) => {
+    const keyCount = cache.keys().length;
+    cache.flushAll();
+    logger.info('Cache force cleared', { userId: req.session?.userId, keysCleared: keyCount });
+    res.send(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Cache Cleared</title>
+            <style>
+                body { font-family: Arial, sans-serif; max-width: 600px; margin: 50px auto; padding: 20px; }
+                .success { background: #d4edda; border: 1px solid #c3e6cb; color: #155724; padding: 20px; border-radius: 5px; }
+                .info { background: #d1ecf1; border: 1px solid #bee5eb; color: #0c5460; padding: 15px; border-radius: 5px; margin-top: 20px; }
+                a { color: #007bff; text-decoration: none; }
+                a:hover { text-decoration: underline; }
+            </style>
+        </head>
+        <body>
+            <div class="success">
+                <h2>✅ Cache Cleared Successfully!</h2>
+                <p><strong>${keyCount}</strong> cached items removed.</p>
+            </div>
+            <div class="info">
+                <h3>Next Steps:</h3>
+                <ol>
+                    <li>Hard refresh your browser (Ctrl+Shift+R or Cmd+Shift+R)</li>
+                    <li>Go to your writing test</li>
+                    <li>Timer and buttons should now work!</li>
+                </ol>
+                <p><a href="/admin">← Back to Admin Dashboard</a></p>
+            </div>
+        </body>
+        </html>
+    `);
+});
+
 const PORT = process.env.PORT || 3000;
 
 // Start server only after database connection is established

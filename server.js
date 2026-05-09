@@ -1173,6 +1173,73 @@ app.post('/teacher/assign-student', isTeacher, async (req, res) => {
     }
 });
 
+// Create a new group
+app.post('/teacher/create-group', isTeacher, async (req, res) => {
+    try {
+        const { groupName } = req.body;
+        
+        if (!groupName || !groupName.trim()) {
+            return res.status(400).send("Group name is required. <a href='/teacher-dashboard'>Go back</a>");
+        }
+
+        const newGroup = new Group({
+            name: groupName.trim(),
+            teacherId: req.session.userId,
+            students: [],
+            assignedTests: []
+        });
+
+        await newGroup.save();
+        logger.info('Group created', { groupId: newGroup._id, groupName: newGroup.name, teacherId: req.session.userId });
+        res.redirect('/teacher-dashboard');
+    } catch (err) {
+        logger.error('Create group error', { error: err.message, stack: err.stack, userId: req.session.userId });
+        res.status(500).send("Error creating group: " + err.message);
+    }
+});
+
+// Assign student to group (alternative endpoint)
+app.post('/teacher/assign-to-group', isTeacher, async (req, res) => {
+    const { studentId, groupId } = req.body;
+    try {
+        const [student, group] = await Promise.all([
+            User.findById(studentId),
+            Group.findById(groupId)
+        ]);
+
+        if (!student || student.role !== 'student') {
+            return res.status(404).send("Student not found. <a href='/teacher-dashboard'>Go back</a>");
+        }
+
+        if (!group) {
+            return res.status(404).send("Group not found. <a href='/teacher-dashboard'>Go back</a>");
+        }
+
+        if (req.session.userRole !== 'admin' && String(group.teacherId) !== String(req.session.userId)) {
+            return res.status(403).send("Not authorized to manage this group. <a href='/teacher-dashboard'>Go back</a>");
+        }
+
+        if (req.session.userRole !== 'admin' && String(student.teacherId) !== String(req.session.userId)) {
+            return res.status(403).send("Not authorized to assign this student. <a href='/teacher-dashboard'>Go back</a>");
+        }
+
+        // Remove from old group if exists
+        if (student.groupId && String(student.groupId) !== String(group._id)) {
+            await Group.findByIdAndUpdate(student.groupId, { $pull: { students: student._id } });
+        }
+
+        // Add to new group
+        await Group.findByIdAndUpdate(groupId, { $addToSet: { students: studentId } });
+        await User.findByIdAndUpdate(studentId, { groupId: groupId });
+        
+        logger.info('Student assigned to group', { studentId, groupId, teacherId: req.session.userId });
+        res.redirect('/teacher-dashboard');
+    } catch (err) {
+        logger.error('Assign to group error', { error: err.message, userId: req.session.userId });
+        res.status(500).send("Error assigning student to group: " + err.message);
+    }
+});
+
 
 
 app.get('/teacher/progress/:id', isTeacher, async (req, res) => {

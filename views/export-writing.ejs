@@ -874,24 +874,37 @@ Provide HTML feedback with scoring.`;
         navigator.clipboard.writeText('TASK 1:\n' + document.getElementById('input_task1').value + '\n\nTASK 2:\n' + document.getElementById('input_task2').value).then(() => alert('Copied!')).catch(() => alert('Failed'));
     }
 
-    setInterval(() => {
-        if(time > 0 && !isSubmitted) {
-            time--;
-            const m = Math.floor(time/60), s = time%60;
-            document.getElementById('timerDisplay').innerText = (m<10?'0':'')+m + ':' + (s<10?'0':'')+s;
-            localStorage.setItem(SESSION_ID + '_timer', time);
-            localStorage.setItem(SESSION_ID + '_t1', document.getElementById('input_task1').value);
-            localStorage.setItem(SESSION_ID + '_t2', document.getElementById('input_task2').value);
-        }
-    }, 1000);
+    function updateTimerDisplay() {
+        const m = Math.floor(time/60), s = time%60;
+        document.getElementById('timerDisplay').innerText = (m<10?'0':'')+m + ':' + (s<10?'0':'')+s;
+    }
 
-    window.onload = function() {
+    function startTimerInterval() {
+        setInterval(() => {
+            if(time > 0 && !isSubmitted) {
+                time--;
+                updateTimerDisplay();
+                localStorage.setItem(SESSION_ID + '_timer', time);
+                localStorage.setItem(SESSION_ID + '_t1', document.getElementById('input_task1').value);
+                localStorage.setItem(SESSION_ID + '_t2', document.getElementById('input_task2').value);
+            }
+        }, 1000);
+    }
+
+    window.addEventListener('DOMContentLoaded', function() {
+        // Restore saved data
         const savedTime = localStorage.getItem(SESSION_ID + '_timer');
         if(savedTime) time = parseInt(savedTime);
         if(localStorage.getItem(SESSION_ID + '_name')) document.getElementById('studentName').value = localStorage.getItem(SESSION_ID + '_name');
         if(localStorage.getItem(SESSION_ID + '_t1')) { document.getElementById('input_task1').value = localStorage.getItem(SESSION_ID + '_t1'); updateCount(1); }
         if(localStorage.getItem(SESSION_ID + '_t2')) { document.getElementById('input_task2').value = localStorage.getItem(SESSION_ID + '_t2'); updateCount(2); }
-    }
+        
+        // Update timer display immediately
+        updateTimerDisplay();
+        
+        // Start the countdown interval
+        startTimerInterval();
+    });
 </script>
 
 </body>

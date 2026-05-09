@@ -1,4 +1,4 @@
-require('dotenv').config(); 
+require('dotenv').config();
 
 // Validate environment variables before starting
 const { validateEnv, getConfig, logConfig } = require('./utils/config');
@@ -26,8 +26,8 @@ if (process.env.SENTRY_DSN) {
 const express = require('express');
 const mongoose = require('mongoose');
 const path = require('path');
-const bcrypt = require('bcryptjs'); 
-const session = require('express-session'); 
+const bcrypt = require('bcryptjs');
+const session = require('express-session');
 const MongoStore = require('connect-mongo').default;
 const multer = require("multer");
 const mime = require('mime-types');
@@ -43,7 +43,7 @@ const { getAuthoringPageHtml } = require('./utils/builderAuthoring');
 const { backupDatabase } = require('./backup-database');
 
 // Initialize cache (TTL = 10 minutes)
-const cache = new NodeCache({ 
+const cache = new NodeCache({
     stdTTL: 600, // 10 minutes
     checkperiod: 120, // Check for expired keys every 2 minutes
     useClones: false // Don't clone objects (faster)
@@ -126,10 +126,10 @@ const Notification = require('./models/Notification');
 
 // --- 3. MIDDLEWARE & SETTINGS ---
 app.set('view engine', 'ejs');
-app.use(express.urlencoded({ extended: true, limit: '50mb' })); 
-app.use(express.json({ limit: '50mb' })); 
-app.use(express.static('public')); 
-app.use(cookieParser()); 
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+app.use(express.json({ limit: '50mb' }));
+app.use(express.static('public'));
+app.use(cookieParser());
 
 // --- STORAGE CONFIGURATION ---
 const fs = require('fs');
@@ -211,7 +211,7 @@ const csrfProtection = csrf({ cookie: true });
 
 function isAdmin(req, res, next) {
     if (req.session.userId && req.session.userRole === 'admin') {
-        return next(); 
+        return next();
     }
     res.redirect('/login');
 }
@@ -262,12 +262,12 @@ async function getAccessibleTest(req, testId) {
     // Check cache first
     const cacheKey = `test_access_${testId}_${req.session.userId}`;
     let cachedResult = cache.get(cacheKey);
-    
+
     if (cachedResult) {
         logger.debug('Cache HIT for test access', { testId, userId: req.session.userId });
         return cachedResult;
     }
-    
+
     const [user, test] = await Promise.all([
         User.findById(req.session.userId).select('role assignedTests groupId teacherId username'),
         Test.findById(testId)
@@ -403,7 +403,7 @@ async function saveStudentSubmission({ req, payload }) {
                 } else if (normalizedType === 'listening') {
                     aiResult = await analyzeListeningTest(submission, access.test);
                 }
-                
+
                 if (aiResult && aiResult.success) {
                     submission.details.aiAnalysis = aiResult.analysis;
                     submission.details.aiAnalyzedAt = aiResult.analyzedAt;
@@ -508,39 +508,39 @@ async function saveValidatedTest({ title, type, content, builderJson, req }) {
  */
 async function handleDelete(req, res, options) {
     const { model, modelName, idParam, authCheck, preDelete, postDelete } = options;
-    
+
     if (!req.session.userId) return res.redirect('/login');
-    
+
     try {
         const id = req.params[idParam];
-        
+
         // Validate ID format
         const idValidation = validateObjectId(id);
         if (!idValidation.valid) {
-            return res.status(CONSTANTS.STATUS.BAD_REQUEST).json({ 
-                success: false, 
-                message: idValidation.error 
+            return res.status(CONSTANTS.STATUS.BAD_REQUEST).json({
+                success: false,
+                message: idValidation.error
             });
         }
 
         const doc = await model.findById(id);
         if (!doc) {
-            return res.status(CONSTANTS.STATUS.NOT_FOUND).json({ 
-                success: false, 
-                message: `${modelName} not found` 
+            return res.status(CONSTANTS.STATUS.NOT_FOUND).json({
+                success: false,
+                message: `${modelName} not found`
             });
         }
 
         // Check authorization
         const authResult = await authCheck(req, doc);
         if (!authResult.allowed) {
-            logger.warn(`Unauthorized delete attempt for ${modelName}`, { 
-                userId: req.session.userId, 
-                documentId: id 
+            logger.warn(`Unauthorized delete attempt for ${modelName}`, {
+                userId: req.session.userId,
+                documentId: id
             });
-            return res.status(CONSTANTS.STATUS.FORBIDDEN).json({ 
-                success: false, 
-                message: authResult.message || 'Not authorized' 
+            return res.status(CONSTANTS.STATUS.FORBIDDEN).json({
+                success: false,
+                message: authResult.message || 'Not authorized'
             });
         }
 
@@ -557,24 +557,24 @@ async function handleDelete(req, res, options) {
             await postDelete(doc);
         }
 
-        logger.info(`${modelName} deleted successfully`, { 
-            userId: req.session.userId, 
-            documentId: id 
+        logger.info(`${modelName} deleted successfully`, {
+            userId: req.session.userId,
+            documentId: id
         });
 
-        res.json({ 
-            success: true, 
-            message: `${modelName} deleted successfully`, 
-            redirect: req.body.redirect || '/teacher-dashboard' 
+        res.json({
+            success: true,
+            message: `${modelName} deleted successfully`,
+            redirect: req.body.redirect || '/teacher-dashboard'
         });
     } catch (err) {
-        logger.error(`Error deleting ${modelName}`, { 
+        logger.error(`Error deleting ${modelName}`, {
             error: err.message,
-            userId: req.session.userId 
+            userId: req.session.userId
         });
-        res.status(CONSTANTS.STATUS.INTERNAL_ERROR).json({ 
-            success: false, 
-            message: `Error deleting ${modelName}: ${err.message}` 
+        res.status(CONSTANTS.STATUS.INTERNAL_ERROR).json({
+            success: false,
+            message: `Error deleting ${modelName}: ${err.message}`
         });
     }
 }
@@ -585,7 +585,8 @@ app.get('/', (req, res) => {
     res.render('index', { user: req.session.username });
 });
 
-app.get('/login', csrfProtection, (req, res) => { if (req.session.userId) { const role = req.session.userRole; if (role === 'admin') return res.redirect('/admin'); if (role === 'teacher') return res.redirect('/teacher-dashboard'); if (role === 'student') return res.redirect('/student-dashboard'); } res.render('login', { csrfToken: req.csrfToken() });
+app.get('/login', csrfProtection, (req, res) => {
+    if (req.session.userId) { const role = req.session.userRole; if (role === 'admin') return res.redirect('/admin'); if (role === 'teacher') return res.redirect('/teacher-dashboard'); if (role === 'student') return res.redirect('/student-dashboard'); } res.render('login', { csrfToken: req.csrfToken() });
 });
 
 app.post('/login', loginLimiter, csrfProtection, async (req, res) => {
@@ -602,7 +603,7 @@ app.post('/login', loginLimiter, csrfProtection, async (req, res) => {
                     logger.error('Session save error', { error: err.message });
                     return res.status(500).send("Login error. Please try again.");
                 }
-                
+
                 if (user.role === 'admin') return res.redirect('/admin');
                 if (user.role === 'teacher') return res.redirect('/teacher-dashboard');
                 return res.redirect('/student-dashboard');
@@ -623,14 +624,15 @@ app.get('/logout', (req, res) => {
 
 // --- ADMIN ROUTES ---
 
-app.get('/admin', isAdmin, async (req, res) => {
+app.get('/admin', isAdmin, csrfProtection, async (req, res) => {
     try {
         const tests = await Test.find({}).sort({ type: 1, title: 1 });
         const teachers = await User.find({ role: 'teacher' }).populate('assignedTests');
         res.render('admin', {
             tests,
             teachers,
-            testsByType: groupTestsByType(tests)
+            testsByType: groupTestsByType(tests),
+            csrfToken: req.csrfToken()
         });
     } catch (err) {
         res.status(500).send("Error loading dashboard data.");
@@ -638,7 +640,7 @@ app.get('/admin', isAdmin, async (req, res) => {
 });
 
 app.get('/create-test', isAdmin, (req, res) => {
-    res.render('create-test-hub'); 
+    res.render('create-test-hub');
 });
 
 app.get('/create-test/reading', isAdmin, csrfProtection, (req, res) => {
@@ -802,14 +804,14 @@ app.post('/create-test/listening', isAdmin, csrfProtection, testCreationLimiter,
         // Validate input
         const titleValidation = validateTestTitle(req.body.title);
         if (!titleValidation.valid) {
-            return res.status(CONSTANTS.STATUS.BAD_REQUEST).json({ 
-                success: false, 
-                error: titleValidation.error 
+            return res.status(CONSTANTS.STATUS.BAD_REQUEST).json({
+                success: false,
+                error: titleValidation.error
             });
         }
 
         const audioUrls = {};
-        
+
         // 1. Upload files to B2
         if (req.files && req.files.length > 0) {
             await Promise.all(req.files.map(async (file) => {
@@ -831,9 +833,9 @@ app.post('/create-test/listening', isAdmin, csrfProtection, testCreationLimiter,
                 ? { finalHtml: source }
                 : { ...(source || {}), finalHtml: source?.finalHtml ?? source?.html ?? '' };
         }
-        
+
         const contentObj = {
-            fullAudio: finalFullAudio, 
+            fullAudio: finalFullAudio,
             audioParts: [
                 audioUrls['part1'] || null,
                 audioUrls['part2'] || null,
@@ -853,9 +855,9 @@ app.post('/create-test/listening', isAdmin, csrfProtection, testCreationLimiter,
             req
         });
 
-        logger.info('Listening test created', { 
-            testId: newTest._id, 
-            userId: req.session.userId 
+        logger.info('Listening test created', {
+            testId: newTest._id,
+            userId: req.session.userId
         });
 
         res.json({
@@ -864,13 +866,13 @@ app.post('/create-test/listening', isAdmin, csrfProtection, testCreationLimiter,
             testId: newTest._id
         });
     } catch (err) {
-        logger.error('Listening test upload error', { 
-            error: err.message, 
-            userId: req.session.userId 
+        logger.error('Listening test upload error', {
+            error: err.message,
+            userId: req.session.userId
         });
-        res.status(CONSTANTS.STATUS.INTERNAL_ERROR).json({ 
-            success: false, 
-            error: err.message 
+        res.status(CONSTANTS.STATUS.INTERNAL_ERROR).json({
+            success: false,
+            error: err.message
         });
     }
 });
@@ -931,7 +933,7 @@ app.post('/create-test/writing', isAdmin, csrfProtection, testCreationLimiter, a
 app.post('/create-test/:type', isAdmin, csrfProtection, async (req, res) => {
     try {
         const { title, content } = req.body;
-        const testType = req.params.type; 
+        const testType = req.params.type;
 
         const newTest = await saveValidatedTest({
             title,
@@ -997,7 +999,7 @@ app.post('/admin/assign-test', isAdmin, strictLimiter, async (req, res) => {
 
 // --- TEACHER ROUTES ---
 
-app.get('/teacher-dashboard', isTeacher, async (req, res) => {
+app.get('/teacher-dashboard', isTeacher, csrfProtection, async (req, res) => {
     try {
         const page = Math.max(1, parseInt(req.query.page) || 1);
         const PAGE_SIZE = 20;
@@ -1011,24 +1013,21 @@ app.get('/teacher-dashboard', isTeacher, async (req, res) => {
             User.find({ teacherId: req.session.userId, role: 'student' }).sort({ username: 1 })
         ]);
 
-        // Get total count for pagination
-        const totalTests = await Test.countDocuments({ 
-            _id: { $in: teacher.assignedTests || [] } 
+        const totalTests = await Test.countDocuments({
+            _id: { $in: teacher.assignedTests || [] }
         });
         const totalPages = Math.ceil(totalTests / PAGE_SIZE);
 
-        // Fetch only the tests for current page
-        const tests = await Test.find({ 
-            _id: { $in: teacher.assignedTests || [] } 
+        const tests = await Test.find({
+            _id: { $in: teacher.assignedTests || [] }
         })
-        .sort({ title: 1 })
-        .skip(skip)
-        .limit(PAGE_SIZE)
-        .lean();
+            .sort({ title: 1 })
+            .skip(skip)
+            .limit(PAGE_SIZE)
+            .lean();
 
-        // Get submission stats only for current page tests
         const testIds = tests.map(t => t._id);
-        const submissions = await Submission.find({ 
+        const submissions = await Submission.find({
             teacherId: req.session.userId,
             testId: { $in: testIds }
         }).select('testId studentId lastSubmittedAt');
@@ -1077,7 +1076,7 @@ app.get('/teacher-dashboard', isTeacher, async (req, res) => {
         });
 
         res.render('teacher-dashboard', {
-            teacher: { _id: teacher._id, assignedTests: [] }, // Don't send all tests
+            teacher: { _id: teacher._id, assignedTests: [] },
             tests: enrichedTests,
             testsByType: groupTestsByType(enrichedTests),
             allStudents,
@@ -1087,7 +1086,8 @@ app.get('/teacher-dashboard', isTeacher, async (req, res) => {
                 groupsCount: groups.length,
                 studentsCount: allStudents.length
             },
-            pagination: { page, totalPages, totalTests, pageSize: PAGE_SIZE }
+            pagination: { page, totalPages, totalTests, pageSize: PAGE_SIZE },
+            csrfToken: req.csrfToken()
         });
     } catch (err) {
         res.status(500).send("Error loading dashboard.");
@@ -1095,39 +1095,39 @@ app.get('/teacher-dashboard', isTeacher, async (req, res) => {
 });
 
 app.get('/teacher/add-student', isTeacher, (req, res) => {
-    res.render('add-student'); 
+    res.render('add-student');
 });
 
 app.post('/teacher/add-student', isTeacher, async (req, res) => {
     try {
         const { username, password } = req.body;
-        
+
         // Validation
         if (!username || !password) {
             return res.status(400).json({ success: false, message: "Username and password are required." });
         }
-        
+
         if (password.length < 6) {
             return res.status(400).json({ success: false, message: "Password must be at least 6 characters." });
         }
-        
+
         // Check if username already exists
         const existingUser = await User.findOne({ username });
         if (existingUser) {
             return res.status(400).json({ success: false, message: "Username already exists. Please choose a different one." });
         }
-        
+
         const hashedPassword = await bcrypt.hash(password, 10);
         const newStudent = new User({
             username: username,
             password: hashedPassword,
             role: 'student',
-            teacherId: req.session.userId 
+            teacherId: req.session.userId
         });
         await newStudent.save();
-        
-        res.json({ 
-            success: true, 
+
+        res.json({
+            success: true,
             message: `Student '${username}' created successfully!`,
             redirect: '/teacher-dashboard'
         });
@@ -1177,7 +1177,7 @@ app.post('/teacher/assign-student', isTeacher, async (req, res) => {
 app.post('/teacher/create-group', isTeacher, async (req, res) => {
     try {
         const { groupName } = req.body;
-        
+
         if (!groupName || !groupName.trim()) {
             return res.status(400).send("Group name is required. <a href='/teacher-dashboard'>Go back</a>");
         }
@@ -1231,7 +1231,7 @@ app.post('/teacher/assign-to-group', isTeacher, async (req, res) => {
         // Add to new group
         await Group.findByIdAndUpdate(groupId, { $addToSet: { students: studentId } });
         await User.findByIdAndUpdate(studentId, { groupId: groupId });
-        
+
         logger.info('Student assigned to group', { studentId, groupId, teacherId: req.session.userId });
         res.redirect('/teacher-dashboard');
     } catch (err) {
@@ -1339,19 +1339,19 @@ app.get('/teacher/progress/:id', isTeacher, async (req, res) => {
 
 // --- THE ULTIMATE STUDENT VIEWER (BUILDER-MATCHED HTML) ---
 app.get('/view-test/:id', async (req, res) => {
-    if(!req.session.userId) return res.redirect('/login');
+    if (!req.session.userId) return res.redirect('/login');
     try {
         // Check cache first
         const cacheKey = `test_html_${req.params.id}`;
         let html = cache.get(cacheKey);
-        
+
         if (html) {
             logger.debug('Cache HIT for test', { testId: req.params.id });
             return res.send(html);
         }
-        
+
         logger.debug('Cache MISS for test', { testId: req.params.id });
-        
+
         const access = await getAccessibleTest(req, req.params.id);
         if (!access.test) return res.status(404).send("Test not found.");
         if (!access.isAllowed) return res.status(403).send("Not authorized to view this test.");
@@ -1361,15 +1361,15 @@ app.get('/view-test/:id', async (req, res) => {
                 deepseekApiKey: process.env.DEEPSEEK_API_KEY || '',
                 studentName: access.user ? (access.user.username || '') : ''
             });
-            
+
             // Cache the generated HTML
             cache.set(cacheKey, html);
             logger.debug('Cached test HTML', { testId: req.params.id });
-            
+
             return res.send(html);
         } catch (generatorErr) {
             logger.error('HTML generation error', { error: generatorErr.message, stack: generatorErr.stack });
-            
+
             return res.status(500).send(`Error generating test HTML: ${generatorErr.message}`);
         }
     } catch (err) {
@@ -1381,7 +1381,7 @@ app.get('/view-test/:id', async (req, res) => {
 // --- DOWNLOAD STANDALONE HTML TEST ---
 
 app.get('/download-test/:id', async (req, res) => {
-    if(!req.session.userId) return res.redirect('/login');
+    if (!req.session.userId) return res.redirect('/login');
     try {
         const access = await getAccessibleTest(req, req.params.id);
         if (!access.test) return res.status(404).send("Test not found.");
@@ -1426,7 +1426,7 @@ app.get('/download-test/:id', async (req, res) => {
                 readingPassage: JSON.stringify(next)
             };
         }
-        
+
         try {
             const testForDownload = String(access.test.type || '').toLowerCase() === 'listening'
                 ? await inlineListeningAudio(access.test)
@@ -1442,7 +1442,7 @@ app.get('/download-test/:id', async (req, res) => {
             return res.send(stableHtml);
         } catch (generatorErr) {
             console.error('HTML generation error for download:', generatorErr);
-            
+
             return res.status(500).send(`Error generating test HTML: ${generatorErr.message}`);
         }
     } catch (err) {
@@ -1453,7 +1453,7 @@ app.get('/download-test/:id', async (req, res) => {
 
 // --- SUBMISSION CAPTURE ---
 app.post('/api/test-submissions', apiLimiter, async (req, res) => {
-    if(!req.session.userId) return res.status(401).json({ success: false, message: "Not logged in" });
+    if (!req.session.userId) return res.status(401).json({ success: false, message: "Not logged in" });
     try {
         const result = await saveStudentSubmission({
             req,
@@ -1472,7 +1472,7 @@ app.post('/api/test-submissions', apiLimiter, async (req, res) => {
 });
 
 app.post('/submit-writing-test', apiLimiter, async (req, res) => {
-    if(!req.session.userId) return res.status(401).json({ success: false, message: "Not logged in" });
+    if (!req.session.userId) return res.status(401).json({ success: false, message: "Not logged in" });
     try {
         const { testId, studentName, task1, task2, wordCount1, wordCount2, timeTaken } = req.body;
         const result = await saveStudentSubmission({
@@ -1507,7 +1507,7 @@ app.post('/submit-writing-test', apiLimiter, async (req, res) => {
 
 // --- AI CHAT FOR STUDENTS ---
 app.get('/student/ai-chat', async (req, res) => {
-    if(!req.session.userId) return res.redirect('/login');
+    if (!req.session.userId) return res.redirect('/login');
     try {
         const student = await User.findById(req.session.userId).select('username role');
         if (!student || student.role !== 'student') {
@@ -1526,9 +1526,9 @@ app.get('/student/ai-chat', async (req, res) => {
                 : null
         };
 
-        res.render('ai-chat', { 
+        res.render('ai-chat', {
             studentName: student.username,
-            stats 
+            stats
         });
     } catch (err) {
         logger.error('AI chat page error', { error: err.message });
@@ -1537,8 +1537,8 @@ app.get('/student/ai-chat', async (req, res) => {
 });
 
 app.post('/api/ai-chat', apiLimiter, async (req, res) => {
-    if(!req.session.userId) return res.status(401).json({ success: false, message: 'Not logged in' });
-    
+    if (!req.session.userId) return res.status(401).json({ success: false, message: 'Not logged in' });
+
     try {
         const student = await User.findById(req.session.userId).select('username role');
         if (!student || student.role !== 'student') {
@@ -1565,8 +1565,8 @@ app.post('/api/ai-chat', apiLimiter, async (req, res) => {
                 .sort({ createdAt: -1 })
                 .limit(10)
         ]);
-        
-        const submissions = [...readingSubmissions, ...listeningSubmissions, ...writingSubmissions].sort((a, b) => 
+
+        const submissions = [...readingSubmissions, ...listeningSubmissions, ...writingSubmissions].sort((a, b) =>
             new Date(b.createdAt) - new Date(a.createdAt)
         );
 
@@ -1574,12 +1574,12 @@ app.post('/api/ai-chat', apiLimiter, async (req, res) => {
         const testHistory = submissions.map((sub, index) => {
             const date = new Date(sub.createdAt).toLocaleDateString();
             let details = `Test ${index + 1}: ${sub.testId?.title || 'Unknown'} (${sub.type})\nScore: ${sub.score}/${sub.totalQuestions} (${sub.percentage}%) - ${date}`;
-            
+
             // Add time management info
             if (sub.timeRemainingText) {
                 details += `\nTime: ${sub.timeRemainingText}`;
             }
-            
+
             if (sub.type === 'writing') {
                 details += `\nWords: Task 1=${sub.wordCount1 || 0}, Task 2=${sub.wordCount2 || 0}`;
                 if (sub.details?.task1Preview) {
@@ -1598,7 +1598,7 @@ app.post('/api/ai-chat', apiLimiter, async (req, res) => {
                     details += `\n\nDetailed Analysis:\n${sub.details.summaryText}`;
                 }
             }
-            
+
             return details;
         }).join('\n\n---\n\n');
 
@@ -1606,15 +1606,15 @@ app.post('/api/ai-chat', apiLimiter, async (req, res) => {
         const readingTests = submissions.filter(s => s.type === 'reading');
         const listeningTests = submissions.filter(s => s.type === 'listening');
         const writingTests = submissions.filter(s => s.type === 'writing');
-        
+
         const avgReading = readingTests.filter(s => s.percentage).length > 0
             ? Math.round(readingTests.filter(s => s.percentage).reduce((sum, s) => sum + s.percentage, 0) / readingTests.filter(s => s.percentage).length)
             : null;
-        
+
         const avgListening = listeningTests.filter(s => s.percentage).length > 0
             ? Math.round(listeningTests.filter(s => s.percentage).reduce((sum, s) => sum + s.percentage, 0) / listeningTests.filter(s => s.percentage).length)
             : null;
-        
+
         const avgWriting = writingTests.length > 0
             ? Math.round(writingTests.reduce((sum, s) => (sum + (s.wordCount1 || 0) + (s.wordCount2 || 0)), 0) / writingTests.length)
             : null;
@@ -1658,7 +1658,7 @@ Response:`;
         let result;
         let retries = 3;
         let delay = 1000;
-        
+
         for (let i = 0; i < retries; i++) {
             try {
                 const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
@@ -1674,12 +1674,12 @@ Response:`;
                         max_tokens: 1500
                     })
                 });
-                
+
                 if (!response.ok) {
                     const error = await response.json();
                     throw new Error(error.error?.message || 'DeepSeek API error');
                 }
-                
+
                 result = await response.json();
                 break;
             } catch (error) {
@@ -1689,31 +1689,31 @@ Response:`;
                 delay *= 2;
             }
         }
-        
+
         const reply = result.choices[0].message.content;
 
-        logger.info('AI chat response generated', { 
+        logger.info('AI chat response generated', {
             studentId: req.session.userId,
             messageLength: message.length,
             replyLength: reply.length
         });
 
-        res.json({ 
-            success: true, 
+        res.json({
+            success: true,
             reply: reply
         });
     } catch (err) {
         logger.error('AI chat error', { error: err.message, stack: err.stack });
-        res.status(500).json({ 
-            success: false, 
-            message: 'AI chat error: ' + err.message 
+        res.status(500).json({
+            success: false,
+            message: 'AI chat error: ' + err.message
         });
     }
 });
 
 // --- AI FEEDBACK VIEWER ---
 app.get('/student/ai-feedback/:submissionId', async (req, res) => {
-    if(!req.session.userId) return res.redirect('/login');
+    if (!req.session.userId) return res.redirect('/login');
     try {
         const submission = await Submission.findOne({
             _id: req.params.submissionId,
@@ -1804,7 +1804,7 @@ app.get('/teacher/student-patterns/:studentId', isTeacher, async (req, res) => {
 // --- STUDENT DASHBOARD ---
 
 app.get('/student-dashboard', async (req, res) => {
-    if(!req.session.userId) return res.redirect('/login');
+    if (!req.session.userId) return res.redirect('/login');
     try {
         const page = Math.max(1, parseInt(req.query.page) || 1);
         const search = (req.query.search || '').trim();
@@ -1825,7 +1825,7 @@ app.get('/student-dashboard', async (req, res) => {
         let allTests = student.groupId ? student.groupId.assignedTests : [];
         const now = new Date();
         const scheduledTests = [];
-        
+
         // Process scheduled tests
         if (student.groupId && student.groupId.testSchedule) {
             student.groupId.testSchedule.forEach(schedule => {
@@ -1840,14 +1840,14 @@ app.get('/student-dashboard', async (req, res) => {
                     });
                 }
             });
-            
+
             const scheduledTestIds = new Set(scheduledTests.map(t => String(t._id)));
             allTests = allTests.filter(test => !scheduledTestIds.has(String(test._id)));
         }
 
         // Apply search filter
         if (search) {
-            allTests = allTests.filter(test => 
+            allTests = allTests.filter(test =>
                 test.title.toLowerCase().includes(search.toLowerCase())
             );
         }
@@ -1862,12 +1862,12 @@ app.get('/student-dashboard', async (req, res) => {
         const total = combinedTests.length;
         const totalPages = Math.ceil(total / PAGE_SIZE);
         const tests = combinedTests.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
-        
+
         const groupName = student.groupId ? student.groupId.name : "No Group Assigned";
-        res.render('student-dashboard', { 
-            student, 
-            tests, 
-            testsByType: groupTestsByType(tests), 
+        res.render('student-dashboard', {
+            student,
+            tests,
+            testsByType: groupTestsByType(tests),
             groupName,
             pagination: { page, totalPages, total, search }
         });
@@ -1905,7 +1905,7 @@ function pushToTeachers(testId) {
     const clients = sseClients.get(testId);
     if (!clients || clients.size === 0) return;
     const payload = `data: ${JSON.stringify({ students: getActiveStudents(testId) })}\n\n`;
-    clients.forEach(res => { try { res.write(payload); } catch(e) {} });
+    clients.forEach(res => { try { res.write(payload); } catch (e) { } });
 }
 
 app.post('/api/heartbeat', apiLimiter, async (req, res) => {
@@ -1997,8 +1997,8 @@ app.post('/delete-test/:id', csrfProtection, async (req, res) => {
         idParam: 'id',
         authCheck: async (req, test) => {
             const user = await User.findById(req.session.userId);
-            const isAllowed = user.role === CONSTANTS.ROLES.ADMIN || 
-                             (user.role === CONSTANTS.ROLES.TEACHER && test.createdBy.toString() === req.session.userId);
+            const isAllowed = user.role === CONSTANTS.ROLES.ADMIN ||
+                (user.role === CONSTANTS.ROLES.TEACHER && test.createdBy.toString() === req.session.userId);
             return {
                 allowed: isAllowed,
                 message: 'Not authorized to delete this test'
@@ -2009,7 +2009,7 @@ app.post('/delete-test/:id', csrfProtection, async (req, res) => {
             await Group.updateMany({ assignedTests: test._id }, { $pull: { assignedTests: test._id } });
             await User.updateMany({ assignedTests: test._id }, { $pull: { assignedTests: test._id } });
             await Submission.deleteMany({ testId: test._id });
-            
+
             // Clear cache for this test
             cache.del(`test_html_${test._id}`);
             cache.keys().forEach(key => {
@@ -2034,7 +2034,7 @@ app.post('/delete-student/:id', csrfProtection, async (req, res) => {
             }
 
             const user = await User.findById(req.session.userId);
-            
+
             if (user.role === CONSTANTS.ROLES.ADMIN) {
                 return { allowed: true };
             }
@@ -2044,9 +2044,9 @@ app.post('/delete-student/:id', csrfProtection, async (req, res) => {
             }
 
             if (!student.teacherId || student.teacherId.toString() !== req.session.userId) {
-                return { 
-                    allowed: false, 
-                    message: CONSTANTS.MESSAGES.CANNOT_DELETE_OTHER_TEACHERS_STUDENTS 
+                return {
+                    allowed: false,
+                    message: CONSTANTS.MESSAGES.CANNOT_DELETE_OTHER_TEACHERS_STUDENTS
                 };
             }
 
@@ -2085,15 +2085,15 @@ app.post('/delete-teacher/:id', csrfProtection, async (req, res) => {
             // Find all tests created by this teacher
             const teacherTests = await Test.find({ createdBy: teacher._id });
             const testIds = teacherTests.map(t => t._id);
-            
+
             // Remove tests from all groups
             if (testIds.length > 0) {
                 await Group.updateMany(
-                    { assignedTests: { $in: testIds } }, 
+                    { assignedTests: { $in: testIds } },
                     { $pull: { assignedTests: { $in: testIds } } }
                 );
                 await User.updateMany(
-                    { assignedTests: { $in: testIds } }, 
+                    { assignedTests: { $in: testIds } },
                     { $pull: { assignedTests: { $in: testIds } } }
                 );
             }
@@ -2109,14 +2109,14 @@ app.post('/delete-group/:id', csrfProtection, async (req, res) => {
         idParam: 'id',
         authCheck: async (req, group) => {
             const user = await User.findById(req.session.userId);
-            
+
             if (user.role === CONSTANTS.ROLES.ADMIN) {
                 return { allowed: true };
             }
 
-            const isTeacherOwner = user.role === CONSTANTS.ROLES.TEACHER && 
-                                   group.teacherId.toString() === req.session.userId;
-            
+            const isTeacherOwner = user.role === CONSTANTS.ROLES.TEACHER &&
+                group.teacherId.toString() === req.session.userId;
+
             return {
                 allowed: isTeacherOwner,
                 message: 'Not authorized to delete this group'
@@ -2131,62 +2131,62 @@ app.post('/delete-group/:id', csrfProtection, async (req, res) => {
 
 // Remove a student from a group (keep account, just remove from group)
 app.post('/remove-student-from-group/:groupId/:studentId', async (req, res) => {
-    if(!req.session.userId) return res.redirect('/login');
+    if (!req.session.userId) return res.redirect('/login');
     try {
         // Validate IDs
         const groupValidation = validateObjectId(req.params.groupId);
         const studentValidation = validateObjectId(req.params.studentId);
 
         if (!groupValidation.valid || !studentValidation.valid) {
-            return res.status(CONSTANTS.STATUS.BAD_REQUEST).json({ 
-                success: false, 
-                message: 'Invalid ID format' 
+            return res.status(CONSTANTS.STATUS.BAD_REQUEST).json({
+                success: false,
+                message: 'Invalid ID format'
             });
         }
 
         const group = await Group.findById(req.params.groupId);
         if (!group) {
-            return res.status(CONSTANTS.STATUS.NOT_FOUND).json({ 
-                success: false, 
-                message: CONSTANTS.MESSAGES.GROUP_NOT_FOUND 
+            return res.status(CONSTANTS.STATUS.NOT_FOUND).json({
+                success: false,
+                message: CONSTANTS.MESSAGES.GROUP_NOT_FOUND
             });
         }
-        
+
         const user = await User.findById(req.session.userId);
-        
+
         // Check authorization
-        if (user.role !== CONSTANTS.ROLES.ADMIN && 
+        if (user.role !== CONSTANTS.ROLES.ADMIN &&
             (user.role !== CONSTANTS.ROLES.TEACHER || group.teacherId.toString() !== req.session.userId)) {
-            logger.warn('Unauthorized attempt to remove student from group', { 
-                userId: req.session.userId 
+            logger.warn('Unauthorized attempt to remove student from group', {
+                userId: req.session.userId
             });
-            return res.status(CONSTANTS.STATUS.FORBIDDEN).json({ 
-                success: false, 
-                message: 'Not authorized to remove students from this group' 
+            return res.status(CONSTANTS.STATUS.FORBIDDEN).json({
+                success: false,
+                message: 'Not authorized to remove students from this group'
             });
         }
-        
+
         // Remove student from group
         await Group.findByIdAndUpdate(req.params.groupId, { $pull: { students: req.params.studentId } });
         await User.findByIdAndUpdate(req.params.studentId, { $unset: { groupId: 1 } });
-        
-        logger.info('Student removed from group', { 
-            userId: req.session.userId, 
-            studentId: req.params.studentId 
+
+        logger.info('Student removed from group', {
+            userId: req.session.userId,
+            studentId: req.params.studentId
         });
 
-        res.json({ 
-            success: true, 
-            message: CONSTANTS.MESSAGES.STUDENT_REMOVED_FROM_GROUP, 
-            redirect: req.body.redirect || '/teacher-dashboard' 
+        res.json({
+            success: true,
+            message: CONSTANTS.MESSAGES.STUDENT_REMOVED_FROM_GROUP,
+            redirect: req.body.redirect || '/teacher-dashboard'
         });
     } catch (err) {
-        logger.error('Error removing student from group', { 
-            error: err.message 
+        logger.error('Error removing student from group', {
+            error: err.message
         });
-        res.status(CONSTANTS.STATUS.INTERNAL_ERROR).json({ 
-            success: false, 
-            message: 'Error removing student: ' + err.message 
+        res.status(CONSTANTS.STATUS.INTERNAL_ERROR).json({
+            success: false,
+            message: 'Error removing student: ' + err.message
         });
     }
 });
@@ -2222,9 +2222,9 @@ app.get('/admin/view-password/:userId', isAdmin, async (req, res) => {
     try {
         const user = await User.findById(req.params.userId).select('username role');
         if (!user) return res.status(404).json({ error: 'User not found' });
-        res.json({ 
-            username: user.username, 
-            role: user.role, 
+        res.json({
+            username: user.username,
+            role: user.role,
             message: 'Password is encrypted and cannot be viewed. Use reset password instead.'
         });
     } catch (err) {
@@ -2235,20 +2235,20 @@ app.get('/admin/view-password/:userId', isAdmin, async (req, res) => {
 app.post('/admin/reset-password/:userId', isAdmin, async (req, res) => {
     try {
         const { newPassword } = req.body;
-        
+
         if (!newPassword || newPassword.length < 6) {
             return res.status(400).json({ success: false, message: 'Password must be at least 6 characters' });
         }
-        
+
         const user = await User.findById(req.params.userId);
         if (!user) {
             return res.status(404).json({ success: false, message: 'User not found' });
         }
-        
+
         const hashedPassword = await bcrypt.hash(newPassword, 10);
         user.password = hashedPassword;
         await user.save();
-        
+
         logger.info('Password reset by admin', { userId: req.params.userId, adminId: req.session.userId });
         res.json({ success: true, message: 'Password reset successfully', password: newPassword });
     } catch (err) {
@@ -2264,7 +2264,7 @@ app.get('/teacher/view-password/:studentId', isTeacher, async (req, res) => {
         if (req.session.userRole !== 'admin' && String(student.teacherId) !== String(req.session.userId)) {
             return res.status(403).json({ error: 'Not authorized' });
         }
-        res.json({ 
+        res.json({
             username: student.username,
             message: 'Password is encrypted and cannot be viewed. Use reset password instead.'
         });
@@ -2276,24 +2276,24 @@ app.get('/teacher/view-password/:studentId', isTeacher, async (req, res) => {
 app.post('/teacher/reset-password/:studentId', isTeacher, async (req, res) => {
     try {
         const { newPassword } = req.body;
-        
+
         if (!newPassword || newPassword.length < 6) {
             return res.status(400).json({ success: false, message: 'Password must be at least 6 characters' });
         }
-        
+
         const student = await User.findById(req.params.studentId);
         if (!student || student.role !== 'student') {
             return res.status(404).json({ success: false, message: 'Student not found' });
         }
-        
+
         if (req.session.userRole !== 'admin' && String(student.teacherId) !== String(req.session.userId)) {
             return res.status(403).json({ success: false, message: 'Not authorized' });
         }
-        
+
         const hashedPassword = await bcrypt.hash(newPassword, 10);
         student.password = hashedPassword;
         await student.save();
-        
+
         logger.info('Password reset by teacher', { studentId: req.params.studentId, teacherId: req.session.userId });
         res.json({ success: true, message: 'Password reset successfully', password: newPassword });
     } catch (err) {
@@ -2306,7 +2306,7 @@ app.post('/admin/bulk-delete', isAdmin, async (req, res) => {
     try {
         const { type, ids } = req.body;
         if (!Array.isArray(ids) || ids.length === 0) return res.status(400).json({ success: false, message: 'No items selected' });
-        
+
         let deleted = 0;
         if (type === 'test') {
             await Test.deleteMany({ _id: { $in: ids } });
@@ -2338,16 +2338,16 @@ app.post('/teacher/bulk-delete-students', isTeacher, async (req, res) => {
     try {
         const { ids } = req.body;
         if (!Array.isArray(ids) || ids.length === 0) return res.status(400).json({ success: false, message: 'No students selected' });
-        
+
         const students = await User.find({ _id: { $in: ids }, role: 'student', teacherId: req.session.userId });
         const validIds = students.map(s => s._id);
-        
+
         for (const student of students) {
             if (student.groupId) await Group.findByIdAndUpdate(student.groupId, { $pull: { students: student._id } });
             await Submission.deleteMany({ studentId: student._id });
         }
         await User.deleteMany({ _id: { $in: validIds } });
-        
+
         logger.info('Bulk student delete', { count: validIds.length, teacherId: req.session.userId });
         res.json({ success: true, message: `${validIds.length} student(s) deleted successfully` });
     } catch (err) {
@@ -2361,11 +2361,11 @@ app.get('/api/search-tests', isTeacher, async (req, res) => {
         const query = (req.query.q || '').trim();
         const type = req.query.type || '';
         const teacher = await User.findById(req.session.userId).select('assignedTests');
-        
+
         let filter = { _id: { $in: teacher.assignedTests || [] } };
         if (query) filter.title = { $regex: query, $options: 'i' };
         if (type) filter.type = type;
-        
+
         const tests = await Test.find(filter).select('_id title type').limit(50);
         res.json({ tests });
     } catch (err) {
@@ -2381,7 +2381,7 @@ app.get('/teacher/analytics', isTeacher, async (req, res) => {
             Test.find({ createdBy: req.session.userId }).select('title type'),
             User.find({ teacherId: req.session.userId, role: 'student' }).select('username')
         ]);
-        
+
         res.render('analytics', { submissions, tests, students });
     } catch (err) {
         res.status(500).send('Error loading analytics');
@@ -2399,11 +2399,11 @@ app.post('/student/feedback', csrfProtection, async (req, res) => {
     try {
         const { testType, questionType, issueDescription } = req.body;
         const student = await User.findById(req.session.userId).select('username');
-        
+
         // Sanitize user input to prevent XSS
         const sanitizedDescription = xss(issueDescription);
         const sanitizedQuestionType = xss(questionType || '');
-        
+
         const feedback = new Feedback({
             studentId: req.session.userId,
             studentName: student.username,
@@ -2432,8 +2432,8 @@ app.get('/admin/feedback', isAdmin, async (req, res) => {
 app.post('/admin/feedback/:id/resolve', isAdmin, async (req, res) => {
     try {
         const { adminNotes, adminReply } = req.body;
-        await Feedback.findByIdAndUpdate(req.params.id, { 
-            status: 'resolved', 
+        await Feedback.findByIdAndUpdate(req.params.id, {
+            status: 'resolved',
             adminNotes,
             adminReply: adminReply || null
         });
@@ -2450,14 +2450,14 @@ app.post('/admin/feedback/:id/reply', isAdmin, async (req, res) => {
         if (!reply || !reply.trim()) {
             return res.status(400).json({ success: false, message: 'Reply message is required' });
         }
-        
+
         // Sanitize admin reply to prevent XSS
         const sanitizedReply = xss(reply.trim());
-        
-        const feedback = await Feedback.findByIdAndUpdate(req.params.id, { 
+
+        const feedback = await Feedback.findByIdAndUpdate(req.params.id, {
             adminReply: sanitizedReply
         });
-        
+
         // Create notification for student
         await Notification.create({
             userId: studentId,
@@ -2466,11 +2466,11 @@ app.post('/admin/feedback/:id/reply', isAdmin, async (req, res) => {
             message: sanitizedReply,
             relatedId: req.params.id
         });
-        
-        logger.info('Reply sent to student', { 
-            feedbackId: req.params.id, 
-            studentId, 
-            adminId: req.session.userId 
+
+        logger.info('Reply sent to student', {
+            feedbackId: req.params.id,
+            studentId,
+            adminId: req.session.userId
         });
         res.json({ success: true, message: 'Reply sent successfully' });
     } catch (err) {
@@ -2484,12 +2484,12 @@ app.get('/settings', async (req, res) => {
     try {
         const user = await User.findById(req.session.userId).select('username role createdAt');
         let stats = { totalTests: 0 };
-        
+
         if (user.role === 'student') {
             const submissions = await Submission.find({ studentId: req.session.userId });
             stats.totalTests = submissions.length;
         }
-        
+
         res.render('settings', { user, stats });
     } catch (err) {
         res.status(500).send('Error loading settings');
@@ -2500,26 +2500,26 @@ app.post('/settings/change-password', async (req, res) => {
     if (!req.session.userId) return res.status(401).json({ success: false, message: 'Not logged in' });
     try {
         const { currentPassword, newPassword } = req.body;
-        
+
         if (!currentPassword || !newPassword) {
             return res.status(400).json({ success: false, message: 'All fields required' });
         }
-        
+
         if (newPassword.length < 6) {
             return res.status(400).json({ success: false, message: 'New password must be at least 6 characters' });
         }
-        
+
         const user = await User.findById(req.session.userId);
         const isMatch = await bcrypt.compare(currentPassword, user.password);
-        
+
         if (!isMatch) {
             return res.status(400).json({ success: false, message: 'Current password is incorrect' });
         }
-        
+
         const hashedPassword = await bcrypt.hash(newPassword, 10);
         user.password = hashedPassword;
         await user.save();
-        
+
         logger.info('Password changed', { userId: req.session.userId });
         res.json({ success: true, message: 'Password changed successfully' });
     } catch (err) {
@@ -2535,7 +2535,7 @@ app.get('/settings/export-history', async (req, res) => {
         const submissions = await Submission.find({ studentId: req.session.userId })
             .populate('testId', 'title type')
             .sort({ createdAt: -1 });
-        
+
         const history = submissions.map(sub => ({
             testTitle: sub.testId?.title || 'Unknown Test',
             testType: sub.testId?.type || 'N/A',
@@ -2546,12 +2546,12 @@ app.get('/settings/export-history', async (req, res) => {
             submittedAt: sub.lastSubmittedAt || sub.createdAt,
             attemptCount: sub.attemptCount || 1
         }));
-        
+
         const csv = [
             'Test Title,Type,Score,Total Questions,Percentage,Band,Submitted At,Attempts',
             ...history.map(h => `"${h.testTitle}",${h.testType},${h.score},${h.totalQuestions},${h.percentage},${h.band},${new Date(h.submittedAt).toLocaleString()},${h.attemptCount}`)
         ].join('\n');
-        
+
         res.setHeader('Content-Type', 'text/csv');
         res.setHeader('Content-Disposition', `attachment; filename="${user.username}_test_history.csv"`);
         res.send(csv);
@@ -2567,10 +2567,10 @@ app.get('/settings/export-report', async (req, res) => {
         const submissions = await Submission.find({ studentId: req.session.userId })
             .populate('testId', 'title type')
             .sort({ createdAt: -1 });
-        
+
         const totalTests = submissions.length;
         const avgScore = submissions.filter(s => s.percentage).reduce((sum, s) => sum + s.percentage, 0) / (submissions.filter(s => s.percentage).length || 1);
-        
+
         const html = `
 <!DOCTYPE html>
 <html>
@@ -2638,7 +2638,7 @@ app.get('/settings/export-report', async (req, res) => {
 </body>
 </html>
         `;
-        
+
         res.setHeader('Content-Type', 'text/html');
         res.setHeader('Content-Disposition', `attachment; filename="${user.username}_progress_report.html"`);
         res.send(html);
@@ -2658,14 +2658,14 @@ app.post('/teacher/assign-test-group', isTeacher, async (req, res) => {
         }
         const access = await getAccessibleTest(req, testId);
         if (!access.test || !access.isAllowed) return res.status(403).send("You do not have access to this test.");
-        
+
         await Group.findByIdAndUpdate(groupId, { $addToSet: { assignedTests: testId } });
-        
+
         if (scheduleType === 'scheduled' && availableFrom) {
             await Group.findByIdAndUpdate(groupId, {
                 $push: { testSchedule: { testId, availableFrom: new Date(availableFrom) } }
             });
-            
+
             // Notify students about scheduled test
             const notifications = group.students.map(student => ({
                 userId: student._id,
@@ -2675,7 +2675,7 @@ app.post('/teacher/assign-test-group', isTeacher, async (req, res) => {
                 relatedId: testId
             }));
             await Notification.insertMany(notifications);
-            
+
             // Notify teacher about successful scheduling
             await Notification.create({
                 userId: req.session.userId,
@@ -2694,7 +2694,7 @@ app.post('/teacher/assign-test-group', isTeacher, async (req, res) => {
                 relatedId: testId
             }));
             await Notification.insertMany(notifications);
-            
+
             // Notify teacher about successful assignment
             await Notification.create({
                 userId: req.session.userId,
@@ -2704,7 +2704,7 @@ app.post('/teacher/assign-test-group', isTeacher, async (req, res) => {
                 relatedId: testId
             });
         }
-        
+
         logger.info('Test assigned to group', { testId, groupId, scheduleType, teacherId: req.session.userId });
         res.redirect('/teacher-dashboard');
     } catch (err) {
@@ -2742,7 +2742,7 @@ app.get('/admin/logs', isAdmin, async (req, res) => {
 app.get('/admin/cache-stats', isAdmin, (req, res) => {
     const stats = cache.getStats();
     const keys = cache.keys();
-    
+
     res.json({
         success: true,
         stats: {
@@ -2813,16 +2813,16 @@ app.post('/admin/backup-database', isAdmin, async (req, res) => {
     try {
         console.log('🔄 Manual backup triggered by admin:', req.session.username);
         const result = await backupDatabase();
-        res.json({ 
-            success: true, 
+        res.json({
+            success: true,
             message: 'Backup completed successfully',
             filename: result.filename,
             size: `${(result.size / 1024 / 1024).toFixed(2)} MB`
         });
     } catch (error) {
-        res.status(500).json({ 
-            success: false, 
-            message: 'Backup failed: ' + error.message 
+        res.status(500).json({
+            success: false,
+            message: 'Backup failed: ' + error.message
         });
     }
 });
@@ -2883,12 +2883,12 @@ async function startServer() {
     try {
         // Connect to database first
         await connectDatabase();
-        
+
         // Then start the server
         app.listen(PORT, () => {
             console.log(`Server is cooking at http://localhost:${PORT} 🍲`);
             logger.info('Server started successfully', { port: PORT });
-            
+
             // Schedule automated daily backups at 2 AM
             if (process.env.NODE_ENV === 'production') {
                 cron.schedule('0 2 * * *', async () => {

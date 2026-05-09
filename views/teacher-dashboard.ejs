@@ -1,23 +1,30 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Teacher Dashboard</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
         body {
             font-family: "Segoe UI", "Trebuchet MS", sans-serif;
             background:
-                radial-gradient(circle at top left, rgba(255,255,255,0.4), transparent 28%),
+                radial-gradient(circle at top left, rgba(255, 255, 255, 0.4), transparent 28%),
                 linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
             color: #1f2937;
             min-height: 100vh;
             display: flex;
         }
 
-        a { color: inherit; }
+        a {
+            color: inherit;
+        }
 
         .sidebar {
             width: 300px;
@@ -40,7 +47,7 @@
         }
 
         .brand-subtitle {
-            color: rgba(255,255,255,0.78);
+            color: rgba(255, 255, 255, 0.78);
             line-height: 1.6;
             margin-bottom: 24px;
         }
@@ -48,8 +55,8 @@
         .user-chip {
             padding: 16px 18px;
             border-radius: 20px;
-            background: rgba(255,255,255,0.08);
-            border: 1px solid rgba(255,255,255,0.12);
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.12);
             margin-bottom: 24px;
         }
 
@@ -68,8 +75,8 @@
         .side-stat {
             padding: 16px 18px;
             border-radius: 18px;
-            background: rgba(255,255,255,0.08);
-            border: 1px solid rgba(255,255,255,0.12);
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.12);
         }
 
         .side-stat-value {
@@ -79,7 +86,7 @@
         }
 
         .side-stat-label {
-            color: rgba(255,255,255,0.72);
+            color: rgba(255, 255, 255, 0.72);
             font-size: 0.9rem;
         }
 
@@ -105,11 +112,13 @@
         }
 
         .sidebar-link.secondary {
-            background: rgba(255,255,255,0.1);
-            border: 1px solid rgba(255,255,255,0.14);
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.14);
         }
 
-        .sidebar-link:hover { transform: translateY(-2px); }
+        .sidebar-link:hover {
+            transform: translateY(-2px);
+        }
 
         .main-content {
             flex: 1;
@@ -124,7 +133,7 @@
             align-items: center;
             padding: 28px 32px;
             border-radius: 28px;
-            background: rgba(255,255,255,0.92);
+            background: rgba(255, 255, 255, 0.92);
             backdrop-filter: blur(18px);
             box-shadow: 0 18px 42px rgba(15, 23, 42, 0.08);
             margin-bottom: 24px;
@@ -163,7 +172,9 @@
             transition: transform 0.25s ease, box-shadow 0.25s ease, filter 0.25s ease;
         }
 
-        .btn:hover { transform: translateY(-2px); }
+        .btn:hover {
+            transform: translateY(-2px);
+        }
 
         .btn-primary {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -191,7 +202,7 @@
         }
 
         .section {
-            background: rgba(255,255,255,0.92);
+            background: rgba(255, 255, 255, 0.92);
             backdrop-filter: blur(16px);
             border-radius: 28px;
             padding: 28px;
@@ -228,13 +239,21 @@
         .library-column {
             border-radius: 24px;
             padding: 18px;
-            background: linear-gradient(180deg, rgba(248,250,252,0.92) 0%, rgba(241,245,249,0.78) 100%);
+            background: linear-gradient(180deg, rgba(248, 250, 252, 0.92) 0%, rgba(241, 245, 249, 0.78) 100%);
             border: 1px solid #e2e8f0;
         }
 
-        .type-reading { border-top: 6px solid #3b82f6; }
-        .type-listening { border-top: 6px solid #10b981; }
-        .type-writing { border-top: 6px solid #f97316; }
+        .type-reading {
+            border-top: 6px solid #3b82f6;
+        }
+
+        .type-listening {
+            border-top: 6px solid #10b981;
+        }
+
+        .type-writing {
+            border-top: 6px solid #f97316;
+        }
 
         .type-header {
             display: flex;
@@ -255,7 +274,7 @@
             font-size: 0.8rem;
             font-weight: 800;
             color: #334155;
-            background: rgba(255,255,255,0.92);
+            background: rgba(255, 255, 255, 0.92);
             border: 1px solid #dbe3f1;
         }
 
@@ -337,7 +356,7 @@
             font-size: 0.9rem;
             padding: 12px;
             border-radius: 16px;
-            background: rgba(255,255,255,0.78);
+            background: rgba(255, 255, 255, 0.78);
             border: 1px dashed #cbd5e1;
         }
 
@@ -350,7 +369,7 @@
         .panel-card {
             padding: 20px;
             border-radius: 22px;
-            background: linear-gradient(180deg, rgba(248,250,252,0.9) 0%, rgba(241,245,249,0.8) 100%);
+            background: linear-gradient(180deg, rgba(248, 250, 252, 0.9) 0%, rgba(241, 245, 249, 0.8) 100%);
             border: 1px solid #e2e8f0;
         }
 
@@ -366,7 +385,8 @@
             gap: 12px;
         }
 
-        input[type="text"], select {
+        input[type="text"],
+        select {
             width: 100%;
             padding: 12px 14px;
             border-radius: 16px;
@@ -399,14 +419,17 @@
             color: #1f2937;
         }
 
-        input[type="text"]:focus, select:focus {
+        input[type="text"]:focus,
+        select:focus {
             outline: none;
             border-color: #667eea;
             box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.12);
             background-color: white;
         }
 
-        .ms-select-wrap { position: relative; }
+        .ms-select-wrap {
+            position: relative;
+        }
 
         .ms-button {
             width: 100%;
@@ -425,8 +448,17 @@
             background-size: 20px;
         }
 
-        .ms-button:hover { border-color: #cbd5e1; background: white; }
-        .ms-button:focus { outline: none; border-color: #667eea; box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.12); background: white; }
+        .ms-button:hover {
+            border-color: #cbd5e1;
+            background: white;
+        }
+
+        .ms-button:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.12);
+            background: white;
+        }
 
         .ms-panel {
             position: absolute;
@@ -436,13 +468,15 @@
             z-index: 20;
             border-radius: 18px;
             border: 1px solid #e2e8f0;
-            background: rgba(255,255,255,0.98);
+            background: rgba(255, 255, 255, 0.98);
             box-shadow: 0 18px 40px rgba(15, 23, 42, 0.12);
             padding: 10px;
             display: none;
         }
 
-        .ms-panel.open { display: block; }
+        .ms-panel.open {
+            display: block;
+        }
 
         .ms-search {
             width: 100%;
@@ -481,7 +515,7 @@
         }
 
         .ms-option:hover {
-            background: linear-gradient(135deg, rgba(102,126,234,0.08) 0%, rgba(118,75,162,0.04) 100%);
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.08) 0%, rgba(118, 75, 162, 0.04) 100%);
             color: #667eea;
             border-left-color: #667eea;
             transform: translateX(2px);
@@ -503,7 +537,7 @@
         .group-card {
             padding: 22px;
             border-radius: 24px;
-            background: linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(248,250,252,0.92) 100%);
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 250, 252, 0.92) 100%);
             border: 1px solid #e2e8f0;
             box-shadow: 0 12px 26px rgba(15, 23, 42, 0.06);
         }
@@ -552,7 +586,8 @@
             border-collapse: collapse;
         }
 
-        th, td {
+        th,
+        td {
             text-align: left;
             padding: 16px 14px;
             border-bottom: 1px solid #e2e8f0;
@@ -603,11 +638,13 @@
             margin-bottom: 14px;
             padding: 10px 16px;
             border-radius: 16px;
-            background: linear-gradient(135deg, rgba(102,126,234,0.08) 0%, rgba(118,75,162,0.06) 100%);
-            border: 1px solid rgba(102,126,234,0.15);
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.08) 0%, rgba(118, 75, 162, 0.06) 100%);
+            border: 1px solid rgba(102, 126, 234, 0.15);
         }
 
-        .folder-icon { font-size: 1.2rem; }
+        .folder-icon {
+            font-size: 1.2rem;
+        }
 
         .folder-name {
             font-size: 1.05rem;
@@ -623,7 +660,9 @@
             margin-bottom: 8px;
         }
 
-        .test-title-row h4 { margin-bottom: 0; }
+        .test-title-row h4 {
+            margin-bottom: 0;
+        }
 
         .btn-icon {
             background: none;
@@ -635,7 +674,9 @@
             transition: background 0.2s;
         }
 
-        .btn-icon:hover { background: #f1f5f9; }
+        .btn-icon:hover {
+            background: #f1f5f9;
+        }
 
         .meta-edit {
             display: grid;
@@ -662,20 +703,43 @@
         }
 
         @media (max-width: 1280px) {
-            .library-grid { grid-template-columns: 1fr; }
+            .library-grid {
+                grid-template-columns: 1fr;
+            }
         }
 
         @media (max-width: 1080px) {
-            body { display: block; }
-            .sidebar { width: 100%; }
-            .form-grid { grid-template-columns: 1fr; }
+            body {
+                display: block;
+            }
+
+            .sidebar {
+                width: 100%;
+            }
+
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
         }
 
         @media (max-width: 760px) {
-            .main-content { padding: 18px; }
-            .page-header { padding: 22px; flex-direction: column; align-items: flex-start; }
-            .test-metrics { grid-template-columns: 1fr; }
-            .group-grid { grid-template-columns: 1fr; }
+            .main-content {
+                padding: 18px;
+            }
+
+            .page-header {
+                padding: 22px;
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .test-metrics {
+                grid-template-columns: 1fr;
+            }
+
+            .group-grid {
+                grid-template-columns: 1fr;
+            }
         }
 
         /* Dark Mode Styles */
@@ -795,7 +859,7 @@
         }
 
         body.dark-mode .ms-option:hover {
-            background: linear-gradient(135deg, rgba(102,126,234,0.2) 0%, rgba(118,75,162,0.1) 100%) !important;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.2) 0%, rgba(118, 75, 162, 0.1) 100%) !important;
             color: #a5f4fc !important;
             border-left-color: #667eea !important;
         }
@@ -813,8 +877,8 @@
         }
 
         body.dark-mode .folder-header {
-            background: linear-gradient(135deg, rgba(102,126,234,0.15) 0%, rgba(118,75,162,0.12) 100%);
-            border-color: rgba(102,126,234,0.25);
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.15) 0%, rgba(118, 75, 162, 0.12) 100%);
+            border-color: rgba(102, 126, 234, 0.25);
         }
 
         body.dark-mode .type-badge,
@@ -989,7 +1053,6 @@
             color: white !important;
             border-color: #667eea !important;
         }
-
     </style>
     <script>
         function toggleMeta(id) {
@@ -1005,17 +1068,17 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ customTitle, folder })
             })
-            .then(r => r.json())
-            .then(data => {
-                if (data.success) window.location.reload();
-                else alert('Error: ' + data.message);
-            })
-            .catch(e => alert('Error: ' + e.message));
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) window.location.reload();
+                    else alert('Error: ' + data.message);
+                })
+                .catch(e => alert('Error: ' + e.message));
         }
 
         function showToast(msg, type = 'success') {
             const t = document.createElement('div');
-            t.style.cssText = `position:fixed;bottom:28px;right:28px;z-index:9999;padding:14px 22px;border-radius:16px;font-weight:800;font-size:0.95rem;color:#fff;box-shadow:0 12px 28px rgba(15,23,42,0.18);transition:opacity 0.4s ease;background:${type==='error'?'linear-gradient(135deg,#ef4444,#dc2626)':'linear-gradient(135deg,#10b981,#059669)'}`;
+            t.style.cssText = `position:fixed;bottom:28px;right:28px;z-index:9999;padding:14px 22px;border-radius:16px;font-weight:800;font-size:0.95rem;color:#fff;box-shadow:0 12px 28px rgba(15,23,42,0.18);transition:opacity 0.4s ease;background:${type === 'error' ? 'linear-gradient(135deg,#ef4444,#dc2626)' : 'linear-gradient(135deg,#10b981,#059669)'}`;
             t.textContent = msg;
             document.body.appendChild(t);
             setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 400); }, 3000);
@@ -1204,7 +1267,7 @@
             document.querySelectorAll('.test-card').forEach(card => {
                 const title = card.querySelector('h4').textContent.toLowerCase();
                 const cardType = card.closest('.library-column').classList.contains('type-reading') ? 'reading' :
-                                 card.closest('.library-column').classList.contains('type-listening') ? 'listening' : 'writing';
+                    card.closest('.library-column').classList.contains('type-listening') ? 'listening' : 'writing';
                 const matchQuery = !query || title.includes(query);
                 const matchType = !type || cardType === type;
                 card.style.display = matchQuery && matchType ? 'block' : 'none';
@@ -1215,7 +1278,7 @@
             try {
                 const res = await fetch(`/teacher/view-password/${studentId}`);
                 const data = await res.json();
-                
+
                 if (data.hasPassword && data.password) {
                     const overlay = document.createElement('div');
                     overlay.style.cssText = 'position:fixed;inset:0;z-index:10000;background:rgba(15,23,42,0.45);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;';
@@ -1247,7 +1310,7 @@
 
         async function resetPassword(studentId, studentName) {
             document.querySelectorAll('body > div[style*="position:fixed"]').forEach(el => el.remove());
-            
+
             const overlay = document.createElement('div');
             overlay.style.cssText = 'position:fixed;inset:0;z-index:10000;background:rgba(15,23,42,0.45);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;';
             overlay.innerHTML = `<div style="background:white;border-radius:24px;padding:32px;max-width:400px;width:90%;box-shadow:0 24px 48px rgba(15,23,42,0.18);">
@@ -1263,24 +1326,24 @@
 
         async function confirmReset(studentId, studentName) {
             const newPassword = document.getElementById('newPasswordInput').value;
-            
+
             if (!newPassword || newPassword.length < 6) {
                 showToast('Password must be at least 6 characters', 'error');
                 return;
             }
-            
+
             try {
                 const res = await fetch(`/teacher/reset-password/${studentId}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ newPassword })
                 });
-                
+
                 const data = await res.json();
-                
+
                 if (data.success) {
                     document.querySelectorAll('body > div[style*="position:fixed"]').forEach(el => el.remove());
-                    
+
                     const overlay = document.createElement('div');
                     overlay.style.cssText = 'position:fixed;inset:0;z-index:10000;background:rgba(15,23,42,0.45);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;';
                     overlay.innerHTML = `<div style="background:white;border-radius:24px;padding:32px;max-width:400px;width:90%;box-shadow:0 24px 48px rgba(15,23,42,0.18);text-align:center;">
@@ -1303,411 +1366,530 @@
             window.toggleDarkMode();
         }
     </script>
+    <!-- CSRF Token and Global Fetch Interceptor -->
+    <meta name="csrf-token" content="<%= csrfToken %>">
+    <script>
+        (function () {
+            const originalFetch = window.fetch;
+            window.fetch = async function (...args) {
+                let [resource, config] = args;
+                if (config && config.method && ['POST', 'PUT', 'DELETE', 'PATCH'].includes(config.method.toUpperCase())) {
+                    const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+                    config.headers = {
+                        ...config.headers,
+                        'CSRF-Token': token
+                    };
+                }
+                return originalFetch(resource, config);
+            };
+        })();
+    </script>
 </head>
+
 <body>
     <script src="/dark-mode.js"></script>
     <%- include('partials/notifications') %>
-    <aside class="sidebar">
-        <div class="brand">ExamApp</div>
-        <div class="brand-subtitle">Teacher review, group delivery, and student progress in one place.</div>
+        <aside class="sidebar">
+            <div class="brand">ExamApp</div>
+            <div class="brand-subtitle">Teacher review, group delivery, and student progress in one place.</div>
 
-        <div class="user-chip">
-            Signed in as
-            <strong><%= teacher.username %></strong>
-        </div>
+            <div class="user-chip">
+                Signed in as
+                <strong>
+                    <%= teacher.username %>
+                </strong>
+            </div>
 
-        <div class="side-stats">
-            <div class="side-stat">
-                <div class="side-stat-value"><%= stats.testsCount %></div>
-                <div class="side-stat-label">Assigned tests ready to preview</div>
+            <div class="side-stats">
+                <div class="side-stat">
+                    <div class="side-stat-value">
+                        <%= stats.testsCount %>
+                    </div>
+                    <div class="side-stat-label">Assigned tests ready to preview</div>
+                </div>
+                <div class="side-stat">
+                    <div class="side-stat-value">
+                        <%= stats.groupsCount %>
+                    </div>
+                    <div class="side-stat-label">Active groups</div>
+                </div>
+                <div class="side-stat">
+                    <div class="side-stat-value">
+                        <%= stats.studentsCount %>
+                    </div>
+                    <div class="side-stat-label">Registered students</div>
+                </div>
             </div>
-            <div class="side-stat">
-                <div class="side-stat-value"><%= stats.groupsCount %></div>
-                <div class="side-stat-label">Active groups</div>
-            </div>
-            <div class="side-stat">
-                <div class="side-stat-value"><%= stats.studentsCount %></div>
-                <div class="side-stat-label">Registered students</div>
-            </div>
-        </div>
 
-        <div class="sidebar-actions">
-            <a href="/teacher/add-student" class="sidebar-link primary">Register Student</a>
-            <a href="/teacher/analytics" class="sidebar-link primary" style="background:linear-gradient(135deg,#f97316,#ea580c);">📊 Analytics</a>
-            <a href="/settings" class="sidebar-link secondary">⚙️ Settings</a>
-            <a href="/logout" class="sidebar-link secondary">Logout</a>
-        </div>
-    </aside>
-
-    <main class="main-content">
-        <section class="page-header">
-            <div>
-                <h1>Teacher Test Library</h1>
-                <p>Preview tests exactly as students will see them, download the same HTML version, and track who has completed each assignment.</p>
+            <div class="sidebar-actions">
+                <a href="/teacher/add-student" class="sidebar-link primary">Register Student</a>
+                <a href="/teacher/analytics" class="sidebar-link primary"
+                    style="background:linear-gradient(135deg,#f97316,#ea580c);">📊 Analytics</a>
+                <a href="/settings" class="sidebar-link secondary">⚙️ Settings</a>
+                <a href="/logout" class="sidebar-link secondary">Logout</a>
             </div>
-            <div class="header-actions">
-                <a href="/teacher/add-student" class="btn btn-success">+ Register Student</a>
-            </div>
-        </section>
+        </aside>
 
-        <section class="section">
-            <div class="section-header">
+        <main class="main-content">
+            <section class="page-header">
                 <div>
-                    <h2>Tests By Type</h2>
-                    <p>Each preview opens the exact student-facing test shell, and each download uses the same HTML renderer.</p>
+                    <h1>Teacher Test Library</h1>
+                    <p>Preview tests exactly as students will see them, download the same HTML version, and track who
+                        has completed each assignment.</p>
                 </div>
-                <div style="display:flex;gap:10px;align-items:center;">
-                    <input type="text" id="searchTests" placeholder="Search tests..." style="width:220px;padding:10px 14px;" oninput="filterTests()">
-                    <select id="filterType" onchange="filterTests()" style="width:140px;padding:10px 14px;">
-                        <option value="">All Types</option>
-                        <option value="reading">Reading</option>
-                        <option value="listening">Listening</option>
-                        <option value="writing">Writing</option>
-                    </select>
+                <div class="header-actions">
+                    <a href="/teacher/add-student" class="btn btn-success">+ Register Student</a>
                 </div>
-            </div>
+            </section>
 
-            <%
-                // Group tests by folder first
-                const folderMap = {};
-                tests.forEach(test => {
+            <section class="section">
+                <div class="section-header">
+                    <div>
+                        <h2>Tests By Type</h2>
+                        <p>Each preview opens the exact student-facing test shell, and each download uses the same HTML
+                            renderer.</p>
+                    </div>
+                    <div style="display:flex;gap:10px;align-items:center;">
+                        <input type="text" id="searchTests" placeholder="Search tests..."
+                            style="width:220px;padding:10px 14px;" oninput="filterTests()">
+                        <select id="filterType" onchange="filterTests()" style="width:140px;padding:10px 14px;">
+                            <option value="">All Types</option>
+                            <option value="reading">Reading</option>
+                            <option value="listening">Listening</option>
+                            <option value="writing">Writing</option>
+                        </select>
+                    </div>
+                </div>
+
+                <% // Group tests by folder first const folderMap={}; tests.forEach(test=> {
                     const folder = test.folder || 'Uncategorized';
                     if (!folderMap[folder]) folderMap[folder] = [];
                     folderMap[folder].push(test);
-                });
-                const folderNames = Object.keys(folderMap).sort((a, b) => a === 'Uncategorized' ? 1 : b === 'Uncategorized' ? -1 : a.localeCompare(b));
-            %>
+                    });
+                    const folderNames = Object.keys(folderMap).sort((a, b) => a === 'Uncategorized' ? 1 : b ===
+                    'Uncategorized' ? -1 : a.localeCompare(b));
+                    %>
 
-            <% if (tests.length === 0 && pagination.totalTests === 0) { %>
-                <div class="ghost-note">No tests assigned yet.</div>
-            <% } else { %>
-                <% folderNames.forEach(folderName => { %>
-                    <div class="folder-section">
-                        <div class="folder-header">
-                            <span class="folder-icon">📁</span>
-                            <span class="folder-name"><%= folderName %></span>
-                            <span class="type-badge"><%= folderMap[folderName].length %> tests</span>
-                        </div>
-                        <div class="library-grid">
-                            <% const typeConfig = [
-                                { key: 'reading', label: 'Reading', className: 'type-reading' },
-                                { key: 'listening', label: 'Listening', className: 'type-listening' },
-                                { key: 'writing', label: 'Writing', className: 'type-writing' }
-                            ]; %>
-                            <% typeConfig.forEach(type => {
-                                const typeTests = folderMap[folderName].filter(t => t.type === type.key);
-                                if (typeTests.length === 0) return;
-                            %>
-                                <div class="library-column <%= type.className %>">
-                                    <div class="type-header">
-                                        <h3><%= type.label %></h3>
-                                        <div class="type-badge"><%= typeTests.length %></div>
+                    <% if (tests.length===0 && pagination.totalTests===0) { %>
+                        <div class="ghost-note">No tests assigned yet.</div>
+                        <% } else { %>
+                            <% folderNames.forEach(folderName=> { %>
+                                <div class="folder-section">
+                                    <div class="folder-header">
+                                        <span class="folder-icon">📁</span>
+                                        <span class="folder-name">
+                                            <%= folderName %>
+                                        </span>
+                                        <span class="type-badge">
+                                            <%= folderMap[folderName].length %> tests
+                                        </span>
                                     </div>
-                                    <div class="test-list">
-                                        <% typeTests.forEach(test => {
-                                            const completionRate = test.assignedStudentCount ? Math.round((test.completedStudentCount / test.assignedStudentCount) * 100) : 0;
-                                            const displayTitle = test.customTitle || test.title;
-                                        %>
-                                            <article class="test-card">
-                                                <div class="test-title-row">
-                                                    <h4><%= displayTitle %></h4>
-                                                    <button class="btn-icon" onclick="toggleMeta('<%= test._id %>')" title="Rename / Move">✏️</button>
-                                                </div>
+                                    <div class="library-grid">
+                                        <% const typeConfig=[ { key: 'reading' , label: 'Reading' ,
+                                            className: 'type-reading' }, { key: 'listening' , label: 'Listening' ,
+                                            className: 'type-listening' }, { key: 'writing' , label: 'Writing' ,
+                                            className: 'type-writing' } ]; %>
+                                            <% typeConfig.forEach(type=> {
+                                                const typeTests = folderMap[folderName].filter(t => t.type ===
+                                                type.key);
+                                                if (typeTests.length === 0) return;
+                                                %>
+                                                <div class="library-column <%= type.className %>">
+                                                    <div class="type-header">
+                                                        <h3>
+                                                            <%= type.label %>
+                                                        </h3>
+                                                        <div class="type-badge">
+                                                            <%= typeTests.length %>
+                                                        </div>
+                                                    </div>
+                                                    <div class="test-list">
+                                                        <% typeTests.forEach(test=> {
+                                                            const completionRate = test.assignedStudentCount ?
+                                                            Math.round((test.completedStudentCount /
+                                                            test.assignedStudentCount) * 100) : 0;
+                                                            const displayTitle = test.customTitle || test.title;
+                                                            %>
+                                                            <article class="test-card">
+                                                                <div class="test-title-row">
+                                                                    <h4>
+                                                                        <%= displayTitle %>
+                                                                    </h4>
+                                                                    <button class="btn-icon"
+                                                                        onclick="toggleMeta('<%= test._id %>')"
+                                                                        title="Rename / Move">✏️</button>
+                                                                </div>
 
-                                                <div id="meta-<%= test._id %>" class="meta-edit" style="display:none;">
-                                                    <input type="text" class="meta-input" id="title-<%= test._id %>" value="<%= displayTitle %>" placeholder="Custom name...">
-                                                    <input type="text" class="meta-input" id="folder-<%= test._id %>" value="<%= test.folder || '' %>" placeholder="Folder name...">
-                                                    <button class="btn btn-success" style="padding:8px 14px; font-size:0.85rem;" onclick="saveMeta('<%= test._id %>')">Save</button>
-                                                </div>
+                                                                <div id="meta-<%= test._id %>" class="meta-edit"
+                                                                    style="display:none;">
+                                                                    <input type="text" class="meta-input"
+                                                                        id="title-<%= test._id %>"
+                                                                        value="<%= displayTitle %>"
+                                                                        placeholder="Custom name...">
+                                                                    <input type="text" class="meta-input"
+                                                                        id="folder-<%= test._id %>"
+                                                                        value="<%= test.folder || '' %>"
+                                                                        placeholder="Folder name...">
+                                                                    <button class="btn btn-success"
+                                                                        style="padding:8px 14px; font-size:0.85rem;"
+                                                                        onclick="saveMeta('<%= test._id %>')">Save</button>
+                                                                </div>
 
-                                                <div class="test-metrics">
-                                                    <div class="metric"><strong><%= test.assignedGroupCount %></strong><span>Groups</span></div>
-                                                    <div class="metric"><strong><%= test.assignedStudentCount %></strong><span>Students</span></div>
-                                                    <div class="metric"><strong><%= test.completedStudentCount %></strong><span>Completed</span></div>
-                                                </div>
-                                                <div class="progress-track">
-                                                    <div class="progress-fill" style="width: <%= completionRate %>%"></div>
-                                                </div>
+                                                                <div class="test-metrics">
+                                                                    <div class="metric"><strong>
+                                                                            <%= test.assignedGroupCount %>
+                                                                        </strong><span>Groups</span></div>
+                                                                    <div class="metric"><strong>
+                                                                            <%= test.assignedStudentCount %>
+                                                                        </strong><span>Students</span></div>
+                                                                    <div class="metric"><strong>
+                                                                            <%= test.completedStudentCount %>
+                                                                        </strong><span>Completed</span></div>
+                                                                </div>
+                                                                <div class="progress-track">
+                                                                    <div class="progress-fill"
+                                                                        style="width: <%= completionRate %>%"></div>
+                                                                </div>
 
-                                                <div class="test-actions">
-                                                    <% const canEdit = test.createdBy && String(test.createdBy) === String(teacher._id); %>
-                                                    <% if (canEdit) { %>
-                                                        <a href="/edit-test/<%= test._id %>" class="btn btn-success">Edit</a>
-                                                    <% } %>
-                                                    <a href="/view-test/<%= test._id %>" target="_blank" class="btn btn-secondary">Preview</a>
-                                                    <a href="/download-test/<%= test._id %>" class="btn btn-secondary">Download</a>
-                                                    <a href="/teacher/progress/<%= test._id %>" class="btn btn-primary">Progress</a>
-                                                    <a href="/teacher/live/<%= test._id %>" target="_blank" class="btn" style="background:linear-gradient(135deg,#ef4444,#dc2626);color:white;box-shadow:0 10px 20px rgba(239,68,68,0.24);">📡 Live</a>
+                                                                <div class="test-actions">
+                                                                    <% const canEdit=test.createdBy &&
+                                                                        String(test.createdBy)===String(teacher._id); %>
+                                                                        <% if (canEdit) { %>
+                                                                            <a href="/edit-test/<%= test._id %>"
+                                                                                class="btn btn-success">Edit</a>
+                                                                            <% } %>
+                                                                                <a href="/view-test/<%= test._id %>"
+                                                                                    target="_blank"
+                                                                                    class="btn btn-secondary">Preview</a>
+                                                                                <a href="/download-test/<%= test._id %>"
+                                                                                    class="btn btn-secondary">Download</a>
+                                                                                <a href="/teacher/progress/<%= test._id %>"
+                                                                                    class="btn btn-primary">Progress</a>
+                                                                                <a href="/teacher/live/<%= test._id %>"
+                                                                                    target="_blank" class="btn"
+                                                                                    style="background:linear-gradient(135deg,#ef4444,#dc2626);color:white;box-shadow:0 10px 20px rgba(239,68,68,0.24);">📡
+                                                                                    Live</a>
+                                                                </div>
+                                                            </article>
+                                                            <% }) %>
+                                                    </div>
                                                 </div>
-                                            </article>
-                                        <% }) %>
+                                                <% }) %>
                                     </div>
                                 </div>
-                            <% }) %>
-                        </div>
-                    </div>
-                <% }) %>
+                                <% }) %>
 
-            <% if (pagination.totalPages > 1) { %>
-                <div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-top:24px;flex-wrap:wrap;">
-                    <% if (pagination.page > 1) { %>
-                        <a href="?page=<%= pagination.page - 1 %>" class="btn btn-secondary" style="padding:10px 18px;">← Prev</a>
-                    <% } %>
-                    <span style="font-weight:800;color:#64748b;font-size:0.9rem;">Page <%= pagination.page %> of <%= pagination.totalPages %> (<%= pagination.totalTests %> tests)</span>
-                    <% if (pagination.page < pagination.totalPages) { %>
-                        <a href="?page=<%= pagination.page + 1 %>" class="btn btn-secondary" style="padding:10px 18px;">Next →</a>
-                    <% } %>
-                </div>
-            <% } %>
-            <% } %>
-        </section>
-
-        <section class="section">
-            <div class="section-header">
-                <div>
-                    <h2>Group Setup</h2>
-                    <p>Create groups, place students, and assign the right tests without leaving the dashboard.</p>
-                </div>
-            </div>
-
-            <div class="form-grid">
-                <div class="panel-card">
-                    <h3>Create New Group</h3>
-                    <form action="/teacher/create-group" method="POST" class="field-stack">
-                        <input type="text" name="groupName" placeholder="e.g. IELTS Evening Group" required>
-                        <button type="submit" class="btn btn-success">Create Group</button>
-                    </form>
-                </div>
-
-                <div class="panel-card">
-                    <h3>Add Student To Group</h3>
-                    <form action="/teacher/assign-to-group" method="POST" class="field-stack">
-                        <select name="studentId" required>
-                            <option value="">Select Student</option>
-                            <% allStudents.forEach(student => { %>
-                                <option value="<%= student._id %>"><%= student.username %></option>
-                            <% }) %>
-                        </select>
-                        <select name="groupId" required>
-                            <option value="">Select Group</option>
-                            <% groups.forEach(group => { %>
-                                <option value="<%= group._id %>"><%= group.name %></option>
-                            <% }) %>
-                        </select>
-                        <button type="submit" class="btn btn-primary">Assign Student</button>
-                    </form>
-                </div>
-
-                <div class="panel-card">
-                    <h3>Assign Test To Group</h3>
-                    <form action="/teacher/assign-test-group" method="POST" class="field-stack">
-                        <select name="testId" required>
-                            <option value="">Select Test</option>
-                            <% tests.forEach(test => { %>
-                                <option value="<%= test._id %>"><%= test.title %> (<%= test.type %>)</option>
-                            <% }) %>
-                        </select>
-                        <select name="groupId" required>
-                            <option value="">Select Group</option>
-                            <% groups.forEach(group => { %>
-                                <option value="<%= group._id %>"><%= group.name %></option>
-                            <% }) %>
-                        </select>
-                        
-                        <!-- Modern Schedule Type Selector -->
-                        <div style="margin-top: 16px;">
-                            <label style="font-weight: 700; margin-bottom: 12px; display: block; color: #475569;">Access Type</label>
-                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-                                <label style="margin: 0; cursor: pointer; padding: 16px; border-radius: 14px; text-align: center; font-weight: 700; transition: all 0.3s ease; background: white; border: 2px solid #e2e8f0; display: flex; flex-direction: column; align-items: center; gap: 8px;" id="now-label">
-                                    <input type="radio" name="scheduleType" value="now" id="scheduleType" checked style="display: none;">
-                                    <span style="font-size: 1.5rem;">📅</span>
-                                    <span style="font-size: 0.9rem;">Available Now</span>
-                                </label>
-                                <label style="margin: 0; cursor: pointer; padding: 16px; border-radius: 14px; text-align: center; font-weight: 700; transition: all 0.3s ease; background: white; border: 2px solid #e2e8f0; display: flex; flex-direction: column; align-items: center; gap: 8px;" id="scheduled-label">
-                                    <input type="radio" name="scheduleType" value="scheduled" style="display: none;">
-                                    <span style="font-size: 1.5rem;">⏰</span>
-                                    <span style="font-size: 0.9rem;">Schedule for Later</span>
-                                </label>
-                            </div>
-                        </div>
-                        
-                        <input type="datetime-local" name="availableFrom" id="availableFrom" style="display:none; margin-top: 12px; width: 100%; padding: 14px 16px; border-radius: 14px; border: 2px solid #e2e8f0; background: white; font-size: 0.95rem; font-family: inherit; transition: all 0.2s ease;">
-                        <button type="submit" class="btn btn-primary" style="margin-top: 16px;">Assign Test</button>
-                    </form>
-                </div>
-                <script>
-                    function toggleSchedule() {
-                        const radios = document.querySelectorAll('input[name="scheduleType"]');
-                        const availableFromInput = document.getElementById('availableFrom');
-                        const selectedRadio = document.querySelector('input[name="scheduleType"]:checked');
-                        
-                        if (!selectedRadio) return;
-                        
-                        const type = selectedRadio.value;
-                        availableFromInput.style.display = type === 'scheduled' ? 'block' : 'none';
-                        availableFromInput.required = type === 'scheduled';
-                        
-                        const nowLabel = document.getElementById('now-label');
-                        const scheduledLabel = document.getElementById('scheduled-label');
-                        
-                        if (type === 'now') {
-                            nowLabel.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
-                            nowLabel.style.borderColor = '#667eea';
-                            nowLabel.style.color = 'white';
-                            nowLabel.style.transform = 'scale(1.02)';
-                            nowLabel.style.boxShadow = '0 8px 20px rgba(102, 126, 234, 0.3)';
-                            scheduledLabel.style.background = 'white';
-                            scheduledLabel.style.borderColor = '#e2e8f0';
-                            scheduledLabel.style.color = '#64748b';
-                            scheduledLabel.style.transform = 'scale(1)';
-                            scheduledLabel.style.boxShadow = 'none';
-                        } else {
-                            scheduledLabel.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
-                            scheduledLabel.style.borderColor = '#667eea';
-                            scheduledLabel.style.color = 'white';
-                            scheduledLabel.style.transform = 'scale(1.02)';
-                            scheduledLabel.style.boxShadow = '0 8px 20px rgba(102, 126, 234, 0.3)';
-                            nowLabel.style.background = 'white';
-                            nowLabel.style.borderColor = '#e2e8f0';
-                            nowLabel.style.color = '#64748b';
-                            nowLabel.style.transform = 'scale(1)';
-                            nowLabel.style.boxShadow = 'none';
-                        }
-                    }
-                    
-                    document.querySelectorAll('input[name="scheduleType"]').forEach(radio => {
-                        radio.addEventListener('change', toggleSchedule);
-                    });
-                    
-                    document.getElementById('now-label').addEventListener('click', function() {
-                        document.querySelector('input[name="scheduleType"][value="now"]').checked = true;
-                        toggleSchedule();
-                    });
-                    
-                    document.getElementById('scheduled-label').addEventListener('click', function() {
-                        document.querySelector('input[name="scheduleType"][value="scheduled"]').checked = true;
-                        toggleSchedule();
-                    });
-                    
-                    window.addEventListener('DOMContentLoaded', toggleSchedule);
-                </script>
-
-                <div class="panel-card">
-                    <h3>Quick Notes</h3>
-                    <div class="field-stack">
-                        <div class="ghost-note">Preview uses the exact student renderer, so anything you verify there will match the student version.</div>
-                        <div class="ghost-note">Downloaded HTML keeps the same layout, theme options, and interaction logic as the platform view.</div>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <section class="section">
-            <div class="section-header">
-                <div>
-                    <h2>Active Groups</h2>
-                    <p>See each group’s roster and currently assigned tests.</p>
-                </div>
-            </div>
-
-            <% if (groups.length > 0) { %>
-                <div class="group-grid">
-                    <% groups.forEach(group => { %>
-                        <article class="group-card">
-                            <div class="group-title-row">
-                                <div class="group-title"><%= group.name %></div>
-                                <button class="btn btn-danger" onclick="deleteItem('group', '<%= group._id %>', '<%= group.name %>')">Delete</button>
-                            </div>
-
-                            <div class="pill-row" style="margin-bottom: 14px;">
-                                <div class="pill neutral"><%= group.students.length %> students</div>
-                                <div class="pill neutral"><%= group.assignedTests.length %> tests</div>
-                            </div>
-
-                            <p style="font-weight: 800; color: #334155; margin-bottom: 8px;">Assigned Tests</p>
-                            <div class="pill-row" style="margin-bottom: 16px;">
-                                <% if (group.assignedTests.length > 0) { %>
-                                    <% group.assignedTests.forEach(test => { %>
-                                        <div class="pill" style="display:flex;align-items:center;gap:6px;">
-                                            <%= test.title %>
-                                            <button type="button" onclick="removeTestFromGroup('<%= group._id %>', '<%= test._id %>', '<%= test.title %>')" style="border:none; background:none; color:#b91c1c; font-weight:900; cursor:pointer; font-size:1.1rem; line-height:1;">×</button>
+                                    <% if (pagination.totalPages> 1) { %>
+                                        <div
+                                            style="display:flex;align-items:center;justify-content:center;gap:10px;margin-top:24px;flex-wrap:wrap;">
+                                            <% if (pagination.page> 1) { %>
+                                                <a href="?page=<%= pagination.page - 1 %>" class="btn btn-secondary"
+                                                    style="padding:10px 18px;">← Prev</a>
+                                                <% } %>
+                                                    <span style="font-weight:800;color:#64748b;font-size:0.9rem;">Page
+                                                        <%= pagination.page %> of <%= pagination.totalPages %> (<%=
+                                                                    pagination.totalTests %> tests)
+                                                    </span>
+                                                    <% if (pagination.page < pagination.totalPages) { %>
+                                                        <a href="?page=<%= pagination.page + 1 %>"
+                                                            class="btn btn-secondary" style="padding:10px 18px;">Next
+                                                            →</a>
+                                                        <% } %>
                                         </div>
-                                    <% }) %>
-                                <% } else { %>
-                                    <div class="ghost-note" style="width: 100%;">No tests assigned yet.</div>
-                                <% } %>
-                            </div>
-
-                            <p style="font-weight: 800; color: #334155; margin-bottom: 8px;">Students</p>
-                            <div class="pill-row">
-                                <% if (group.students.length > 0) { %>
-                                    <% group.students.forEach(student => { %>
-                                        <div class="pill neutral">
-                                            <%= student.username %>
-                                            <button type="button" onclick="removeStudentFromGroup('<%= group._id %>', '<%= student._id %>', '<%= student.username %>')" style="margin-left:8px; border:none; background:none; color:#b91c1c; font-weight:900; cursor:pointer;">×</button>
-                                        </div>
-                                    <% }) %>
-                                <% } else { %>
-                                    <div class="ghost-note" style="width: 100%;">No students in this group yet.</div>
-                                <% } %>
-                            </div>
-                        </article>
-                    <% }) %>
-                </div>
-            <% } else { %>
-                <div class="ghost-note">No groups yet. Create one above to start assigning students and tests.</div>
-            <% } %>
-        </section>
-
-        <section class="section">
-            <div class="section-header">
-                <div>
-                    <h2>All Students</h2>
-                    <p>Keep track of current group placement and remove student accounts when needed.</p>
-                </div>
-                <a href="/teacher/add-student" class="btn btn-success">+ Register Student</a>
-            </div>
-
-            <% if (allStudents.length > 0) { %>
-                <div class="table-wrap">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Student</th>
-                                <th>Current Group</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <% allStudents.forEach(student => { %>
-                                <% const activeGroup = groups.find(group => String(group._id) === String(student.groupId)); %>
-                                <tr>
-                                    <td style="font-weight: 800;"><%= student.username %></td>
-                                    <td>
-                                        <% if (activeGroup) { %>
-                                            <span class="tag"><%= activeGroup.name %></span>
-                                        <% } else { %>
-                                            <span class="tag muted">Unassigned</span>
                                         <% } %>
-                                    </td>
-                                    <td>
-                                        <div class="action-row">
-                                            <button class="btn btn-secondary" onclick="viewPassword('<%= student._id %>', '<%= student.username %>')" style="padding:8px 14px;font-size:0.85rem;">🔑 View Password</button>
-                                            <button class="btn btn-danger" onclick="deleteItem('student', '<%= student._id %>', '<%= student.username %>')">Delete</button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            <% }) %>
-                        </tbody>
-                    </table>
+                                            <% } %>
+            </section>
+
+            <section class="section">
+                <div class="section-header">
+                    <div>
+                        <h2>Group Setup</h2>
+                        <p>Create groups, place students, and assign the right tests without leaving the dashboard.</p>
+                    </div>
                 </div>
-            <% } else { %>
-                <div class="ghost-note">No students registered yet. Use the register button to create the first student account.</div>
-            <% } %>
-        </section>
-    </main>
+
+                <div class="form-grid">
+                    <div class="panel-card">
+                        <h3>Create New Group</h3>
+                        <form action="/teacher/create-group" method="POST" class="field-stack">
+                            <input type="text" name="groupName" placeholder="e.g. IELTS Evening Group" required>
+                            <button type="submit" class="btn btn-success">Create Group</button>
+                        </form>
+                    </div>
+
+                    <div class="panel-card">
+                        <h3>Add Student To Group</h3>
+                        <form action="/teacher/assign-to-group" method="POST" class="field-stack">
+                            <select name="studentId" required>
+                                <option value="">Select Student</option>
+                                <% allStudents.forEach(student=> { %>
+                                    <option value="<%= student._id %>">
+                                        <%= student.username %>
+                                    </option>
+                                    <% }) %>
+                            </select>
+                            <select name="groupId" required>
+                                <option value="">Select Group</option>
+                                <% groups.forEach(group=> { %>
+                                    <option value="<%= group._id %>">
+                                        <%= group.name %>
+                                    </option>
+                                    <% }) %>
+                            </select>
+                            <button type="submit" class="btn btn-primary">Assign Student</button>
+                        </form>
+                    </div>
+
+                    <div class="panel-card">
+                        <h3>Assign Test To Group</h3>
+                        <form action="/teacher/assign-test-group" method="POST" class="field-stack">
+                            <select name="testId" required>
+                                <option value="">Select Test</option>
+                                <% tests.forEach(test=> { %>
+                                    <option value="<%= test._id %>">
+                                        <%= test.title %> (<%= test.type %>)
+                                    </option>
+                                    <% }) %>
+                            </select>
+                            <select name="groupId" required>
+                                <option value="">Select Group</option>
+                                <% groups.forEach(group=> { %>
+                                    <option value="<%= group._id %>">
+                                        <%= group.name %>
+                                    </option>
+                                    <% }) %>
+                            </select>
+
+                            <!-- Modern Schedule Type Selector -->
+                            <div style="margin-top: 16px;">
+                                <label
+                                    style="font-weight: 700; margin-bottom: 12px; display: block; color: #475569;">Access
+                                    Type</label>
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                                    <label
+                                        style="margin: 0; cursor: pointer; padding: 16px; border-radius: 14px; text-align: center; font-weight: 700; transition: all 0.3s ease; background: white; border: 2px solid #e2e8f0; display: flex; flex-direction: column; align-items: center; gap: 8px;"
+                                        id="now-label">
+                                        <input type="radio" name="scheduleType" value="now" id="scheduleType" checked
+                                            style="display: none;">
+                                        <span style="font-size: 1.5rem;">📅</span>
+                                        <span style="font-size: 0.9rem;">Available Now</span>
+                                    </label>
+                                    <label
+                                        style="margin: 0; cursor: pointer; padding: 16px; border-radius: 14px; text-align: center; font-weight: 700; transition: all 0.3s ease; background: white; border: 2px solid #e2e8f0; display: flex; flex-direction: column; align-items: center; gap: 8px;"
+                                        id="scheduled-label">
+                                        <input type="radio" name="scheduleType" value="scheduled"
+                                            style="display: none;">
+                                        <span style="font-size: 1.5rem;">⏰</span>
+                                        <span style="font-size: 0.9rem;">Schedule for Later</span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <input type="datetime-local" name="availableFrom" id="availableFrom"
+                                style="display:none; margin-top: 12px; width: 100%; padding: 14px 16px; border-radius: 14px; border: 2px solid #e2e8f0; background: white; font-size: 0.95rem; font-family: inherit; transition: all 0.2s ease;">
+                            <button type="submit" class="btn btn-primary" style="margin-top: 16px;">Assign Test</button>
+                        </form>
+                    </div>
+                    <script>
+                        function toggleSchedule() {
+                            const radios = document.querySelectorAll('input[name="scheduleType"]');
+                            const availableFromInput = document.getElementById('availableFrom');
+                            const selectedRadio = document.querySelector('input[name="scheduleType"]:checked');
+
+                            if (!selectedRadio) return;
+
+                            const type = selectedRadio.value;
+                            availableFromInput.style.display = type === 'scheduled' ? 'block' : 'none';
+                            availableFromInput.required = type === 'scheduled';
+
+                            const nowLabel = document.getElementById('now-label');
+                            const scheduledLabel = document.getElementById('scheduled-label');
+
+                            if (type === 'now') {
+                                nowLabel.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+                                nowLabel.style.borderColor = '#667eea';
+                                nowLabel.style.color = 'white';
+                                nowLabel.style.transform = 'scale(1.02)';
+                                nowLabel.style.boxShadow = '0 8px 20px rgba(102, 126, 234, 0.3)';
+                                scheduledLabel.style.background = 'white';
+                                scheduledLabel.style.borderColor = '#e2e8f0';
+                                scheduledLabel.style.color = '#64748b';
+                                scheduledLabel.style.transform = 'scale(1)';
+                                scheduledLabel.style.boxShadow = 'none';
+                            } else {
+                                scheduledLabel.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+                                scheduledLabel.style.borderColor = '#667eea';
+                                scheduledLabel.style.color = 'white';
+                                scheduledLabel.style.transform = 'scale(1.02)';
+                                scheduledLabel.style.boxShadow = '0 8px 20px rgba(102, 126, 234, 0.3)';
+                                nowLabel.style.background = 'white';
+                                nowLabel.style.borderColor = '#e2e8f0';
+                                nowLabel.style.color = '#64748b';
+                                nowLabel.style.transform = 'scale(1)';
+                                nowLabel.style.boxShadow = 'none';
+                            }
+                        }
+
+                        document.querySelectorAll('input[name="scheduleType"]').forEach(radio => {
+                            radio.addEventListener('change', toggleSchedule);
+                        });
+
+                        document.getElementById('now-label').addEventListener('click', function () {
+                            document.querySelector('input[name="scheduleType"][value="now"]').checked = true;
+                            toggleSchedule();
+                        });
+
+                        document.getElementById('scheduled-label').addEventListener('click', function () {
+                            document.querySelector('input[name="scheduleType"][value="scheduled"]').checked = true;
+                            toggleSchedule();
+                        });
+
+                        window.addEventListener('DOMContentLoaded', toggleSchedule);
+                    </script>
+
+                    <div class="panel-card">
+                        <h3>Quick Notes</h3>
+                        <div class="field-stack">
+                            <div class="ghost-note">Preview uses the exact student renderer, so anything you verify
+                                there will match the student version.</div>
+                            <div class="ghost-note">Downloaded HTML keeps the same layout, theme options, and
+                                interaction logic as the platform view.</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section">
+                <div class="section-header">
+                    <div>
+                        <h2>Active Groups</h2>
+                        <p>See each group’s roster and currently assigned tests.</p>
+                    </div>
+                </div>
+
+                <% if (groups.length> 0) { %>
+                    <div class="group-grid">
+                        <% groups.forEach(group=> { %>
+                            <article class="group-card">
+                                <div class="group-title-row">
+                                    <div class="group-title">
+                                        <%= group.name %>
+                                    </div>
+                                    <button class="btn btn-danger"
+                                        onclick="deleteItem('group', '<%= group._id %>', '<%= group.name %>')">Delete</button>
+                                </div>
+
+                                <div class="pill-row" style="margin-bottom: 14px;">
+                                    <div class="pill neutral">
+                                        <%= group.students.length %> students
+                                    </div>
+                                    <div class="pill neutral">
+                                        <%= group.assignedTests.length %> tests
+                                    </div>
+                                </div>
+
+                                <p style="font-weight: 800; color: #334155; margin-bottom: 8px;">Assigned Tests</p>
+                                <div class="pill-row" style="margin-bottom: 16px;">
+                                    <% if (group.assignedTests.length> 0) { %>
+                                        <% group.assignedTests.forEach(test=> { %>
+                                            <div class="pill" style="display:flex;align-items:center;gap:6px;">
+                                                <%= test.title %>
+                                                    <button type="button"
+                                                        onclick="removeTestFromGroup('<%= group._id %>', '<%= test._id %>', '<%= test.title %>')"
+                                                        style="border:none; background:none; color:#b91c1c; font-weight:900; cursor:pointer; font-size:1.1rem; line-height:1;">×</button>
+                                            </div>
+                                            <% }) %>
+                                                <% } else { %>
+                                                    <div class="ghost-note" style="width: 100%;">No tests assigned yet.
+                                                    </div>
+                                                    <% } %>
+                                </div>
+
+                                <p style="font-weight: 800; color: #334155; margin-bottom: 8px;">Students</p>
+                                <div class="pill-row">
+                                    <% if (group.students.length> 0) { %>
+                                        <% group.students.forEach(student=> { %>
+                                            <div class="pill neutral">
+                                                <%= student.username %>
+                                                    <button type="button"
+                                                        onclick="removeStudentFromGroup('<%= group._id %>', '<%= student._id %>', '<%= student.username %>')"
+                                                        style="margin-left:8px; border:none; background:none; color:#b91c1c; font-weight:900; cursor:pointer;">×</button>
+                                            </div>
+                                            <% }) %>
+                                                <% } else { %>
+                                                    <div class="ghost-note" style="width: 100%;">No students in this
+                                                        group yet.</div>
+                                                    <% } %>
+                                </div>
+                            </article>
+                            <% }) %>
+                    </div>
+                    <% } else { %>
+                        <div class="ghost-note">No groups yet. Create one above to start assigning students and tests.
+                        </div>
+                        <% } %>
+            </section>
+
+            <section class="section">
+                <div class="section-header">
+                    <div>
+                        <h2>All Students</h2>
+                        <p>Keep track of current group placement and remove student accounts when needed.</p>
+                    </div>
+                    <a href="/teacher/add-student" class="btn btn-success">+ Register Student</a>
+                </div>
+
+                <% if (allStudents.length> 0) { %>
+                    <div class="table-wrap">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Student</th>
+                                    <th>Current Group</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <% allStudents.forEach(student=> { %>
+                                    <% const activeGroup=groups.find(group=> String(group._id) ===
+                                        String(student.groupId)); %>
+                                        <tr>
+                                            <td style="font-weight: 800;">
+                                                <%= student.username %>
+                                            </td>
+                                            <td>
+                                                <% if (activeGroup) { %>
+                                                    <span class="tag">
+                                                        <%= activeGroup.name %>
+                                                    </span>
+                                                    <% } else { %>
+                                                        <span class="tag muted">Unassigned</span>
+                                                        <% } %>
+                                            </td>
+                                            <td>
+                                                <div class="action-row">
+                                                    <button class="btn btn-secondary"
+                                                        onclick="viewPassword('<%= student._id %>', '<%= student.username %>')"
+                                                        style="padding:8px 14px;font-size:0.85rem;">🔑 View
+                                                        Password</button>
+                                                    <button class="btn btn-danger"
+                                                        onclick="deleteItem('student', '<%= student._id %>', '<%= student.username %>')">Delete</button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        <% }) %>
+                            </tbody>
+                        </table>
+                    </div>
+                    <% } else { %>
+                        <div class="ghost-note">No students registered yet. Use the register button to create the first
+                            student account.</div>
+                        <% } %>
+            </section>
+        </main>
 
 
-    </script>
+        </script>
 </body>
+
 </html>

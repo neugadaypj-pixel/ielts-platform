@@ -2120,7 +2120,36 @@ function generateHTMLFromTest(testDoc, options = {}) {
     }
 
     if (plainTest.renderedHtml && typeof plainTest.renderedHtml === 'string' && plainTest.renderedHtml.trim()) {
-        return plainTest.renderedHtml.trim();
+        const normalizedType = String(plainTest.type || 'reading').toLowerCase();
+        let html = plainTest.renderedHtml.trim();
+
+        // Ensure platform theme toggle exists for all types.
+        if (!html.includes('platform-theme-overrides')) {
+            html = injectThemeStyles(html);
+        }
+        if (!html.includes('toggleSiteTheme') && !html.includes('Platform Theme')) {
+            html = injectWebsiteThemeButton(html, normalizedType);
+            html = injectThemeController(html, normalizedType);
+        } else {
+            if (!html.includes('toggleSiteTheme')) {
+                html = injectThemeController(html, normalizedType);
+            }
+            if (!html.includes('Platform Theme')) {
+                html = injectWebsiteThemeButton(html, normalizedType);
+            }
+        }
+
+        // Writing tests need runtime hooks even when HTML was stored.
+        if (normalizedType === 'writing') {
+            if (!html.includes('platform_submission_sync_')) {
+                html = injectWritingSubmissionHook(html, plainTest);
+            }
+            html = injectQuitButton(html);
+            html = injectStudentName(html, plainTest, studentName);
+            html = injectHeartbeat(html, plainTest);
+        }
+
+        return html;
     }
 
     const rawContent = plainTest.readingPassage ?? plainTest.content;
@@ -2146,6 +2175,16 @@ function generateHTMLFromTest(testDoc, options = {}) {
             if (!rawHtml.includes('Platform Theme')) {
                 rawHtml = injectWebsiteThemeButton(rawHtml, normalizedType);
             }
+        }
+
+        // Writing tests: ensure submission hook + heartbeat exist even for raw HTML.
+        if (normalizedType === 'writing') {
+            if (!rawHtml.includes('platform_submission_sync_')) {
+                rawHtml = injectWritingSubmissionHook(rawHtml, plainTest);
+            }
+            rawHtml = injectQuitButton(rawHtml);
+            rawHtml = injectStudentName(rawHtml, plainTest, studentName);
+            rawHtml = injectHeartbeat(rawHtml, plainTest);
         }
 
         return rawHtml;

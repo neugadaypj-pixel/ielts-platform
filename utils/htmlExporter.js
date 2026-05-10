@@ -1582,8 +1582,89 @@ function injectWritingSubmissionHook(html, testDoc) {
     const snippet = `
 <script>
 (function() {
+    const __debugWritingEnabled = (function() {
+        try {
+            return typeof location !== 'undefined'
+                && /(?:\?|&)debugWriting=1(?:&|$)/.test(location.search || '');
+        } catch (error) {
+            return false;
+        }
+    })();
+
+    function debugLog(...args) {
+        if (!__debugWritingEnabled) return;
+        try { console.log('[writing-debug]', ...args); } catch (e) {}
+    }
+
+    function ensureDebugOverlay() {
+        if (!__debugWritingEnabled) return null;
+        try {
+            const existing = document.getElementById('__platformWritingDebug');
+            if (existing) return existing;
+            const box = document.createElement('div');
+            box.id = '__platformWritingDebug';
+            box.style.position = 'fixed';
+            box.style.bottom = '12px';
+            box.style.left = '12px';
+            box.style.zIndex = '2147483647';
+            box.style.padding = '10px 12px';
+            box.style.borderRadius = '10px';
+            box.style.background = 'rgba(0,0,0,0.78)';
+            box.style.color = '#fff';
+            box.style.font = '12px/1.4 monospace';
+            box.style.maxWidth = '420px';
+            box.style.whiteSpace = 'pre-wrap';
+            box.style.boxShadow = '0 8px 24px rgba(0,0,0,0.35)';
+            box.textContent = 'writing-debug enabled';
+            document.body.appendChild(box);
+            return box;
+        } catch (error) {
+            return null;
+        }
+    }
+
+    function updateDebugOverlay(statusLines) {
+        if (!__debugWritingEnabled) return;
+        const box = ensureDebugOverlay();
+        if (!box) return;
+        try {
+            box.textContent = statusLines.join('\n');
+        } catch (error) {}
+    }
+
+    if (__debugWritingEnabled) {
+        window.addEventListener('error', (event) => {
+            try {
+                debugLog('window.error', event.message, event.filename, event.lineno);
+                updateDebugOverlay([
+                    'writing-debug enabled',
+                    'ERROR: ' + (event.message || 'unknown'),
+                    (event.filename ? ('at ' + event.filename + ':' + event.lineno) : '')
+                ].filter(Boolean));
+            } catch (e) {}
+        });
+        window.addEventListener('unhandledrejection', (event) => {
+            try {
+                const reason = event && event.reason ? (event.reason.message || String(event.reason)) : 'unknown';
+                debugLog('unhandledrejection', reason);
+                updateDebugOverlay([
+                    'writing-debug enabled',
+                    'UNHANDLED: ' + reason
+                ]);
+            } catch (e) {}
+        });
+    }
+
     function ensureWritingBindings() {
         try {
+            debugLog('ensureWritingBindings:start', {
+                hasTimerDisplay: !!document.getElementById('timerDisplay'),
+                hasFooter: !!document.querySelector('.footer'),
+                hasSwitchTask: typeof window.switchTask === 'function',
+                hasSubmitTest: typeof window.submitTest === 'function',
+                sessionId: (typeof window.SESSION_ID !== 'undefined' ? window.SESSION_ID : '(missing)')
+            });
+
             // Bind buttons defensively in case inline handlers are stripped or globals are missing.
             const footerButtons = Array.from(document.querySelectorAll('.footer .part-btn'));
             if (footerButtons.length >= 2) {
@@ -1673,6 +1754,19 @@ function injectWritingSubmissionHook(html, testDoc) {
                     }
                 }, 1000);
             }
+
+            updateDebugOverlay([
+                'writing-debug enabled',
+                'testId: ${safeTestId}',
+                'SESSION_ID: ' + (typeof window.SESSION_ID !== 'undefined' ? window.SESSION_ID : '(missing)'),
+                'switchTask(): ' + (typeof window.switchTask),
+                'submitTest(): ' + (typeof window.submitTest),
+                'timerStarted: ' + (window.__platformWritingTimerStarted ? 'yes' : 'no'),
+                'time(var): ' + (typeof window.time !== 'undefined' ? String(window.time) : '(missing)'),
+                'timerText: ' + ((document.getElementById('timerDisplay')?.innerText || '').trim() || '(missing)'),
+                'footerBtns: ' + String(document.querySelectorAll('.footer .part-btn').length),
+                'submitBtn: ' + (document.querySelector('.footer .check-btn') ? 'yes' : 'no')
+            ]);
         } catch (error) {
             // ignore
         }

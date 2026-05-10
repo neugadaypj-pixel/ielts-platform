@@ -8,6 +8,22 @@ function toPlainObject(testDoc) {
         return testDoc.toObject();
     }
 
+function sanitizeWritingRuntimeHtml(html) {
+    if (!html || typeof html !== 'string') return html;
+    let result = html;
+
+    // Fix older injected debug scripts that contained a literal newline inside join('...')
+    result = result.replace(/statusLines\.join\('\s*[\r\n]+\s*'\)/g, "statusLines.join('\\\\n')");
+
+    // Fix older injected debug flag regex that lost the backslash before '?'
+    result = result.replace(/\/\(\?:\?\|&\)debugWriting=1\(\?:&\|\$\)\//g, "/(?:\\\\?|&)debugWriting=1(?:&|$)/");
+
+    // Fix older timer parsing regex that lost backslashes for \d
+    result = result.replace(/match\(\/\^\(d\+\):\(d\+\)\$\/\)/g, "match(/^(\\\\d+):(\\\\d+)$/)");
+
+    return result;
+}
+
     return { ...testDoc };
 }
 
@@ -2242,6 +2258,7 @@ function generateHTMLFromTest(testDoc, options = {}) {
             html = injectQuitButton(html);
             html = injectStudentName(html, plainTest, studentName);
             html = injectHeartbeat(html, plainTest);
+            html = sanitizeWritingRuntimeHtml(html);
         }
 
         return html;
@@ -2280,6 +2297,7 @@ function generateHTMLFromTest(testDoc, options = {}) {
             rawHtml = injectQuitButton(rawHtml);
             rawHtml = injectStudentName(rawHtml, plainTest, studentName);
             rawHtml = injectHeartbeat(rawHtml, plainTest);
+            rawHtml = sanitizeWritingRuntimeHtml(rawHtml);
         }
 
         return rawHtml;

@@ -1584,8 +1584,9 @@ function injectWritingSubmissionHook(html, testDoc) {
 (function() {
     const __debugWritingEnabled = (function() {
         try {
-            return typeof location !== 'undefined'
-                && /(?:\?|&)debugWriting=1(?:&|$)/.test(location.search || '');
+            if (typeof location === 'undefined') return false;
+            const params = new URLSearchParams(location.search || '');
+            return params.get('debugWriting') === '1';
         } catch (error) {
             return false;
         }
@@ -1628,7 +1629,7 @@ function injectWritingSubmissionHook(html, testDoc) {
         const box = ensureDebugOverlay();
         if (!box) return;
         try {
-            box.textContent = statusLines.join('\n');
+            box.textContent = statusLines.join('\\n');
         } catch (error) {}
     }
 
@@ -1721,7 +1722,7 @@ function injectWritingSubmissionHook(html, testDoc) {
 
                 if (typeof window.time !== 'number' || !Number.isFinite(window.time)) {
                     const initial = (document.getElementById('timerDisplay')?.innerText || '').trim();
-                    const match = initial.match(/^(\d+):(\d+)$/);
+                    const match = initial.match(/^(\\d+):(\\d+)$/);
                     if (match) {
                         const minutes = Number(match[1]);
                         const seconds = Number(match[2]);

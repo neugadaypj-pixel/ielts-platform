@@ -1452,6 +1452,7 @@ function injectReadingSubmissionHook(html, testDoc) {
     }
 
     window.addEventListener('load', () => {
+        ensureWritingBindings();
         setTimeout(syncSubmission, 1200);
     });
 })();
@@ -1581,6 +1582,102 @@ function injectWritingSubmissionHook(html, testDoc) {
     const snippet = `
 <script>
 (function() {
+    function ensureWritingBindings() {
+        try {
+            // Bind buttons defensively in case inline handlers are stripped or globals are missing.
+            const footerButtons = Array.from(document.querySelectorAll('.footer .part-btn'));
+            if (footerButtons.length >= 2) {
+                footerButtons[0].addEventListener('click', () => {
+                    if (typeof window.switchTask === 'function') window.switchTask(1);
+                });
+                footerButtons[1].addEventListener('click', () => {
+                    if (typeof window.switchTask === 'function') window.switchTask(2);
+                });
+            }
+
+            const submitBtn = document.querySelector('.footer .check-btn');
+            if (submitBtn) {
+                submitBtn.addEventListener('click', () => {
+                    if (typeof window.submitTest === 'function') window.submitTest();
+                });
+            }
+
+            // Fallback switchTask implementation (matches builder behavior).
+            if (typeof window.switchTask !== 'function') {
+                window.switchTask = function(num) {
+                    const buttons = document.querySelectorAll('.footer .part-btn');
+                    buttons.forEach((b) => b.classList.remove('active'));
+                    if (buttons[num - 1]) buttons[num - 1].classList.add('active');
+
+                    const pTask1 = document.getElementById('p_task1');
+                    const pTask2 = document.getElementById('p_task2');
+                    const inputTask1 = document.getElementById('input_task1');
+                    const inputTask2 = document.getElementById('input_task2');
+                    const wcBox1 = document.querySelector('.word-count-box');
+                    const wcBox2 = document.getElementById('wc_box_2');
+
+                    if (num === 1) {
+                        pTask1?.classList.remove('hidden');
+                        pTask2?.classList.add('hidden');
+                        inputTask1?.classList.remove('hidden');
+                        inputTask2?.classList.add('hidden');
+                        wcBox1?.classList.remove('hidden');
+                        wcBox2?.classList.add('hidden');
+                    } else {
+                        pTask1?.classList.add('hidden');
+                        pTask2?.classList.remove('hidden');
+                        inputTask1?.classList.add('hidden');
+                        inputTask2?.classList.remove('hidden');
+                        wcBox1?.classList.add('hidden');
+                        wcBox2?.classList.remove('hidden');
+                    }
+                };
+            }
+
+            // Fallback timer if builder interval didn't start.
+            if (!window.__platformWritingTimerStarted) {
+                window.__platformWritingTimerStarted = true;
+
+                if (typeof window.time !== 'number' || !Number.isFinite(window.time)) {
+                    const initial = (document.getElementById('timerDisplay')?.innerText || '').trim();
+                    const match = initial.match(/^(\d+):(\d+)$/);
+                    if (match) {
+                        const minutes = Number(match[1]);
+                        const seconds = Number(match[2]);
+                        if (Number.isFinite(minutes) && Number.isFinite(seconds)) {
+                            window.time = minutes * 60 + seconds;
+                        }
+                    }
+                }
+
+                if (typeof window.time !== 'number' || !Number.isFinite(window.time)) {
+                    window.time = 60 * 60;
+                }
+
+                setInterval(() => {
+                    try {
+                        const submitted = typeof window.isSubmitted !== 'undefined' ? window.isSubmitted : false;
+                        if (window.time > 0 && !submitted) {
+                            window.time -= 1;
+                            const m = Math.floor(window.time / 60);
+                            const s = window.time % 60;
+                            const timerDisplay = document.getElementById('timerDisplay');
+                            if (timerDisplay) {
+                                timerDisplay.innerText = (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s;
+                            }
+                        } else if (window.time <= 0 && !submitted && typeof window.checkTimeUp === 'function') {
+                            window.checkTimeUp();
+                        }
+                    } catch (error) {
+                        // Ignore timer failures - keep page usable.
+                    }
+                }, 1000);
+            }
+        } catch (error) {
+            // ignore
+        }
+    }
+
     const syncKey = 'platform_submission_sync_' + ((typeof SESSION_ID !== 'undefined' && SESSION_ID) || 'writing_${safeTestId}');
 
     function canSync() {

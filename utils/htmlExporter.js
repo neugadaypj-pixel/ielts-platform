@@ -816,7 +816,7 @@ function injectThemeStyles(html) {
     }
 </style>`;
 
-    return replaceLastLiteral(html, '</head>', `${themeStyles}\n</head>`);
+    return replaceLastLiteral(html, '</body>', `${themeStyles}\n</body>`);
 }
 
 function injectWebsiteThemeButton(html, type) {
@@ -1373,7 +1373,8 @@ function injectQuitButton(html) {
     }
 })();
 </script>`;
-    return replaceLastLiteral(html, '</head>', `${snippet}\n</head>`);
+
+    return replaceLastLiteral(html, '</body>', `${snippet}\n</body>`);
 }
 
 function injectReadingSubmissionHook(html, testDoc) {

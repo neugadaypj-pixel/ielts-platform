@@ -101,6 +101,13 @@ function hashStringToSixDigits(value) {
     return hash;
 }
 
+function scopeSessionIdForStudent(baseSessionId, studentName) {
+    const trimmed = String(studentName || '').trim();
+    if (!trimmed) return baseSessionId;
+    const suffix = hashStringToSixDigits(trimmed);
+    return `${baseSessionId}_${suffix}`;
+}
+
 function createDeterministicMath(seedValue) {
     const mathObject = {};
 
@@ -902,6 +909,66 @@ function injectThemeController(html, type) {
     } catch (error) {}
 
     syncSiteThemeButton();
+})();
+</script>`;
+
+    return replaceLastLiteral(html, '</body>', `${snippet}\n</body>`);
+}
+
+function injectListeningAudioLockdown(html) {
+    const snippet = `
+<script>
+(function() {
+    function lockAudio(audio) {
+        if (!audio || audio.__platformLocked) return;
+        audio.__platformLocked = true;
+
+        try { audio.controls = false; audio.removeAttribute('controls'); } catch (e) {}
+        try { audio.setAttribute('controlsList', 'nodownload noplaybackrate noremoteplayback'); } catch (e) {}
+        try { audio.disablePictureInPicture = true; audio.setAttribute('disablepictureinpicture', ''); } catch (e) {}
+        try { audio.setAttribute('playsinline', ''); } catch (e) {}
+
+        let lastTime = 0;
+        audio.addEventListener('timeupdate', () => {
+            if (!audio.seeking) lastTime = audio.currentTime;
+        });
+
+        audio.addEventListener('seeking', () => {
+            try {
+                if (Math.abs(audio.currentTime - lastTime) > 0.35) {
+                    audio.currentTime = lastTime;
+                }
+            } catch (e) {}
+        });
+
+        audio.addEventListener('ratechange', () => {
+            try { audio.playbackRate = 1; } catch (e) {}
+        });
+
+        // Some earphones / browsers can pause audio via media keys.
+        // We cannot fully block hardware controls, but we can auto-resume.
+        audio.addEventListener('pause', () => {
+            try {
+                if (!audio.ended) {
+                    const playPromise = audio.play();
+                    if (playPromise && typeof playPromise.catch === 'function') playPromise.catch(() => {});
+                }
+            } catch (e) {}
+        });
+    }
+
+    function applyLockdown() {
+        document.querySelectorAll('audio').forEach(lockAudio);
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', applyLockdown);
+    } else {
+        applyLockdown();
+    }
+
+    const observer = new MutationObserver(applyLockdown);
+    observer.observe(document.documentElement, { childList: true, subtree: true });
 })();
 </script>`;
 
@@ -2081,7 +2148,7 @@ function injectPersistentStateForDownload(html, testDoc) {
 
 function generateReadingHtml(testDoc, parsedContent, studentName) {
     const content = normalizeReadingContent(parsedContent, testDoc);
-    const stableSessionId = createStableSessionId(testDoc, 'test_');
+    const stableSessionId = scopeSessionIdForStudent(createStableSessionId(testDoc, 'test_'), studentName);
 
     let html = runBuilderGenerateFile('reading', {
         p1_title: { value: content.p1.title },
@@ -2113,7 +2180,7 @@ function generateReadingHtml(testDoc, parsedContent, studentName) {
 
 function generateListeningHtml(testDoc, parsedContent, studentName) {
     const content = normalizeListeningContent(parsedContent);
-    const stableSessionId = createStableSessionId(testDoc, 'ielts_listening_');
+    const stableSessionId = scopeSessionIdForStudent(createStableSessionId(testDoc, 'ielts_listening_'), studentName);
     let generatedHtml = runBuilderGenerateFile('listening', {
         q1_text: { value: content.p1 },
         q2_text: { value: content.p2 },
@@ -2168,6 +2235,7 @@ function generateListeningHtml(testDoc, parsedContent, studentName) {
     generatedHtml = injectThemeController(generatedHtml, 'listening');
     generatedHtml = injectListeningHighlightFix(generatedHtml);
     generatedHtml = injectListeningSubmissionHook(generatedHtml, testDoc);
+    generatedHtml = injectListeningAudioLockdown(generatedHtml);
     generatedHtml = injectQuitButton(generatedHtml);
     generatedHtml = injectStudentName(generatedHtml, testDoc, studentName);
     generatedHtml = injectHeartbeat(generatedHtml, testDoc);
@@ -2177,7 +2245,7 @@ function generateListeningHtml(testDoc, parsedContent, studentName) {
 function generateWritingHtml(testDoc, parsedContent, options = {}) {
     const studentName = options.studentName || '';
     const content = normalizeWritingContent(parsedContent);
-    const stableSessionId = createStableSessionId(testDoc, 'ielts_writing_');
+    const stableSessionId = scopeSessionIdForStudent(createStableSessionId(testDoc, 'ielts_writing_'), studentName);
     let generatedHtml = runBuilderGenerateFile('writing', {
         t1_img: { value: content.task1.image || '' },
         t1_prompt: { value: content.task1.prompt || '' },

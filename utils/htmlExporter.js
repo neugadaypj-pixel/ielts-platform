@@ -915,6 +915,35 @@ function injectThemeController(html, type) {
     return replaceLastLiteral(html, '</body>', `${snippet}\n</body>`);
 }
 
+function injectShortcutBlocker(html) {
+    const snippet = `
+<script>
+(function() {
+    function shouldBlock(event) {
+        const key = (event.key || '').toLowerCase();
+        const code = (event.code || '').toLowerCase();
+        const ctrlOrMeta = !!(event.ctrlKey || event.metaKey);
+        const shift = !!event.shiftKey;
+
+        if (ctrlOrMeta && (key === 'f' || key === 'u' || key === 's' || key === 'p')) return true;
+        if (ctrlOrMeta && shift && (key === 'i' || key === 'j' || key === 'c')) return true;
+        if (key === 'f12' || code === 'f12') return true;
+        return false;
+    }
+
+    window.addEventListener('keydown', function(event) {
+        try {
+            if (!shouldBlock(event)) return;
+            event.preventDefault();
+            event.stopPropagation();
+        } catch (e) {}
+    }, true);
+})();
+</script>`;
+
+    return replaceLastLiteral(html, '</body>', `${snippet}\n</body>`);
+}
+
 function injectListeningAudioLockdown(html) {
     const snippet = `
 <script>
@@ -2172,6 +2201,7 @@ function generateReadingHtml(testDoc, parsedContent, studentName) {
     html = injectThemeController(html, 'reading');
     html = injectReadingHighlightFix(html);
     html = injectReadingSubmissionHook(html, testDoc);
+    html = injectShortcutBlocker(html);
     html = injectQuitButton(html);
     html = injectStudentName(html, testDoc, studentName);
     html = injectHeartbeat(html, testDoc);
@@ -2236,6 +2266,7 @@ function generateListeningHtml(testDoc, parsedContent, studentName) {
     generatedHtml = injectListeningHighlightFix(generatedHtml);
     generatedHtml = injectListeningSubmissionHook(generatedHtml, testDoc);
     generatedHtml = injectListeningAudioLockdown(generatedHtml);
+    generatedHtml = injectShortcutBlocker(generatedHtml);
     generatedHtml = injectQuitButton(generatedHtml);
     generatedHtml = injectStudentName(generatedHtml, testDoc, studentName);
     generatedHtml = injectHeartbeat(generatedHtml, testDoc);
@@ -2285,6 +2316,7 @@ function generateWritingHtml(testDoc, parsedContent, options = {}) {
     generatedHtml = injectWebsiteThemeButton(generatedHtml, 'writing');
     generatedHtml = injectThemeController(generatedHtml, 'writing');
     generatedHtml = injectWritingSubmissionHook(generatedHtml, testDoc);
+    generatedHtml = injectShortcutBlocker(generatedHtml);
     generatedHtml = injectQuitButton(generatedHtml);
     generatedHtml = injectStudentName(generatedHtml, testDoc, studentName);
     generatedHtml = injectHeartbeat(generatedHtml, testDoc);

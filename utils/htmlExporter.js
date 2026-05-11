@@ -2559,7 +2559,8 @@ function injectPersistentStateForDownload(html, testDoc) {
     if (typeof SESSION_ID !== 'undefined') patchSessionKey('SESSION_ID');
 
     function getFieldKey(el, index) {
-        return el.id || el.name || el.getAttribute('data-qid') || el.getAttribute('data-question-id') || ('field_' + index);
+        const base = el.id || el.name || el.getAttribute('data-qid') || el.getAttribute('data-question-id') || 'field';
+        return base + '__' + index;
     }
 
     function collectState() {

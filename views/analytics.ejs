@@ -145,8 +145,9 @@
             </div>
             <div class="stat-card">
                 <div class="stat-value">
-                    <% const avgScore = submissions.filter(s => s.score).length > 0 
-                        ? Math.round(submissions.filter(s => s.score).reduce((sum, s) => sum + (s.percentage || 0), 0) / submissions.filter(s => s.score).length)
+                    <% const scoredSubmissions = submissions.filter(s => Number.isFinite(Number(s.percentage))); %>
+                    <% const avgScore = scoredSubmissions.length > 0 
+                        ? Math.round(scoredSubmissions.reduce((sum, s) => sum + Number(s.percentage), 0) / scoredSubmissions.length)
                         : 0; %>
                     <%= avgScore %>%
                 </div>
@@ -198,7 +199,7 @@
 
         // Average scores by type
         const scoresByType = { reading: [], listening: [], writing: [] };
-        submissions.forEach(s => { if (s.percentage) scoresByType[s.type].push(s.percentage); });
+        submissions.forEach(s => { if (Number.isFinite(Number(s.percentage)) && scoresByType[s.type]) scoresByType[s.type].push(Number(s.percentage)); });
         const avgByType = {
             reading: scoresByType.reading.length ? Math.round(scoresByType.reading.reduce((a,b)=>a+b,0)/scoresByType.reading.length) : 0,
             listening: scoresByType.listening.length ? Math.round(scoresByType.listening.reduce((a,b)=>a+b,0)/scoresByType.listening.length) : 0,
@@ -248,11 +249,12 @@
         // Score distribution
         const scoreBuckets = { '0-20': 0, '21-40': 0, '41-60': 0, '61-80': 0, '81-100': 0 };
         submissions.forEach(s => {
-            if (!s.percentage) return;
-            if (s.percentage <= 20) scoreBuckets['0-20']++;
-            else if (s.percentage <= 40) scoreBuckets['21-40']++;
-            else if (s.percentage <= 60) scoreBuckets['41-60']++;
-            else if (s.percentage <= 80) scoreBuckets['61-80']++;
+            const percentage = Number(s.percentage);
+            if (!Number.isFinite(percentage)) return;
+            if (percentage <= 20) scoreBuckets['0-20']++;
+            else if (percentage <= 40) scoreBuckets['21-40']++;
+            else if (percentage <= 60) scoreBuckets['41-60']++;
+            else if (percentage <= 80) scoreBuckets['61-80']++;
             else scoreBuckets['81-100']++;
         });
         new Chart(document.getElementById('distChart'), {

@@ -103,6 +103,7 @@
         /* MODERN FLOW BOX (Pill-shaped ovals, strictly 15px font) */
         .flow-box { padding: 8px 20px; border: 2px solid #e1e4e8; border-radius: 50px; background: #fff; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.02); transition: transform 0.2s, box-shadow 0.2s; min-width: 80px; display: inline-block; vertical-align: middle; margin: 0 auto; line-height: 1.5; font-size: 15px !important; color: #333; }
         .flow-box:hover { border-color: #bdc3c7; box-shadow: 0 6px 15px rgba(0,0,0,0.05); }
+        .flow-arrow-right { display: inline-flex; align-items: center; justify-content: center; margin: 0 14px; font-size: 24px !important; font-weight: bold; color: #8e44ad; vertical-align: middle; }
 
         /* Fix for overly wide flow chart gaps */
         .flow-box .gap-input, .flow-chart-content .gap-input { width: 70px !important; padding: 5px; margin: 0 auto; text-align: center; }
@@ -356,7 +357,7 @@
                                     <button class="btn-format" onmousedown="event.preventDefault(); document.execCommand('underline');">Underline</button>
                                     
                                     <button class="btn-format" onmousedown="event.preventDefault()" onclick="insertTag('flow_editor_${i}', '<div style=\\'text-align:center; margin:8px 0;\\'><span style=\\'font-size:22px; font-weight:bold; color:#8e44ad;\\'>&darr;</span></div><div><br></div>', '')">↓ Down Arrow (Centered)</button>
-                                    <button class="btn-format" onmousedown="event.preventDefault()" onclick="insertTag('flow_editor_${i}', ' <span style=\\'font-size:20px; font-weight:bold; color:#8e44ad;\\'>&rarr;</span> ', '')">→ Right Arrow</button>
+                                    <button class="btn-format" onmousedown="event.preventDefault()" onclick="insertFlowRightArrow(${i})">→ Right Arrow (Between Boxes)</button>
                                     <button class="btn-format" type="button" onmousedown="event.preventDefault()" onclick="insertFlowTableTemplate(${i})">Create Modern Boxes</button>
                                 </div>
                                 <div class="gap-controls">
@@ -454,6 +455,50 @@
         if (savedRange) newSel.addRange(savedRange);
         else { const range = document.createRange(); range.selectNodeContents(editor); range.collapse(false); newSel.addRange(range); }
         document.execCommand('insertHTML', false, t);
+        saveSelection();
+    }
+
+    function insertFlowRightArrow(partNum) {
+        const editor = document.getElementById(`flow_editor_${partNum}`);
+        if (!editor) return;
+
+        let range = null;
+        const sel = window.getSelection();
+        if (sel.rangeCount > 0 && editor.contains(sel.getRangeAt(0).commonAncestorContainer)) {
+            range = sel.getRangeAt(0);
+        } else if (lastSavedRange && editor.contains(lastSavedRange.commonAncestorContainer)) {
+            range = lastSavedRange;
+        }
+
+        const arrow = document.createElement('span');
+        arrow.className = 'flow-arrow-right';
+        arrow.innerHTML = '&rarr;';
+
+        if (range) {
+            let node = range.commonAncestorContainer;
+            if (node.nodeType === Node.TEXT_NODE) node = node.parentElement;
+            const flowBox = node && node.closest ? node.closest('.flow-box') : null;
+
+            if (flowBox && editor.contains(flowBox)) {
+                flowBox.insertAdjacentElement('afterend', arrow);
+                arrow.insertAdjacentText('afterend', '\u00A0');
+            } else {
+                range.deleteContents();
+                range.insertNode(arrow);
+                arrow.insertAdjacentText('afterend', '\u00A0');
+            }
+
+            const newRange = document.createRange();
+            newRange.setStartAfter(arrow.nextSibling || arrow);
+            newRange.collapse(true);
+            sel.removeAllRanges();
+            sel.addRange(newRange);
+        } else {
+            editor.appendChild(arrow);
+            editor.appendChild(document.createTextNode('\u00A0'));
+        }
+
+        editor.focus();
         saveSelection();
     }
     

@@ -21,7 +21,7 @@ function validateString(value, fieldName, minLength = 1, maxLength = 500) {
     }
 
     if (trimmed.length > maxLength) {
-        return { valid: false, error: `${fieldName} must not exceed ${maxLength} characters` };
+        return { valid: false, error: `${fieldName} must be maximum ${maxLength} characters` };
     }
 
     return { valid: true, error: null };

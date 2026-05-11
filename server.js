@@ -1921,12 +1921,15 @@ app.post('/api/heartbeat', apiLimiter, async (req, res) => {
     const nextAnswered = Number(answeredCount);
     const nextTotal = Number(totalCount);
     const safeAnswered = Number.isFinite(nextAnswered) ? nextAnswered : 0;
-    const safeTotal = Number.isFinite(nextTotal) ? nextTotal : 0;
+    const safeTotal = Number.isFinite(nextTotal) ? nextTotal : (previous?.totalCount || 0);
+    const boundedAnswered = safeTotal > 0
+        ? Math.max(0, Math.min(safeAnswered, safeTotal))
+        : Math.max(0, safeAnswered);
 
     studentMap.set(studentKey, {
         studentName,
-        answeredCount: previous ? Math.max(previous.answeredCount || 0, safeAnswered) : safeAnswered,
-        totalCount: previous ? Math.max(previous.totalCount || 0, safeTotal) : safeTotal,
+        answeredCount: boundedAnswered,
+        totalCount: safeTotal,
         currentPart: currentPart || (previous?.currentPart || ''),
         timeRemaining: timeRemaining || (previous?.timeRemaining || ''),
         type: type || (previous?.type || ''),
@@ -1945,7 +1948,11 @@ app.post('/api/heartbeat', apiLimiter, async (req, res) => {
     res.json({ ok: true, activeCount });
 });
 
-app.get('/api/live-stream/:testId', isTeacher, (req, res) => {
+app.get('/api/live-stream/:testId', isTeacher, async (req, res) => {
+    const access = await getAccessibleTest(req, req.params.testId);
+    if (!access.test) return res.status(404).end();
+    if (!access.isAllowed) return res.status(403).end();
+
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
@@ -1965,15 +1972,19 @@ app.get('/api/live-stream/:testId', isTeacher, (req, res) => {
 
 app.get('/teacher/live/:testId', isTeacher, async (req, res) => {
     try {
-        const test = await Test.findById(req.params.testId).select('title type createdBy');
-        if (!test) return res.status(404).send('Test not found');
-        res.render('live-monitor', { test, students: [], testId: req.params.testId });
+        const access = await getAccessibleTest(req, req.params.testId);
+        if (!access.test) return res.status(404).send('Test not found');
+        if (!access.isAllowed) return res.status(403).send('Not authorized to monitor this test.');
+        res.render('live-monitor', { test: access.test, students: [], testId: req.params.testId });
     } catch (err) {
         res.status(500).send('Error: ' + err.message);
     }
 });
 
-app.get('/api/live-data/:testId', isTeacher, (req, res) => {
+app.get('/api/live-data/:testId', isTeacher, async (req, res) => {
+    const access = await getAccessibleTest(req, req.params.testId);
+    if (!access.test) return res.status(404).json({ students: [] });
+    if (!access.isAllowed) return res.status(403).json({ students: [] });
     res.json({ students: getActiveStudents(req.params.testId) });
 });
 

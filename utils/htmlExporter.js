@@ -724,6 +724,33 @@ function injectThemeStyles(html) {
         background: rgba(102, 126, 234, 0.08) !important;
         color: #4338ca !important;
     }
+    .platform-theme .flow-row {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        gap: 0 !important;
+        margin: 18px 0 !important;
+        flex-wrap: nowrap !important;
+    }
+    .platform-theme .flow-box {
+        border-radius: 4px !important;
+        min-width: 140px !important;
+        max-width: 240px !important;
+        min-height: 46px !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        margin: 0 !important;
+        padding: 10px 18px !important;
+    }
+    .platform-theme .flow-arrow-right {
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        margin: 0 8px !important;
+        min-width: 28px !important;
+        color: #2c3e50 !important;
+    }
     .platform-theme .start-overlay {
         background:
             radial-gradient(circle at top left, rgba(255,255,255,0.65), transparent 30%),

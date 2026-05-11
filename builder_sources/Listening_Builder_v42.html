@@ -2266,12 +2266,7 @@
 
     function saveState() {
         if(isResetting || !testStarted) return;
-        const state = { submitted: isSubmitted, answers: {}, drops: {}, flags: [], htmlContent: {} };
-        
-        [1,2,3,4].forEach(i => {
-             const el = document.getElementById('panel_q'+i);
-             if(el) state.htmlContent['p'+i] = el.innerHTML;
-        });
+        const state = { submitted: isSubmitted, answers: {}, drops: {}, flags: [] };
 
         document.querySelectorAll('input:not([type="hidden"]), select').forEach(el => {
             if(el.type === 'radio') { if(el.checked) state.answers[el.name] = el.value; } 
@@ -2342,7 +2337,14 @@
         });
 
         updateNavigatorUI(state);
-        localStorage.setItem(SESSION_KEY, JSON.stringify(state));
+        try {
+            localStorage.setItem(SESSION_KEY, JSON.stringify(state));
+        } catch(e) {
+            try {
+                const compactState = { submitted: state.submitted, answers: state.answers, drops: state.drops, flags: state.flags };
+                localStorage.setItem(SESSION_KEY, JSON.stringify(compactState));
+            } catch(innerError) {}
+        }
     }
     
     function updateNavigatorUI(state) {

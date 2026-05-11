@@ -1291,6 +1291,110 @@ function injectListeningAudioLockdown(html) {
     return replaceLastLiteral(html, '</body>', `${snippet}\n</body>`);
 }
 
+function injectListeningStorageQuotaFix(html) {
+    const snippet = `
+<script>
+(function() {
+    if (window.__platformListeningStorageQuotaFix) return;
+    window.__platformListeningStorageQuotaFix = true;
+
+    function saveCompactListeningState() {
+        try {
+            if (typeof isResetting !== 'undefined' && isResetting) return;
+            if (typeof testStarted !== 'undefined' && !testStarted) return;
+            if (typeof SESSION_KEY === 'undefined' || !SESSION_KEY) return;
+
+            const state = { submitted: Boolean(typeof isSubmitted !== 'undefined' && isSubmitted), answers: {}, drops: {}, flags: [] };
+
+            document.querySelectorAll('input:not([type="hidden"]), select').forEach(el => {
+                if (el.type === 'radio') {
+                    if (el.checked) state.answers[el.name] = el.value;
+                } else if (el.id) {
+                    if (state.answers[el.id] !== undefined) {
+                        if (!Array.isArray(state.answers[el.id])) state.answers[el.id] = [state.answers[el.id]];
+                        state.answers[el.id].push(el.value);
+                    } else {
+                        state.answers[el.id] = el.value;
+                    }
+                }
+            });
+
+            document.querySelectorAll('.custom-select-wrapper input[type="hidden"]').forEach(el => {
+                if (!el.value) return;
+                if (state.answers[el.id] !== undefined) {
+                    if (!Array.isArray(state.answers[el.id])) state.answers[el.id] = [state.answers[el.id]];
+                    state.answers[el.id].push(el.value);
+                } else {
+                    state.answers[el.id] = el.value;
+                }
+            });
+
+            document.querySelectorAll('.pick-n-question').forEach(group => {
+                const startQ = group.dataset.groupStart;
+                const checks = [];
+                group.querySelectorAll('input[type="checkbox"]:checked').forEach(cb => checks.push(cb.value));
+                if (startQ && checks.length > 0) state.answers['multi_' + startQ] = checks;
+            });
+
+            document.querySelectorAll('.map-drop-zone.filled').forEach(zone => {
+                const hidden = zone.querySelector('input[type="hidden"]');
+                if (hidden && hidden.value && zone.dataset.qid) {
+                    state.drops[zone.dataset.qid] = { val: hidden.value, text: zone.dataset.droppedText || hidden.value };
+                }
+            });
+
+            document.querySelectorAll('.flagged').forEach(block => {
+                block.querySelectorAll('input[id^="q"], select[id^="q"]').forEach(el => {
+                    const id = String(el.id).replace('q','');
+                    if (id && !state.flags.includes(id)) state.flags.push(id);
+                });
+                block.querySelectorAll('.map-drop-zone').forEach(el => {
+                    const id = String(el.dataset.qid || '');
+                    if (id && !state.flags.includes(id)) state.flags.push(id);
+                });
+                block.querySelectorAll('input[type="radio"][name^="q"]').forEach(el => {
+                    const id = String(el.name).replace('q','');
+                    if (id && !state.flags.includes(id)) state.flags.push(id);
+                });
+                block.querySelectorAll('input[type="checkbox"][data-questions]').forEach(el => {
+                    String(el.dataset.questions || '').split(/\\s+/).forEach(id => {
+                        if (id && !state.flags.includes(String(id))) state.flags.push(String(id));
+                    });
+                });
+                if (block.dataset.qStart && !state.flags.includes(String(block.dataset.qStart))) state.flags.push(String(block.dataset.qStart));
+            });
+
+            document.querySelectorAll('.gap-input.flagged-input').forEach(inp => {
+                const id = String(inp.id || '').replace('q', '');
+                if (id && !state.flags.includes(id)) state.flags.push(id);
+            });
+            document.querySelectorAll('.map-drop-zone.flagged-zone').forEach(zone => {
+                const id = String(zone.dataset.qid || '');
+                if (id && !state.flags.includes(id)) state.flags.push(id);
+            });
+
+            if (typeof updateNavigatorUI === 'function') {
+                try { updateNavigatorUI(state); } catch (e) {}
+            }
+
+            try {
+                localStorage.setItem(SESSION_KEY, JSON.stringify(state));
+            } catch (error) {
+                try {
+                    localStorage.removeItem(SESSION_KEY);
+                    localStorage.setItem(SESSION_KEY, JSON.stringify({ submitted: state.submitted, answers: state.answers, drops: state.drops, flags: state.flags }));
+                } catch (innerError) {}
+            }
+        } catch (error) {}
+    }
+
+    window.saveState = saveCompactListeningState;
+    try { saveState = saveCompactListeningState; } catch (e) {}
+})();
+</script>`;
+    return replaceLastLiteral(html, '</body>', `${snippet}\n</body>`);
+}
+
 function injectReadingHighlightFix(html) {
     const snippet = `
 <script>
@@ -2303,65 +2407,59 @@ function injectHeartbeat(html, testDoc) {
     const TEST_ID = '${safeTestId}';
     const TEST_TYPE = '${safeType}';
 
-    function countAnswered() {
-        let count = 0;
-        const seen = new Set();
-
-        // Gap inputs (text)
-        document.querySelectorAll('input.gap-input, input.answer-input').forEach(el => {
-            if (!seen.has(el.id) && el.value && el.value.trim()) {
-                seen.add(el.id);
-                count++;
-            }
-        });
-
-        // Radio groups
-        const radioGroups = new Set();
-        document.querySelectorAll('input[type="radio"]').forEach(el => radioGroups.add(el.name));
-        radioGroups.forEach(name => {
-            if (document.querySelector('input[name="' + name + '"]:checked')) count++;
-        });
-
-        // Checkboxes (pick-n)
-        document.querySelectorAll('.pick-n-question').forEach(group => {
-            if (group.querySelector('input[type="checkbox"]:checked')) count++;
-        });
-
-        // Map drop zones
-        document.querySelectorAll('.map-drop-zone.filled').forEach(zone => {
-            if (!seen.has(zone.dataset.qid)) {
-                seen.add(zone.dataset.qid);
-                count++;
-            }
-        });
-
-        // Custom select (matching)
-        document.querySelectorAll('.custom-select-wrapper input[type="hidden"]').forEach(el => {
-            if (!seen.has(el.id) && el.value && el.value.trim()) {
-                seen.add(el.id);
-                count++;
-            }
-        });
-
-        return count;
-    }
-
-    function countTotal() {
-        // The answer key is stored as encodedKey in the test HTML
+    function getAnswerKeyQuestionIds() {
         try {
             if (typeof encodedKey !== 'undefined' && encodedKey) {
                 const decoded = JSON.parse(atob(encodedKey));
-                return Object.keys(decoded).length;
+                return Object.keys(decoded);
             }
         } catch(e) {}
-        // Fallback: count unique question IDs excluding non-question inputs
         const ids = new Set();
         document.querySelectorAll('input[id^="q"]').forEach(el => {
-            if (el.type !== 'hidden' && el.id !== 'studentName') ids.add(el.id);
+            if (el.id !== 'studentName') ids.add(el.id.replace(/^q/, ''));
         });
-        document.querySelectorAll('.map-drop-zone[data-qid]').forEach(el => ids.add('q' + el.dataset.qid));
-        document.querySelectorAll('input[type="radio"][name^="q"]').forEach(el => ids.add(el.name));
-        return ids.size;
+        document.querySelectorAll('.map-drop-zone[data-qid]').forEach(el => ids.add(String(el.dataset.qid)));
+        document.querySelectorAll('input[type="radio"][name^="q"]').forEach(el => ids.add(el.name.replace(/^q/, '')));
+        document.querySelectorAll('input[type="checkbox"][data-questions]').forEach(el => {
+            String(el.dataset.questions || '').split(/\s+/).forEach(q => { if (q) ids.add(q); });
+        });
+        document.querySelectorAll('[data-q-start]').forEach(el => {
+            if (el.dataset.qStart) ids.add(String(el.dataset.qStart));
+        });
+        return Array.from(ids);
+    }
+
+    function isQuestionAnswered(qId) {
+        const fieldSelector = '#' + CSS.escape('q' + qId);
+        const fields = Array.from(document.querySelectorAll(fieldSelector));
+        if (fields.length > 0) {
+            return fields.every(field => field.value && field.value.trim());
+        }
+
+        if (document.querySelector('input[name="q' + CSS.escape(qId) + '"]:checked')) return true;
+
+        const mapZone = document.querySelector('.map-drop-zone[data-qid="' + CSS.escape(qId) + '"]');
+        if (mapZone && mapZone.classList.contains('filled')) return true;
+
+        const checkboxes = Array.from(document.querySelectorAll('input[type="checkbox"][data-questions~="' + CSS.escape(qId) + '"]'));
+        if (checkboxes.length > 0) {
+            const group = checkboxes[0].closest('.pick-n-question');
+            const checkedCount = group ? group.querySelectorAll('input[type="checkbox"]:checked').length : checkboxes.filter(cb => cb.checked).length;
+            const questionIds = group
+                ? Array.from(new Set(Array.from(group.querySelectorAll('input[type="checkbox"][data-questions]')).flatMap(cb => String(cb.dataset.questions || '').split(/\s+/).filter(Boolean)))).sort((a, b) => Number(a) - Number(b))
+                : [String(qId)];
+            return checkedCount >= (questionIds.indexOf(String(qId)) + 1);
+        }
+
+        return false;
+    }
+
+    function countAnswered() {
+        return getAnswerKeyQuestionIds().filter(isQuestionAnswered).length;
+    }
+
+    function countTotal() {
+        return getAnswerKeyQuestionIds().length;
     }
 
     function getCurrentPart() {
@@ -2655,6 +2753,7 @@ function generateListeningHtml(testDoc, parsedContent, studentName) {
     generatedHtml = injectListeningDropdownDirectionFix(generatedHtml);
     generatedHtml = injectExamGuardWarnOnly(generatedHtml, testDoc);
     generatedHtml = injectListeningAudioLockdown(generatedHtml);
+    generatedHtml = injectListeningStorageQuotaFix(generatedHtml);
     generatedHtml = injectShortcutBlocker(generatedHtml);
     generatedHtml = injectQuitButton(generatedHtml);
     generatedHtml = injectStudentName(generatedHtml, testDoc, studentName);
@@ -2760,6 +2859,9 @@ function generateHTMLFromTest(testDoc, options = {}) {
             if (!html.includes('injectListeningAudioLockdown')) {
                 html = injectListeningAudioLockdown(html);
             }
+            if (!html.includes('__platformListeningStorageQuotaFix')) {
+                html = injectListeningStorageQuotaFix(html);
+            }
             if (!html.includes('platform_exam_guard_')) {
                 html = injectExamGuardWarnOnly(html, plainTest);
             }
@@ -2801,6 +2903,9 @@ rawHtml = injectWebsiteThemeButton(rawHtml, normalizedType);
 if (normalizedType === 'listening') {
     if (!rawHtml.includes('injectListeningAudioLockdown')) {
         rawHtml = injectListeningAudioLockdown(rawHtml);
+    }
+    if (!rawHtml.includes('__platformListeningStorageQuotaFix')) {
+        rawHtml = injectListeningStorageQuotaFix(rawHtml);
     }
     if (!rawHtml.includes('platform_exam_guard_')) {
         rawHtml = injectExamGuardWarnOnly(rawHtml, plainTest);

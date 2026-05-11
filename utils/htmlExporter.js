@@ -931,6 +931,77 @@ function injectListeningDropdownZIndexFix(html) {
     return replaceLastLiteral(html, '</body>', `${snippet}\n</body>`);
 }
 
+function injectListeningDropdownDirectionFix(html) {
+    const snippet = `
+<script>
+(function() {
+    function getFixedFooterHeight() {
+        try {
+            const footer = document.querySelector('.footer');
+            if (!footer) return 0;
+            const style = window.getComputedStyle(footer);
+            if (style.position !== 'fixed') return 0;
+            const rect = footer.getBoundingClientRect();
+            return rect.height || 0;
+        } catch (e) {
+            return 0;
+        }
+    }
+
+    function updateWrapperDirection(wrapper) {
+        try {
+            if (!wrapper || !wrapper.classList || !wrapper.classList.contains('open')) return;
+            const options = wrapper.querySelector('.custom-select-options');
+            if (!options) return;
+
+            // Reset to default downward layout first so measurements are accurate.
+            options.style.top = '';
+            options.style.bottom = '';
+
+            const footerPadding = getFixedFooterHeight() + 10;
+            const rect = options.getBoundingClientRect();
+            const viewportBottom = (window.innerHeight || document.documentElement.clientHeight) - footerPadding;
+
+            if (rect.bottom > viewportBottom) {
+                // Flip upward
+                options.style.top = 'auto';
+                options.style.bottom = 'calc(100% + 8px)';
+            }
+        } catch (e) {}
+    }
+
+    function updateAllOpen() {
+        document.querySelectorAll('.custom-select-wrapper.open').forEach(updateWrapperDirection);
+    }
+
+    // Wrap the builder function so we can correct position right after it opens.
+    const originalToggle = typeof window.toggleCustomSelect === 'function' ? window.toggleCustomSelect : null;
+    if (originalToggle) {
+        window.toggleCustomSelect = function(...args) {
+            const trigger = args && args[0] ? args[0] : null;
+            const wrapper = trigger && trigger.closest ? trigger.closest('.custom-select-wrapper') : null;
+            const result = originalToggle.apply(this, args);
+            setTimeout(() => updateWrapperDirection(wrapper), 0);
+            return result;
+        };
+    } else {
+        // Fallback: if the builder changes, still try to adjust on clicks.
+        document.addEventListener('click', (event) => {
+            const trigger = event.target && event.target.closest ? event.target.closest('.custom-select-trigger') : null;
+            if (!trigger) return;
+            const wrapper = trigger.closest('.custom-select-wrapper');
+            setTimeout(() => updateWrapperDirection(wrapper), 0);
+        }, true);
+    }
+
+    window.addEventListener('resize', () => setTimeout(updateAllOpen, 0));
+    window.addEventListener('scroll', () => setTimeout(updateAllOpen, 0), true);
+})();
+</script>`;
+
+    return replaceLastLiteral(html, '</body>', `${snippet}\n</body>`);
+}
+
 function injectShortcutBlocker(html) {
     const snippet = `
 <script>
@@ -2282,6 +2353,7 @@ function generateListeningHtml(testDoc, parsedContent, studentName) {
     generatedHtml = injectListeningHighlightFix(generatedHtml);
     generatedHtml = injectListeningSubmissionHook(generatedHtml, testDoc);
     generatedHtml = injectListeningDropdownZIndexFix(generatedHtml);
+    generatedHtml = injectListeningDropdownDirectionFix(generatedHtml);
     generatedHtml = injectListeningAudioLockdown(generatedHtml);
     generatedHtml = injectShortcutBlocker(generatedHtml);
     generatedHtml = injectQuitButton(generatedHtml);

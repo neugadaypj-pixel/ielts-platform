@@ -1237,6 +1237,35 @@ function injectListeningAudioLockdown(html) {
                 }
             } catch (e) {}
         });
+
+        // Save current time to localStorage periodically and on key events
+        const saveCurrentTime = () => {
+            try {
+                if (audio && !audio.paused && !audio.ended && audio.currentTime > 0) {
+                    localStorage.setItem('listening_audio_currentTime', audio.currentTime.toString());
+                    localStorage.setItem('listening_audio_lastSaved', Date.now().toString());
+                }
+            } catch (e) {}
+        };
+
+        // Save every 5 seconds
+        setInterval(saveCurrentTime, 5000);
+        // Also save on timeupdate
+        audio.addEventListener('timeupdate', saveCurrentTime);
+
+        // Restore saved time on load if within reasonable time window (30 minutes)
+        try {
+            const savedTime = parseFloat(localStorage.getItem('listening_audio_currentTime') || '0');
+            const lastSaved = parseInt(localStorage.getItem('listening_audio_lastSaved') || '0');
+            const now = Date.now();
+            if (savedTime > 0 && (now - lastSaved) < 30 * 60 * 1000) { // within 30 minutes
+                audio.addEventListener('loadedmetadata', () => {
+                    if (audio.duration && savedTime <= audio.duration) {
+                        audio.currentTime = savedTime;
+                    }
+                });
+            }
+        } catch (e) {}
     }
 
     function applyLockdown() {
@@ -2625,6 +2654,20 @@ function generateHTMLFromTest(testDoc, options = {}) {
             html = sanitizeWritingRuntimeHtml(html);
         }
 
+        // Listening tests need runtime hooks even when HTML was stored.
+        if (normalizedType === 'listening') {
+            if (!html.includes('injectListeningAudioLockdown')) {
+                html = injectListeningAudioLockdown(html);
+            }
+            if (!html.includes('platform_exam_guard_')) {
+                html = injectExamGuardWarnOnly(html, plainTest);
+            }
+            html = injectQuitButton(html);
+            html = injectStudentName(html, plainTest, studentName);
+            html = injectHeartbeat(html, plainTest);
+            html = injectListeningDropdownZIndexFix(html);
+        }
+
         return html;
     }
 
@@ -2653,18 +2696,32 @@ rawHtml = injectWebsiteThemeButton(rawHtml, normalizedType);
 }
 }
 
+// Listening tests: ensure audio lockdown, flagging, and heartbeat exist even for raw HTML.
+if (normalizedType === 'listening') {
+    if (!rawHtml.includes('injectListeningAudioLockdown')) {
+        rawHtml = injectListeningAudioLockdown(rawHtml);
+    }
+    if (!rawHtml.includes('platform_exam_guard_')) {
+        rawHtml = injectExamGuardWarnOnly(rawHtml, plainTest);
+    }
+    rawHtml = injectQuitButton(rawHtml);
+    rawHtml = injectStudentName(rawHtml, plainTest, studentName);
+    rawHtml = injectHeartbeat(rawHtml, plainTest);
+    rawHtml = injectListeningDropdownZIndexFix(rawHtml);
+}
+
 // Writing tests: ensure submission hook + heartbeat exist even for raw HTML.
 if (normalizedType === 'writing') {
-if (!rawHtml.includes('platform_submission_sync_')) {
-rawHtml = injectWritingSubmissionHook(rawHtml, plainTest);
-}
-if (!rawHtml.includes('platform_exam_guard_')) {
-rawHtml = injectExamGuardWarnOnly(rawHtml, plainTest);
-}
-rawHtml = injectQuitButton(rawHtml);
-rawHtml = injectStudentName(rawHtml, plainTest, studentName);
-rawHtml = injectHeartbeat(rawHtml, plainTest);
-rawHtml = sanitizeWritingRuntimeHtml(rawHtml);
+    if (!rawHtml.includes('platform_submission_sync_')) {
+        rawHtml = injectWritingSubmissionHook(rawHtml, plainTest);
+    }
+    if (!rawHtml.includes('platform_exam_guard_')) {
+        rawHtml = injectExamGuardWarnOnly(rawHtml, plainTest);
+    }
+    rawHtml = injectQuitButton(rawHtml);
+    rawHtml = injectStudentName(rawHtml, plainTest, studentName);
+    rawHtml = injectHeartbeat(rawHtml, plainTest);
+    rawHtml = sanitizeWritingRuntimeHtml(rawHtml);
 }
 
 return rawHtml;

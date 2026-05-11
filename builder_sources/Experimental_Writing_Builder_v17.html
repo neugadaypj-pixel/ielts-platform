@@ -183,6 +183,7 @@ Discuss both views and give your own opinion.</textarea>
 
     function generateFile() {
         const getVal = (id) => document.getElementById(id).value;
+        const getTaskImageList = (value) => String(value || '').split(/\r?\n/).map(url => url.trim()).filter(Boolean);
         const t1img = getVal('t1_img'); const t1p = getVal('t1_prompt'); const t1m = getVal('t1_model');
         const t2p = getVal('t2_prompt'); const t2m = getVal('t2_model');
         const timeLimit = getVal('time_limit') || 60;
@@ -190,7 +191,7 @@ Discuss both views and give your own opinion.</textarea>
         const uniqueId = "ielts_writing_" + Math.floor(Math.random() * 1000000);
         const escape = (str) => (str || "").replace(/`/g, '\\`').replace(/\${/g, '\\${');
         const API_KEY_PLACEHOLDER = "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";
-        const task1ImagesHtml = getImageList(t1img).map((src, index) => `<img src="${escape(src)}" class="task-img" alt="Task 1 Chart ${index + 1}">`).join('');
+        const task1ImagesHtml = getTaskImageList(t1img).map((src, index) => `<img src="${escape(src)}" class="task-img" alt="Task 1 Chart ${index + 1}">`).join('');
 
         const pdfScript = '<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"><' + '/script>';
 

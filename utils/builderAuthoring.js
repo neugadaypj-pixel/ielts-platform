@@ -470,6 +470,7 @@ ${commonInjectionStyles()}
     }
 
     const getVal = (id) => (document.getElementById(id) ? document.getElementById(id).value : '');
+    const getListVal = (id) => getVal(id).split(/\\r?\\n/).map((value) => value.trim()).filter(Boolean);
 
     function getCookie(name) {
         const value = '; ' + document.cookie;
@@ -487,6 +488,7 @@ ${commonInjectionStyles()}
             task1: {
                 prompt: getVal('t1_prompt'),
                 image: getVal('t1_img'),
+                images: getListVal('t1_img'),
                 modelAnswer: getVal('t1_model')
             },
             task2: {

@@ -359,11 +359,16 @@ function normalizeListeningContent(parsedContent = {}) {
 }
 
 function normalizeWritingContent(parsedContent = {}) {
+    const imageList = Array.isArray(parsedContent.task1?.images)
+        ? parsedContent.task1.images.map((value) => String(value || '').trim()).filter(Boolean)
+        : String(parsedContent.task1?.image || '').split(/\r?\n/).map((value) => value.trim()).filter(Boolean);
+
     return {
         timeLimit: Number.parseInt(parsedContent.timeLimit, 10) || 60,
         task1: {
             prompt: parsedContent.task1?.prompt || '',
-            image: parsedContent.task1?.image || '',
+            image: imageList.join('\n'),
+            images: imageList,
             modelAnswer: parsedContent.task1?.modelAnswer || ''
         },
         task2: {

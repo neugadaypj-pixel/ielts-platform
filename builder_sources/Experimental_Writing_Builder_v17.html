@@ -61,9 +61,9 @@
         <div class="editor-grid">
             <div class="half">
                 <h3>Task 1 Prompt</h3>
-                <label>Chart/Graph Image (Filename or URL):</label>
-                <input type="text" id="t1_img" placeholder="chart.png OR https://example.com/graph.jpg" onchange="previewImage(1)">
-                <img id="prev_1" class="image-preview">
+                <label>Chart/Graph Images (one filename or URL per line):</label>
+                <textarea id="t1_img" placeholder="chart.png&#10;https://example.com/graph2.jpg" onchange="previewImage(1)" oninput="previewImage(1)" style="min-height:90px;"></textarea>
+                <div id="prev_1" class="image-preview"></div>
 
                 <label>Instructions / Topic:</label>
                 <div style="margin-bottom:8px;">
@@ -132,10 +132,20 @@ Discuss both views and give your own opinion.</textarea>
         }
     }
 
+    function getImageList(value) {
+        return String(value || '').split(/\r?\n/).map(url => url.trim()).filter(Boolean);
+    }
+
     function previewImage(id) {
-        const url = document.getElementById('t'+id+'_img').value;
-        const img = document.getElementById('prev_'+id);
-        if(url){ img.src = url; img.style.display = 'block'; } else { img.style.display = 'none'; }
+        const urls = getImageList(document.getElementById('t'+id+'_img').value);
+        const preview = document.getElementById('prev_'+id);
+        if(urls.length){
+            preview.innerHTML = urls.map((url, index) => `<img src="${url}" alt="Task ${id} image ${index + 1}" style="max-width:100%; height:auto; display:block; margin:10px auto; border:1px dashed #ccc; padding:5px;">`).join('');
+            preview.style.display = 'block';
+        } else {
+            preview.innerHTML = '';
+            preview.style.display = 'none';
+        }
     }
 
     // --- AUTO-CONVERT PASTED IMAGES TO CODE ---
@@ -158,7 +168,7 @@ Discuss both views and give your own opinion.</textarea>
             reader.onload = function(event) {
                 const base64 = event.target.result;
                 if (target.id === 't1_img') {
-                    target.value = base64;
+                    target.value = target.value ? target.value.trimEnd() + "\\n" + base64 : base64;
                     previewImage(1);
                 } else {
                     const html = `<img src="${base64}" style="max-width:100%; height:auto; display:block; margin:10px auto;">`;
@@ -180,6 +190,7 @@ Discuss both views and give your own opinion.</textarea>
         const uniqueId = "ielts_writing_" + Math.floor(Math.random() * 1000000);
         const escape = (str) => (str || "").replace(/`/g, '\\`').replace(/\${/g, '\\${');
         const API_KEY_PLACEHOLDER = "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";
+        const task1ImagesHtml = getImageList(t1img).map((src, index) => `<img src="${escape(src)}" class="task-img" alt="Task 1 Chart ${index + 1}">`).join('');
 
         const pdfScript = '<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"><' + '/script>';
 
@@ -524,7 +535,7 @@ Discuss both views and give your own opinion.</textarea>
             <div id="p_task1" class="task-card">
                 <h2>Writing Task 1</h2>
                 <hr style="margin: 15px 0; border:0; border-top:1px solid #eee;">
-                ${t1img ? `<img src="${escape(t1img)}" class="task-img" alt="Task 1 Chart">` : ''}
+                ${task1ImagesHtml}
                 <div class="instructions">${escape(t1p)}</div>
             </div>
             <div id="p_task2" class="task-card hidden">

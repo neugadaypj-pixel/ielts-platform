@@ -101,7 +101,7 @@ try {
 
     const readingHtml = generateHTMLFromTest(sampleReadingTest);
     const listeningHtml = generateHTMLFromTest(sampleListeningTest);
-    const writingHtml = generateHTMLFromTest(sampleWritingTest, { groqApiKey: 'demo-key' });
+    const writingHtml = generateHTMLFromTest(sampleWritingTest, { deepseekApiKey: 'demo-key' });
 
     const readingChecks = [
         { name: 'HTML starts correctly', test: readingHtml.startsWith('<!DOCTYPE html>') },
@@ -148,8 +148,8 @@ try {
         { name: 'Writing includes Task 1 prompt', test: writingHtml.includes('household spending over a ten-year period') },
         { name: 'Writing includes Task 2 prompt', test: writingHtml.includes('children should learn practical skills at school') },
         { name: 'Writing includes Task 1 image', test: writingHtml.includes('https://example.com/chart.png') },
-        { name: 'Writing injects current Groq API key', test: writingHtml.includes('demo-key') },
-        { name: 'Writing uses stable session key', test: writingHtml.includes('const SESSION_ID = "ielts_writing_69dfc4326a334a9b5fc9c111";') },
+        { name: 'Writing injects current DeepSeek API key', test: writingHtml.includes('demo-key') },
+        { name: 'Writing uses stable session key', test: writingHtml.includes('var SESSION_ID = "ielts_writing_69dfc4326a334a9b5fc9c111";') },
         { name: 'Includes Platform Theme button', test: writingHtml.includes('Platform Theme') },
         { name: 'Includes platform theme controller', test: writingHtml.includes('toggleSiteTheme') },
         { name: 'Writing HTML closes properly', test: writingHtml.endsWith('</html>') }

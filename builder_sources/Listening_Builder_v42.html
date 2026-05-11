@@ -2275,11 +2275,25 @@
 
         document.querySelectorAll('input:not([type="hidden"]), select').forEach(el => {
             if(el.type === 'radio') { if(el.checked) state.answers[el.name] = el.value; } 
-            else if(el.id) { state.answers[el.id] = el.value; }
+            else if(el.id) {
+                if (state.answers[el.id] !== undefined) {
+                    if (!Array.isArray(state.answers[el.id])) state.answers[el.id] = [state.answers[el.id]];
+                    state.answers[el.id].push(el.value);
+                } else {
+                    state.answers[el.id] = el.value;
+                }
+            }
         });
         
         document.querySelectorAll('.custom-select-wrapper input[type="hidden"]').forEach(el => {
-            if(el.value) state.answers[el.id] = el.value;
+            if(el.value) {
+                if (state.answers[el.id] !== undefined) {
+                    if (!Array.isArray(state.answers[el.id])) state.answers[el.id] = [state.answers[el.id]];
+                    state.answers[el.id].push(el.value);
+                } else {
+                    state.answers[el.id] = el.value;
+                }
+            }
         });
         
         document.querySelectorAll('.pick-n-question').forEach(group => {
@@ -2386,15 +2400,29 @@
                     if(radios.length > 0) {
                         for(let i=0; i<radios.length; i++) { if(radios[i].value === val) radios[i].checked = true; }
                     } else {
-                        const el = document.getElementById(key);
-                        if(el) {
-                            el.value = val;
-                            const wrapper = el.closest('.custom-select-wrapper');
-                            if (wrapper) {
-                                const triggerText = wrapper.querySelector('.sel-text');
-                                const trigger = wrapper.querySelector('.custom-select-trigger');
-                                if(val) { triggerText.innerText = val; trigger.classList.add('answered'); } 
-                                else { triggerText.innerText = 'Select...'; trigger.classList.remove('answered'); }
+                        const matchingFields = document.querySelectorAll('#' + CSS.escape(key));
+                        if(matchingFields.length > 1 && Array.isArray(val)) {
+                            matchingFields.forEach((el, idx) => {
+                                el.value = val[idx] || '';
+                                const wrapper = el.closest('.custom-select-wrapper');
+                                if (wrapper) {
+                                    const triggerText = wrapper.querySelector('.sel-text');
+                                    const trigger = wrapper.querySelector('.custom-select-trigger');
+                                    if(el.value) { triggerText.innerText = el.value; trigger.classList.add('answered'); } 
+                                    else { triggerText.innerText = 'Select'; trigger.classList.remove('answered'); }
+                                }
+                            });
+                        } else {
+                            const el = matchingFields[0] || document.getElementById(key);
+                            if(el) {
+                                el.value = Array.isArray(val) ? (val[0] || '') : val;
+                                const wrapper = el.closest('.custom-select-wrapper');
+                                if (wrapper) {
+                                    const triggerText = wrapper.querySelector('.sel-text');
+                                    const trigger = wrapper.querySelector('.custom-select-trigger');
+                                    if(el.value) { triggerText.innerText = el.value; trigger.classList.add('answered'); } 
+                                    else { triggerText.innerText = 'Select'; trigger.classList.remove('answered'); }
+                                }
                             }
                         }
                     }
@@ -2485,10 +2513,11 @@
                     let unanswered = [];
                     for (const [qId, correctRaw] of Object.entries(correctAnswers)) {
                         let answered = false;
-                        let elById = document.getElementById('q' + qId);
+                        const fieldsById = document.querySelectorAll('#' + CSS.escape('q' + qId));
+                        let elById = fieldsById[0] || document.getElementById('q' + qId);
                         
-                        if (elById && (elById.type === 'hidden' || elById.type === 'text' || elById.type === 'number' || elById.tagName === 'SELECT')) {
-                            if (elById.value && elById.value.trim() !== '') answered = true;
+                        if (fieldsById.length > 0 && elById && (elById.type === 'hidden' || elById.type === 'text' || elById.type === 'number' || elById.tagName === 'SELECT')) {
+                            answered = Array.from(fieldsById).every(field => field.value && field.value.trim() !== '');
                         } else {
                             const multiBoxes = document.querySelectorAll('input[type="checkbox"][data-questions~="' + qId + '"]');
                             if(multiBoxes.length > 0) {
@@ -2533,6 +2562,13 @@
             for (const [qId, correctRaw] of Object.entries(correctAnswers)) {
                 total++;
                 let correctVariants = [];
+                let splitCorrectGroups = null;
+                if (typeof correctRaw === 'string' && correctRaw.includes(';')) {
+                    splitCorrectGroups = correctRaw.split(';').map(part => {
+                        if (part.includes('|')) return part.split('|').map(c => c.trim().toUpperCase()).filter(Boolean);
+                        return [part.trim().toUpperCase()];
+                    });
+                }
                 if (Array.isArray(correctRaw)) {
                     correctVariants = correctRaw.map(c => String(c).trim().toUpperCase());
                 } else if (typeof correctRaw === 'string' && correctRaw.includes('|')) {
@@ -2543,25 +2579,27 @@
 
                 let isCorrect = false; 
                 let container = null; 
-                let elById = document.getElementById('q'+qId);
+                const fieldsById = document.querySelectorAll('#' + CSS.escape('q' + qId));
+                let elById = fieldsById[0] || document.getElementById('q'+qId);
                 let userVal = "";
 
-                if (elById && (elById.type === 'hidden' || elById.type === 'text' || elById.type === 'number' || elById.tagName === 'SELECT')) {
-                    userVal = elById.value?.trim().toUpperCase() || ""; 
-                    
-                    let visualTarget = elById;
-                    if (elById.type === 'hidden' && elById.closest('.map-drop-zone')) {
-                        visualTarget = elById.closest('.map-drop-zone');
-                    } else if (elById.type === 'hidden' && elById.closest('.custom-select-wrapper')) {
-                        visualTarget = elById.closest('.custom-select-wrapper').querySelector('.custom-select-trigger');
-                    }
-
-                    if (correctVariants.includes(userVal)) { 
-                        isCorrect = true; 
-                        visualTarget.classList.add('correct'); 
-                    } else { 
-                        visualTarget.classList.add('incorrect'); 
-                    }
+                if (fieldsById.length > 0 && elById && (elById.type === 'hidden' || elById.type === 'text' || elById.type === 'number' || elById.tagName === 'SELECT')) {
+                    const fieldResults = Array.from(fieldsById).map((field, idx) => {
+                        const fieldVal = field.value?.trim().toUpperCase() || "";
+                        const variants = splitCorrectGroups ? (splitCorrectGroups[idx] || []) : correctVariants;
+                        let visualTarget = field;
+                        if (field.type === 'hidden' && field.closest('.map-drop-zone')) {
+                            visualTarget = field.closest('.map-drop-zone');
+                        } else if (field.type === 'hidden' && field.closest('.custom-select-wrapper')) {
+                            visualTarget = field.closest('.custom-select-wrapper').querySelector('.custom-select-trigger');
+                        }
+                        const fieldCorrect = variants.includes(fieldVal);
+                        if (fieldCorrect) visualTarget.classList.add('correct');
+                        else visualTarget.classList.add('incorrect');
+                        return { value: fieldVal, correct: fieldCorrect };
+                    });
+                    userVal = fieldResults.map(result => result.value || "(blank)").join("; ");
+                    isCorrect = fieldResults.length > 0 && fieldResults.every(result => result.correct);
                 } else {
                     const multiBoxes = document.querySelectorAll(\`input[type="checkbox"][data-questions~="\${qId}"]\`);
                     if(multiBoxes.length > 0) {

@@ -2435,13 +2435,13 @@ function injectPersistentStateForDownload(html, testDoc) {
     const snippet = `
 <script>
 (function() {
-    // Ensure state keys are stable and not time-based so data survives file re-open
     const STABLE_KEY = '${stableId}';
+    const AUTOSAVE_KEY = STABLE_KEY + '_autosave_v2';
+
     function patchSessionKey(varName) {
         try {
             const current = window[varName];
             if (current && typeof current === 'string' && current !== STABLE_KEY) {
-                // Migrate any existing state from old key to stable key
                 try {
                     const old = localStorage.getItem(current);
                     if (old && !localStorage.getItem(STABLE_KEY)) {
@@ -2454,9 +2454,105 @@ function injectPersistentStateForDownload(html, testDoc) {
     }
     if (typeof SESSION_KEY !== 'undefined') patchSessionKey('SESSION_KEY');
     if (typeof SESSION_ID !== 'undefined') patchSessionKey('SESSION_ID');
+
+    function getFieldKey(el, index) {
+        return el.id || el.name || el.getAttribute('data-qid') || el.getAttribute('data-question-id') || ('field_' + index);
+    }
+
+    function collectState() {
+        const state = {
+            fields: {},
+            checked: {},
+            classes: {},
+            audio: {},
+            scrollX: window.scrollX || 0,
+            scrollY: window.scrollY || 0,
+            savedAt: Date.now()
+        };
+
+        document.querySelectorAll('input, textarea, select').forEach((el, index) => {
+            const key = getFieldKey(el, index);
+            if (el.type === 'radio' || el.type === 'checkbox') {
+                state.checked[key] = Boolean(el.checked);
+            } else {
+                state.fields[key] = el.value;
+            }
+        });
+
+        document.querySelectorAll('.flagged, .flagged-input, .flagged-zone, .q-flag.active, .nav-circle.flagged').forEach((el, index) => {
+            const key = el.id || el.getAttribute('data-qid') || el.getAttribute('data-question-id') || el.textContent?.trim() || ('flag_' + index);
+            state.classes[key] = el.className;
+        });
+
+        document.querySelectorAll('audio').forEach((audio, index) => {
+            if (audio.currentTime > 0) {
+                state.audio[audio.id || audio.currentSrc || audio.src || ('audio_' + index)] = audio.currentTime;
+            }
+        });
+
+        return state;
+    }
+
+    function saveDownloadState() {
+        try {
+            localStorage.setItem(AUTOSAVE_KEY, JSON.stringify(collectState()));
+        } catch (e) {}
+    }
+
+    function restoreDownloadState() {
+        try {
+            const raw = localStorage.getItem(AUTOSAVE_KEY);
+            if (!raw) return;
+            const state = JSON.parse(raw);
+            const inputs = Array.from(document.querySelectorAll('input, textarea, select'));
+
+            inputs.forEach((el, index) => {
+                const key = getFieldKey(el, index);
+                if (el.type === 'radio' || el.type === 'checkbox') {
+                    if (Object.prototype.hasOwnProperty.call(state.checked || {}, key)) {
+                        el.checked = Boolean(state.checked[key]);
+                    }
+                } else if (Object.prototype.hasOwnProperty.call(state.fields || {}, key)) {
+                    el.value = state.fields[key];
+                }
+                el.dispatchEvent(new Event('input', { bubbles: true }));
+                el.dispatchEvent(new Event('change', { bubbles: true }));
+            });
+
+            document.querySelectorAll('audio').forEach((audio, index) => {
+                const key = audio.id || audio.currentSrc || audio.src || ('audio_' + index);
+                const savedTime = Number((state.audio || {})[key]);
+                if (savedTime > 0) {
+                    const applyTime = () => {
+                        try {
+                            if (!audio.duration || savedTime <= audio.duration) audio.currentTime = savedTime;
+                        } catch (e) {}
+                    };
+                    if (audio.readyState >= 1) applyTime();
+                    else audio.addEventListener('loadedmetadata', applyTime, { once: true });
+                }
+            });
+
+            setTimeout(() => {
+                try { window.scrollTo(state.scrollX || 0, state.scrollY || 0); } catch (e) {}
+            }, 250);
+        } catch (e) {}
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', restoreDownloadState);
+    } else {
+        restoreDownloadState();
+    }
+
+    document.addEventListener('input', saveDownloadState, true);
+    document.addEventListener('change', saveDownloadState, true);
+    document.addEventListener('click', () => setTimeout(saveDownloadState, 50), true);
+    window.addEventListener('beforeunload', saveDownloadState);
+    setInterval(saveDownloadState, 5000);
 })();
 </script>`;
-    return replaceAllLiteral(html, '</head>', `${snippet}\n</head>`);
+    return replaceLastLiteral(html, '</body>', `${snippet}\n</body>`);
 }
 
 function generateReadingHtml(testDoc, parsedContent, studentName) {
@@ -2580,7 +2676,7 @@ function generateWritingHtml(testDoc, parsedContent, options = {}) {
             `var SESSION_ID = "${stableSessionId}";`
         )
         .replace(
-            /const GROQ_API_KEY = ".*?";/g,
+            /\b(?:const|var|let)\s+GROQ_API_KEY\s*=\s*["'][\s\S]*?["'];/g,
             `const DEEPSEEK_API_KEY = "${escapeForBuilderValue(options.deepseekApiKey || '')}";`
         )
         .replace(

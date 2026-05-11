@@ -1914,23 +1914,32 @@ app.post('/api/heartbeat', apiLimiter, async (req, res) => {
     if (!testId || !studentName) return res.json({ ok: false });
 
     if (!heartbeatStore.has(testId)) heartbeatStore.set(testId, new Map());
-    heartbeatStore.get(testId).set(studentName, {
+    const studentKey = String(req.session.userId);
+    const studentMap = heartbeatStore.get(testId);
+    const previous = studentMap.get(studentKey);
+
+    const nextAnswered = Number(answeredCount);
+    const nextTotal = Number(totalCount);
+    const safeAnswered = Number.isFinite(nextAnswered) ? nextAnswered : 0;
+    const safeTotal = Number.isFinite(nextTotal) ? nextTotal : 0;
+
+    studentMap.set(studentKey, {
         studentName,
-        answeredCount: Number(answeredCount) || 0,
-        totalCount: Number(totalCount) || 0,
-        currentPart: currentPart || '',
-        timeRemaining: timeRemaining || '',
-        type: type || '',
-        task1Preview: task1Preview || null,
-        task2Preview: task2Preview || null,
-        wordCount1: wordCount1 || null,
-        wordCount2: wordCount2 || null,
+        answeredCount: previous ? Math.max(previous.answeredCount || 0, safeAnswered) : safeAnswered,
+        totalCount: previous ? Math.max(previous.totalCount || 0, safeTotal) : safeTotal,
+        currentPart: currentPart || (previous?.currentPart || ''),
+        timeRemaining: timeRemaining || (previous?.timeRemaining || ''),
+        type: type || (previous?.type || ''),
+        task1Preview: typeof task1Preview === 'string' ? task1Preview : (previous?.task1Preview || null),
+        task2Preview: typeof task2Preview === 'string' ? task2Preview : (previous?.task2Preview || null),
+        wordCount1: wordCount1 || (previous?.wordCount1 || null),
+        wordCount2: wordCount2 || (previous?.wordCount2 || null),
         lastSeen: Date.now()
     });
 
     pushToTeachers(testId);
 
-    const activeCount = heartbeatStore.get(testId).size;
+    const activeCount = getActiveStudents(testId).length;
     res.json({ ok: true, activeCount });
 });
 

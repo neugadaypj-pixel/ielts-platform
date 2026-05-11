@@ -265,6 +265,19 @@ ${commonInjectionStyles()}
                     if (savedJson.answerKey && document.getElementById('answer_key_json')) {
                         document.getElementById('answer_key_json').value = savedJson.answerKey;
                     }
+                    const pauseCb = document.getElementById('add_pause_cb');
+                    if (pauseCb) {
+                        if (typeof savedJson.includePause !== 'undefined') {
+                            pauseCb.checked = Boolean(savedJson.includePause);
+                        } else if (preloadedData && preloadedData.readingPassage) {
+                            try {
+                                const parsed = JSON.parse(preloadedData.readingPassage);
+                                if (parsed && typeof parsed.includePause !== 'undefined') {
+                                    pauseCb.checked = Boolean(parsed.includePause);
+                                }
+                            } catch (e) {}
+                        }
+                    }
                 } catch (e) { console.error('Error loading builder JSON:', e); }
             }
             setTimeout(applyListeningData, 200);
@@ -346,6 +359,7 @@ ${commonInjectionStyles()}
         }));
         formData.append('builderJson', JSON.stringify({
             answerKey: getVal('answer_key_json'),
+            includePause: document.getElementById('add_pause_cb').checked,
             parts: { 1: getVal('q1_text'), 2: getVal('q2_text'), 3: getVal('q3_text'), 4: getVal('q4_text') }
         }));
 

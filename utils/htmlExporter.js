@@ -915,6 +915,22 @@ function injectThemeController(html, type) {
     return replaceLastLiteral(html, '</body>', `${snippet}\n</body>`);
 }
 
+function injectListeningDropdownZIndexFix(html) {
+    const snippet = `
+<style id="platform-listening-dropdown-fix">
+    .custom-select-wrapper.open { z-index: 20050 !important; }
+    .custom-select-wrapper.open .custom-select-options {
+        z-index: 20051 !important;
+        max-height: min(320px, 50vh) !important;
+        overflow-y: auto !important;
+    }
+    .custom-select-options { z-index: 20000 !important; }
+    .match-item { position: relative !important; }
+</style>`;
+
+    return replaceLastLiteral(html, '</body>', `${snippet}\n</body>`);
+}
+
 function injectShortcutBlocker(html) {
     const snippet = `
 <script>
@@ -2265,6 +2281,7 @@ function generateListeningHtml(testDoc, parsedContent, studentName) {
     generatedHtml = injectThemeController(generatedHtml, 'listening');
     generatedHtml = injectListeningHighlightFix(generatedHtml);
     generatedHtml = injectListeningSubmissionHook(generatedHtml, testDoc);
+    generatedHtml = injectListeningDropdownZIndexFix(generatedHtml);
     generatedHtml = injectListeningAudioLockdown(generatedHtml);
     generatedHtml = injectShortcutBlocker(generatedHtml);
     generatedHtml = injectQuitButton(generatedHtml);

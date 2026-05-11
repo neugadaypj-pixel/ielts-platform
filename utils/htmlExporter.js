@@ -915,6 +915,172 @@ function injectThemeController(html, type) {
     return replaceLastLiteral(html, '</body>', `${snippet}\n</body>`);
 }
 
+function injectExamGuardWarnOnly(html, testDoc) {
+    const safeTestId = escapeForBuilderValue(testDoc._id);
+    const snippet = `
+<script>
+(function() {
+    // Warn-only guard. Does not lock or submit.
+    const storageKey = 'platform_exam_guard_' + '${safeTestId}';
+    const state = window.__platformExamGuardState || {
+        violations: 0,
+        lastReason: '',
+        lastAt: 0
+    };
+    window.__platformExamGuardState = state;
+
+    function saveState() {
+        try { localStorage.setItem(storageKey, JSON.stringify(state)); } catch (e) {}
+    }
+
+    function loadState() {
+        try {
+            const raw = localStorage.getItem(storageKey);
+            if (!raw) return;
+            const parsed = JSON.parse(raw);
+            if (parsed && typeof parsed === 'object') {
+                if (Number.isFinite(Number(parsed.violations))) state.violations = Number(parsed.violations);
+                if (typeof parsed.lastReason === 'string') state.lastReason = parsed.lastReason;
+                if (Number.isFinite(Number(parsed.lastAt))) state.lastAt = Number(parsed.lastAt);
+            }
+        } catch (e) {}
+    }
+
+    function showBanner(message) {
+        try {
+            let el = document.getElementById('__platformExamGuardBanner');
+            if (!el) {
+                el = document.createElement('div');
+                el.id = '__platformExamGuardBanner';
+                el.style.position = 'fixed';
+                el.style.top = '12px';
+                el.style.left = '50%';
+                el.style.transform = 'translateX(-50%)';
+                el.style.zIndex = '2147483647';
+                el.style.padding = '12px 18px';
+                el.style.borderRadius = '999px';
+                el.style.background = 'rgba(220, 38, 38, 0.95)';
+                el.style.color = '#fff';
+                el.style.font = '700 14px/1.2 system-ui, sans-serif';
+                el.style.boxShadow = '0 12px 30px rgba(0,0,0,0.25)';
+                el.style.maxWidth = '92vw';
+                el.style.textAlign = 'center';
+                el.style.display = 'none';
+                document.body.appendChild(el);
+            }
+            el.textContent = message;
+            el.style.display = 'block';
+            clearTimeout(el.__hideTimer);
+            el.__hideTimer = setTimeout(() => { try { el.style.display = 'none'; } catch (e) {} }, 4200);
+        } catch (e) {}
+    }
+
+    function recordViolation(reason) {
+        try {
+            const now = Date.now();
+            // Prevent spammy double counts (multiple events on same action).
+            if (now - (state.lastAt || 0) < 1200 && reason === state.lastReason) return;
+            state.violations = (Number(state.violations) || 0) + 1;
+            state.lastReason = String(reason || 'Policy violation');
+            state.lastAt = now;
+            saveState();
+            showBanner(state.lastReason + ' (violations: ' + state.violations + ')');
+        } catch (e) {}
+    }
+
+    function requestFullscreen() {
+        try {
+            const root = document.documentElement;
+            if (!root) return;
+            if (document.fullscreenElement) return;
+            const fn = root.requestFullscreen || root.webkitRequestFullscreen || root.msRequestFullscreen;
+            if (fn) fn.call(root);
+        } catch (e) {}
+    }
+
+    function ensureFullscreenPrompt() {
+        try {
+            if (document.getElementById('__platformFullscreenPrompt')) return;
+            const overlay = document.createElement('div');
+            overlay.id = '__platformFullscreenPrompt';
+            overlay.style.position = 'fixed';
+            overlay.style.inset = '0';
+            overlay.style.zIndex = '2147483646';
+            overlay.style.background = 'rgba(0,0,0,0.70)';
+            overlay.style.display = 'flex';
+            overlay.style.alignItems = 'center';
+            overlay.style.justifyContent = 'center';
+            overlay.style.padding = '24px';
+            overlay.innerHTML = '<div style="max-width:560px;width:100%;background:rgba(255,255,255,0.96);border-radius:22px;padding:26px 24px;box-shadow:0 18px 60px rgba(0,0,0,0.35);text-align:center;font-family:system-ui,sans-serif;">'
+                + '<div style="font-size:18px;font-weight:900;color:#111827;margin-bottom:10px;">Start in Full Screen</div>'
+                + '<div style="color:#4b5563;font-weight:600;line-height:1.4;">Please keep the test in full screen. Leaving the tab or exiting full screen will be recorded.</div>'
+                + '<button id="__platformFullscreenBtn" style="margin-top:18px;padding:12px 18px;border:none;border-radius:999px;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;font-weight:900;font-size:14px;cursor:pointer;">Enter Full Screen</button>'
+                + '<div style="margin-top:12px;color:#9ca3af;font-size:12px;">If full screen is blocked by your browser, click anywhere and try again.</div>'
+                + '</div>';
+            document.body.appendChild(overlay);
+            overlay.addEventListener('click', (event) => {
+                if (event.target && event.target.id === '__platformFullscreenBtn') return;
+                requestFullscreen();
+            });
+            const btn = document.getElementById('__platformFullscreenBtn');
+            if (btn) {
+                btn.addEventListener('click', () => {
+                    requestFullscreen();
+                    setTimeout(() => {
+                        if (document.fullscreenElement) {
+                            try { overlay.remove(); } catch (e) {}
+                        }
+                    }, 250);
+                });
+            }
+        } catch (e) {}
+    }
+
+    // Load stored state before events fire.
+    loadState();
+
+    // Fullscreen prompt (requires user gesture).
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', ensureFullscreenPrompt);
+    } else {
+        ensureFullscreenPrompt();
+    }
+
+    document.addEventListener('fullscreenchange', () => {
+        try {
+            if (!document.fullscreenElement) {
+                recordViolation('Exited full screen');
+                // Keep showing prompt until they re-enter.
+                ensureFullscreenPrompt();
+            }
+        } catch (e) {}
+    });
+
+    document.addEventListener('visibilitychange', () => {
+        try {
+            if (document.hidden) recordViolation('Switched tab / minimized');
+        } catch (e) {}
+    });
+
+    window.addEventListener('blur', () => {
+        // blur can be noisy; keep it as a backup signal.
+        try { recordViolation('Left the test window'); } catch (e) {}
+    });
+
+    // Resist back navigation and record it.
+    try {
+        history.pushState({ __platformGuard: true }, '', location.href);
+        window.addEventListener('popstate', () => {
+            recordViolation('Attempted to navigate back');
+            try { history.pushState({ __platformGuard: true }, '', location.href); } catch (e) {}
+        });
+    } catch (e) {}
+})();
+</script>`;
+
+    return replaceLastLiteral(html, '</body>', `${snippet}\n</body>`);
+}
+
 function injectListeningDropdownZIndexFix(html) {
     const snippet = `
 <style id="platform-listening-dropdown-fix">
@@ -2219,7 +2385,9 @@ function injectHeartbeat(html, testDoc) {
                 task1Preview: task1 ? (task1.value || task1.innerText || '').slice(0, 300) : null,
                 task2Preview: task2 ? (task2.value || task2.innerText || '').slice(0, 300) : null,
                 wordCount1: wc1El ? wc1El.innerText.trim() : null,
-                wordCount2: wc2El ? wc2El.innerText.trim() : null
+                wordCount2: wc2El ? wc2El.innerText.trim() : null,
+                examGuardViolations: window.__platformExamGuardState ? (window.__platformExamGuardState.violations || 0) : 0,
+                examGuardLastReason: window.__platformExamGuardState ? (window.__platformExamGuardState.lastReason || '') : ''
             })
         })
         .then(r => r.json())
@@ -2288,6 +2456,7 @@ function generateReadingHtml(testDoc, parsedContent, studentName) {
     html = injectThemeController(html, 'reading');
     html = injectReadingHighlightFix(html);
     html = injectReadingSubmissionHook(html, testDoc);
+    html = injectExamGuardWarnOnly(html, testDoc);
     html = injectShortcutBlocker(html);
     html = injectQuitButton(html);
     html = injectStudentName(html, testDoc, studentName);
@@ -2354,6 +2523,7 @@ function generateListeningHtml(testDoc, parsedContent, studentName) {
     generatedHtml = injectListeningSubmissionHook(generatedHtml, testDoc);
     generatedHtml = injectListeningDropdownZIndexFix(generatedHtml);
     generatedHtml = injectListeningDropdownDirectionFix(generatedHtml);
+    generatedHtml = injectExamGuardWarnOnly(generatedHtml, testDoc);
     generatedHtml = injectListeningAudioLockdown(generatedHtml);
     generatedHtml = injectShortcutBlocker(generatedHtml);
     generatedHtml = injectQuitButton(generatedHtml);
@@ -2405,6 +2575,7 @@ function generateWritingHtml(testDoc, parsedContent, options = {}) {
     generatedHtml = injectWebsiteThemeButton(generatedHtml, 'writing');
     generatedHtml = injectThemeController(generatedHtml, 'writing');
     generatedHtml = injectWritingSubmissionHook(generatedHtml, testDoc);
+    generatedHtml = injectExamGuardWarnOnly(generatedHtml, testDoc);
     generatedHtml = injectShortcutBlocker(generatedHtml);
     generatedHtml = injectQuitButton(generatedHtml);
     generatedHtml = injectStudentName(generatedHtml, testDoc, studentName);
@@ -2445,6 +2616,9 @@ function generateHTMLFromTest(testDoc, options = {}) {
             if (!html.includes('platform_submission_sync_')) {
                 html = injectWritingSubmissionHook(html, plainTest);
             }
+            if (!html.includes('platform_exam_guard_')) {
+                html = injectExamGuardWarnOnly(html, plainTest);
+            }
             html = injectQuitButton(html);
             html = injectStudentName(html, plainTest, studentName);
             html = injectHeartbeat(html, plainTest);
@@ -2454,46 +2628,49 @@ function generateHTMLFromTest(testDoc, options = {}) {
         return html;
     }
 
-    const rawContent = plainTest.readingPassage ?? plainTest.content;
-    const parsedContent = parseStoredContent(rawContent, 'readingPassage');
+const rawContent = plainTest.readingPassage ?? plainTest.content;
+const parsedContent = parseStoredContent(rawContent, 'readingPassage');
 
-    if (parsedContent.__rawHtml) {
-        const normalizedType = String(plainTest.type || 'reading').toLowerCase();
-        let rawHtml = parsedContent.__rawHtml.trim();
+if (parsedContent.__rawHtml) {
+const normalizedType = String(plainTest.type || 'reading').toLowerCase();
+let rawHtml = parsedContent.__rawHtml.trim();
 
-        // Backward-compat: some older saved tests may contain already-rendered HTML.
-        // Still inject the Platform Theme CSS/JS/button so the toggle works.
-        if (!rawHtml.includes('platform-theme-overrides')) {
-            rawHtml = injectThemeStyles(rawHtml);
-        }
-        if (!rawHtml.includes('toggleSiteTheme') && !rawHtml.includes('Platform Theme')) {
-            rawHtml = injectWebsiteThemeButton(rawHtml, normalizedType);
-            rawHtml = injectThemeController(rawHtml, normalizedType);
-        } else {
-            // Ensure controller exists even if the button markup is already present.
-            if (!rawHtml.includes('toggleSiteTheme')) {
-                rawHtml = injectThemeController(rawHtml, normalizedType);
-            }
-            if (!rawHtml.includes('Platform Theme')) {
-                rawHtml = injectWebsiteThemeButton(rawHtml, normalizedType);
-            }
-        }
+// Backward-compat: some older saved tests may contain already-rendered HTML.
+// Still inject the Platform Theme CSS/JS/button so the toggle works.
+if (!rawHtml.includes('platform-theme-overrides')) {
+rawHtml = injectThemeStyles(rawHtml);
+}
+if (!rawHtml.includes('toggleSiteTheme') && !rawHtml.includes('Platform Theme')) {
+rawHtml = injectWebsiteThemeButton(rawHtml, normalizedType);
+rawHtml = injectThemeController(rawHtml, normalizedType);
+} else {
+// Ensure controller exists even if the button markup is already present.
+if (!rawHtml.includes('toggleSiteTheme')) {
+rawHtml = injectThemeController(rawHtml, normalizedType);
+}
+if (!rawHtml.includes('Platform Theme')) {
+rawHtml = injectWebsiteThemeButton(rawHtml, normalizedType);
+}
+}
 
-        // Writing tests: ensure submission hook + heartbeat exist even for raw HTML.
-        if (normalizedType === 'writing') {
-            if (!rawHtml.includes('platform_submission_sync_')) {
-                rawHtml = injectWritingSubmissionHook(rawHtml, plainTest);
-            }
-            rawHtml = injectQuitButton(rawHtml);
-            rawHtml = injectStudentName(rawHtml, plainTest, studentName);
-            rawHtml = injectHeartbeat(rawHtml, plainTest);
-            rawHtml = sanitizeWritingRuntimeHtml(rawHtml);
-        }
+// Writing tests: ensure submission hook + heartbeat exist even for raw HTML.
+if (normalizedType === 'writing') {
+if (!rawHtml.includes('platform_submission_sync_')) {
+rawHtml = injectWritingSubmissionHook(rawHtml, plainTest);
+}
+if (!rawHtml.includes('platform_exam_guard_')) {
+rawHtml = injectExamGuardWarnOnly(rawHtml, plainTest);
+}
+rawHtml = injectQuitButton(rawHtml);
+rawHtml = injectStudentName(rawHtml, plainTest, studentName);
+rawHtml = injectHeartbeat(rawHtml, plainTest);
+rawHtml = sanitizeWritingRuntimeHtml(rawHtml);
+}
 
-        return rawHtml;
-    }
+return rawHtml;
+}
 
-    const normalizedType = String(plainTest.type || 'reading').toLowerCase();
+const normalizedType = String(plainTest.type || 'reading').toLowerCase();
 
     if (normalizedType === 'reading') {
         return injectNameVar(generateReadingHtml(plainTest, parsedContent, studentName));

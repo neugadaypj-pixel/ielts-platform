@@ -172,9 +172,14 @@
             }
             tbody.innerHTML = students.map(s => {
                 const isWriting = s.type === 'writing';
+                const violations = s.examGuardViolations || 0;
+                const lastReason = s.examGuardLastReason || '';
+                const warningBadge = violations > 0
+                    ? `<span style="display:inline-block;margin-top:6px;padding:3px 8px;background:#fca5a5;color:#7f1d1d;border-radius:999px;font-size:0.75rem;font-weight:700;">${violations} violation${violations > 1 ? 's' : ''}${lastReason ? ': ' + lastReason : ''}</span>`
+                    : '';
                 if (isWriting) {
                     return `<tr>
-                        <td><strong>${s.studentName}</strong></td>
+                        <td><strong>${s.studentName}</strong>${warningBadge ? `<br>${warningBadge}` : ''}</td>
                         <td colspan="2">
                             <div style="margin-bottom:6px;">
                                 <span style="font-size:0.8rem;font-weight:700;color:#667eea;">Task 1</span>
@@ -193,7 +198,7 @@
                 }
                 const pct = s.totalCount > 0 ? Math.round((s.answeredCount / s.totalCount) * 100) : 0;
                 return `<tr>
-                    <td><strong>${s.studentName}</strong></td>
+                    <td><strong>${s.studentName}</strong>${warningBadge ? `<br>${warningBadge}` : ''}</td>
                     <td>
                         <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
                         <span style="font-size:0.8rem;color:#64748b">${pct}%</span>

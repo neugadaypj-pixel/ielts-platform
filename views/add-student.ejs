@@ -91,6 +91,34 @@
             color: #9ca3af;
             margin-top: 6px;
         }
+
+        .password-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .password-row input {
+            flex: 1;
+        }
+
+        .toggle-password {
+            padding: 12px 14px;
+            border-radius: 12px;
+            border: 2px solid #e5e7eb;
+            background: #fff;
+            color: #374151;
+            font-weight: 700;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            flex: 0 0 auto;
+        }
+
+        .toggle-password:hover {
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.08);
+        }
         
         .button-group {
             display: flex;
@@ -246,6 +274,15 @@
             alertDiv.textContent = message;
             alertDiv.className = `alert ${type} show`;
         }
+
+        function togglePasswordVisibility() {
+            const input = document.getElementById('password');
+            const btn = document.getElementById('togglePasswordBtn');
+            if (!input || !btn) return;
+            const nextType = input.type === 'password' ? 'text' : 'password';
+            input.type = nextType;
+            btn.textContent = nextType === 'text' ? 'Hide' : 'Show';
+        }
     </script>
 </head>
 <body>
@@ -268,7 +305,10 @@
                 
                 <div class="form-group">
                     <label for="password">Password *</label>
-                    <input type="password" id="password" name="password" required placeholder="••••••••" autocomplete="new-password">
+                    <div class="password-row">
+                        <input type="password" id="password" name="password" required placeholder="••••••••" autocomplete="new-password">
+                        <button type="button" id="togglePasswordBtn" class="toggle-password" onclick="togglePasswordVisibility()">Show</button>
+                    </div>
                     <div class="hint">Minimum 6 characters</div>
                 </div>
                 

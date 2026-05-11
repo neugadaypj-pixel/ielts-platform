@@ -1342,7 +1342,7 @@ app.get('/view-test/:id', async (req, res) => {
     if (!req.session.userId) return res.redirect('/login');
     try {
         // Check cache first
-        const cacheKey = `test_html_${req.params.id}`;
+        const cacheKey = `test_html_${req.params.id}_${req.session.userId}`;
         let html = cache.get(cacheKey);
 
         if (html) {

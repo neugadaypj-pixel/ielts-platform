@@ -733,22 +733,18 @@ function injectThemeStyles(html) {
         flex-wrap: nowrap !important;
     }
     .platform-theme .flow-box {
-        border-radius: 4px !important;
-        min-width: 140px !important;
-        max-width: 240px !important;
-        min-height: 46px !important;
-        display: inline-flex !important;
-        align-items: center !important;
-        justify-content: center !important;
+        border-radius: 50px !important;
+        min-width: 80px !important;
+        display: inline-block !important;
         margin: 0 !important;
-        padding: 10px 18px !important;
+        padding: 8px 20px !important;
     }
     .platform-theme .flow-arrow-right {
         display: inline-flex !important;
         align-items: center !important;
         justify-content: center !important;
         margin: 0 8px !important;
-        min-width: 28px !important;
+        min-width: 20px !important;
         color: #2c3e50 !important;
     }
     .platform-theme .start-overlay {

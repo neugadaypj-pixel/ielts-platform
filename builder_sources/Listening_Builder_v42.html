@@ -1070,14 +1070,7 @@
                     input.className = 'gap-input';
                     input.placeholder = qNum;
                     input.setAttribute('autocomplete', 'off');
-                    input.style.cssText = 'width:90px; border:1px solid #999; border-radius:0; background:#fff; text-align:center; margin:0 4px;';
                     gap.parentNode.replaceChild(input, gap);
-                    
-                    const flagSpan = document.createElement('span');
-                    flagSpan.className = 'q-flag';
-                    flagSpan.setAttribute('onclick', 'toggleFlag(this)');
-                    flagSpan.innerHTML = '⚑';
-                    input.parentNode.insertBefore(flagSpan, input.nextSibling);
                 }
             });
 

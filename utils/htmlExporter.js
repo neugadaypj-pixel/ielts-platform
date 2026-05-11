@@ -2682,7 +2682,15 @@ function injectPersistentStateForDownload(html, testDoc) {
     return replaceLastLiteral(html, '</body>', `${snippet}\n</body>`);
 }
 
-function generateReadingHtml(testDoc, parsedContent, studentName) {
+function stripPreviewRuntimeRestrictions(html) {
+    return String(html || '')
+        .replace(/<script\b[^>]*>[\s\S]*?platform_exam_guard_[\s\S]*?<\/script>\s*/gi, '')
+        .replace(/<script\b[^>]*>[\s\S]*?__platformFullscreenPrompt[\s\S]*?<\/script>\s*/gi, '')
+        .replace(/<script\b[^>]*>[\s\S]*?shouldBlock\(event\)[\s\S]*?<\/script>\s*/gi, '')
+        .replace(/<script\b[^>]*>[\s\S]*?__platformLocked[\s\S]*?<\/script>\s*/gi, '');
+}
+
+function generateReadingHtml(testDoc, parsedContent, studentName, options = {}) {
     const content = normalizeReadingContent(parsedContent, testDoc);
     const stableSessionId = scopeSessionIdForStudent(createStableSessionId(testDoc, 'test_'), studentName);
 
@@ -2708,15 +2716,17 @@ function generateReadingHtml(testDoc, parsedContent, studentName) {
     html = injectThemeController(html, 'reading');
     html = injectReadingHighlightFix(html);
     html = injectReadingSubmissionHook(html, testDoc);
-    html = injectExamGuardWarnOnly(html, testDoc);
-    html = injectShortcutBlocker(html);
+    if (!options.previewMode) {
+        html = injectExamGuardWarnOnly(html, testDoc);
+        html = injectShortcutBlocker(html);
+    }
     html = injectQuitButton(html);
     html = injectStudentName(html, testDoc, studentName);
     html = injectHeartbeat(html, testDoc);
     return html.trim();
 }
 
-function generateListeningHtml(testDoc, parsedContent, studentName) {
+function generateListeningHtml(testDoc, parsedContent, studentName, options = {}) {
     const content = normalizeListeningContent(parsedContent);
     const stableSessionId = scopeSessionIdForStudent(createStableSessionId(testDoc, 'ielts_listening_'), studentName);
     let generatedHtml = runBuilderGenerateFile('listening', {
@@ -2775,10 +2785,12 @@ function generateListeningHtml(testDoc, parsedContent, studentName) {
     generatedHtml = injectListeningSubmissionHook(generatedHtml, testDoc);
     generatedHtml = injectListeningDropdownZIndexFix(generatedHtml);
     generatedHtml = injectListeningDropdownDirectionFix(generatedHtml);
-    generatedHtml = injectExamGuardWarnOnly(generatedHtml, testDoc);
-    generatedHtml = injectListeningAudioLockdown(generatedHtml);
+    if (!options.previewMode) {
+        generatedHtml = injectExamGuardWarnOnly(generatedHtml, testDoc);
+        generatedHtml = injectListeningAudioLockdown(generatedHtml);
+        generatedHtml = injectShortcutBlocker(generatedHtml);
+    }
     generatedHtml = injectListeningStorageQuotaFix(generatedHtml);
-    generatedHtml = injectShortcutBlocker(generatedHtml);
     generatedHtml = injectQuitButton(generatedHtml);
     generatedHtml = injectStudentName(generatedHtml, testDoc, studentName);
     generatedHtml = injectHeartbeat(generatedHtml, testDoc);
@@ -2828,8 +2840,10 @@ function generateWritingHtml(testDoc, parsedContent, options = {}) {
     generatedHtml = injectWebsiteThemeButton(generatedHtml, 'writing');
     generatedHtml = injectThemeController(generatedHtml, 'writing');
     generatedHtml = injectWritingSubmissionHook(generatedHtml, testDoc);
-    generatedHtml = injectExamGuardWarnOnly(generatedHtml, testDoc);
-    generatedHtml = injectShortcutBlocker(generatedHtml);
+    if (!options.previewMode) {
+        generatedHtml = injectExamGuardWarnOnly(generatedHtml, testDoc);
+        generatedHtml = injectShortcutBlocker(generatedHtml);
+    }
     generatedHtml = injectQuitButton(generatedHtml);
     generatedHtml = injectStudentName(generatedHtml, testDoc, studentName);
     generatedHtml = injectHeartbeat(generatedHtml, testDoc);
@@ -2838,6 +2852,7 @@ function generateWritingHtml(testDoc, parsedContent, options = {}) {
 function generateHTMLFromTest(testDoc, options = {}) {
     const plainTest = toPlainObject(testDoc);
     const studentName = escapeForBuilderValue(options.studentName || '');
+    const previewMode = Boolean(options.previewMode);
 
     function injectNameVar(html) {
         if (!studentName) return html;
@@ -2846,7 +2861,7 @@ function generateHTMLFromTest(testDoc, options = {}) {
 
     if (plainTest.renderedHtml && typeof plainTest.renderedHtml === 'string' && plainTest.renderedHtml.trim()) {
         const normalizedType = String(plainTest.type || 'reading').toLowerCase();
-        let html = plainTest.renderedHtml.trim();
+        let html = previewMode ? stripPreviewRuntimeRestrictions(plainTest.renderedHtml.trim()) : plainTest.renderedHtml.trim();
 
         // Ensure platform theme toggle exists for all types.
         if (!html.includes('platform-theme-overrides')) {
@@ -2869,7 +2884,7 @@ function generateHTMLFromTest(testDoc, options = {}) {
             if (!html.includes('platform_submission_sync_')) {
                 html = injectWritingSubmissionHook(html, plainTest);
             }
-            if (!html.includes('platform_exam_guard_')) {
+            if (!previewMode && !html.includes('platform_exam_guard_')) {
                 html = injectExamGuardWarnOnly(html, plainTest);
             }
             html = injectQuitButton(html);
@@ -2880,13 +2895,13 @@ function generateHTMLFromTest(testDoc, options = {}) {
 
         // Listening tests need runtime hooks even when HTML was stored.
         if (normalizedType === 'listening') {
-            if (!html.includes('injectListeningAudioLockdown')) {
+            if (!previewMode && !html.includes('injectListeningAudioLockdown')) {
                 html = injectListeningAudioLockdown(html);
             }
             if (!html.includes('__platformListeningStorageQuotaFix')) {
                 html = injectListeningStorageQuotaFix(html);
             }
-            if (!html.includes('platform_exam_guard_')) {
+            if (!previewMode && !html.includes('platform_exam_guard_')) {
                 html = injectExamGuardWarnOnly(html, plainTest);
             }
             html = injectQuitButton(html);
@@ -2903,7 +2918,7 @@ const parsedContent = parseStoredContent(rawContent, 'readingPassage');
 
 if (parsedContent.__rawHtml) {
 const normalizedType = String(plainTest.type || 'reading').toLowerCase();
-let rawHtml = parsedContent.__rawHtml.trim();
+let rawHtml = previewMode ? stripPreviewRuntimeRestrictions(parsedContent.__rawHtml.trim()) : parsedContent.__rawHtml.trim();
 
 // Backward-compat: some older saved tests may contain already-rendered HTML.
 // Still inject the Platform Theme CSS/JS/button so the toggle works.
@@ -2925,13 +2940,13 @@ rawHtml = injectWebsiteThemeButton(rawHtml, normalizedType);
 
 // Listening tests: ensure audio lockdown, flagging, and heartbeat exist even for raw HTML.
 if (normalizedType === 'listening') {
-    if (!rawHtml.includes('injectListeningAudioLockdown')) {
+    if (!previewMode && !rawHtml.includes('injectListeningAudioLockdown')) {
         rawHtml = injectListeningAudioLockdown(rawHtml);
     }
     if (!rawHtml.includes('__platformListeningStorageQuotaFix')) {
         rawHtml = injectListeningStorageQuotaFix(rawHtml);
     }
-    if (!rawHtml.includes('platform_exam_guard_')) {
+    if (!previewMode && !rawHtml.includes('platform_exam_guard_')) {
         rawHtml = injectExamGuardWarnOnly(rawHtml, plainTest);
     }
     rawHtml = injectQuitButton(rawHtml);
@@ -2945,7 +2960,7 @@ if (normalizedType === 'writing') {
     if (!rawHtml.includes('platform_submission_sync_')) {
         rawHtml = injectWritingSubmissionHook(rawHtml, plainTest);
     }
-    if (!rawHtml.includes('platform_exam_guard_')) {
+    if (!previewMode && !rawHtml.includes('platform_exam_guard_')) {
         rawHtml = injectExamGuardWarnOnly(rawHtml, plainTest);
     }
     rawHtml = injectQuitButton(rawHtml);
@@ -2960,11 +2975,11 @@ return rawHtml;
 const normalizedType = String(plainTest.type || 'reading').toLowerCase();
 
     if (normalizedType === 'reading') {
-        return injectNameVar(generateReadingHtml(plainTest, parsedContent, studentName));
+        return injectNameVar(generateReadingHtml(plainTest, parsedContent, studentName, options));
     }
 
     if (normalizedType === 'listening') {
-        return injectNameVar(generateListeningHtml(plainTest, parsedContent, studentName));
+        return injectNameVar(generateListeningHtml(plainTest, parsedContent, studentName, options));
     }
 
     if (normalizedType === 'writing') {

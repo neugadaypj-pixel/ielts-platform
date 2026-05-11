@@ -1342,7 +1342,8 @@ app.get('/view-test/:id', async (req, res) => {
     if (!req.session.userId) return res.redirect('/login');
     try {
         // Check cache first
-        const cacheKey = `test_html_${req.params.id}_${req.session.userId}`;
+        const isStaffPreview = req.session.userRole === 'teacher' || req.session.userRole === 'admin';
+        const cacheKey = `test_html_${req.params.id}_${req.session.userId}_${isStaffPreview ? 'preview' : 'student'}`;
         let html = cache.get(cacheKey);
 
         if (html) {
@@ -1359,7 +1360,8 @@ app.get('/view-test/:id', async (req, res) => {
         try {
             html = generateHTMLFromTest(access.test, {
                 deepseekApiKey: process.env.DEEPSEEK_API_KEY || '',
-                studentName: access.user ? (access.user.username || '') : ''
+                studentName: access.user ? (access.user.username || '') : '',
+                previewMode: isStaffPreview
             });
 
             // Cache the generated HTML

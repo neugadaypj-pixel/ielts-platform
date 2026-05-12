@@ -855,9 +855,8 @@ app.post('/update-test/:id', isTeacher, csrfProtection, upload.any(), async (req
         await existingTest.save();
 
         // Clear cache for this test
-        cache.del(`test_html_${testId}`);
         cache.keys().forEach(key => {
-            if (key.startsWith(`test_access_${testId}_`)) {
+            if (key.startsWith(`test_html_${testId}_`) || key.startsWith(`test_access_${testId}_`)) {
                 cache.del(key);
             }
         });
@@ -2144,9 +2143,8 @@ app.post('/delete-test/:id', csrfProtection, async (req, res) => {
             await Submission.deleteMany({ testId: test._id });
 
             // Clear cache for this test
-            cache.del(`test_html_${test._id}`);
             cache.keys().forEach(key => {
-                if (key.startsWith(`test_access_${test._id}_`)) {
+                if (key.startsWith(`test_html_${test._id}_`) || key.startsWith(`test_access_${test._id}_`)) {
                     cache.del(key);
                 }
             });

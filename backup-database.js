@@ -27,13 +27,20 @@ const Notification = require('./models/Notification');
  * BACKUP FUNCTION
  * Exports all database collections to JSON and uploads to Backblaze B2
  */
-async function backupDatabase() {
+async function backupDatabase(options = {}) {
+    const shouldCloseConnection = options.closeConnection !== false;
+    const hadExistingConnection = mongoose.connection.readyState === 1;
+
     try {
         console.log('🔄 Starting database backup...');
         
         // Connect to MongoDB
-        await mongoose.connect(process.env.MONGO_URI);
-        console.log('✅ Connected to MongoDB');
+        if (!hadExistingConnection) {
+            await mongoose.connect(process.env.MONGO_URI);
+            console.log('✅ Connected to MongoDB');
+        } else {
+            console.log('✅ Using existing MongoDB connection');
+        }
 
         // Create backup data object
         const backupData = {
@@ -87,12 +94,17 @@ async function backupDatabase() {
         // Clean up old backups (keep last 7 days)
         await cleanupOldBackups();
 
-        await mongoose.connection.close();
+        if (shouldCloseConnection && !hadExistingConnection) {
+            await mongoose.connection.close();
+        }
         console.log('✅ Backup completed successfully!');
         
         return { success: true, filename, size: buffer.length };
     } catch (error) {
         console.error('❌ Backup failed:', error.message);
+        if (shouldCloseConnection && !hadExistingConnection && mongoose.connection.readyState !== 0) {
+            await mongoose.connection.close().catch(() => {});
+        }
         throw error;
     }
 }

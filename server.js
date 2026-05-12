@@ -97,14 +97,53 @@ app.use(helmet({ contentSecurityPolicy: false }));
 // --- 1. DATABASE CONNECTION ---
 // Set mongoose connection options for better stability
 mongoose.set('strictQuery', false);
+mongoose.set('bufferCommands', true);
+
+const mongoConnectionOptions = {
+    serverSelectionTimeoutMS: 30000,
+    socketTimeoutMS: 60000,
+    connectTimeoutMS: 30000,
+    heartbeatFrequencyMS: 10000,
+    maxPoolSize: 10,
+    minPoolSize: 1,
+    maxIdleTimeMS: 60000,
+    retryWrites: true
+};
+
+function isDatabaseReady() {
+    return mongoose.connection.readyState === 1;
+}
+
+function sendDatabaseUnavailable(res) {
+    res.status(503).send(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <meta http-equiv="refresh" content="5">
+            <title>Database Reconnecting</title>
+            <style>
+                body { font-family: system-ui, sans-serif; background: #f8fafc; color: #0f172a; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; padding: 24px; }
+                .card { background: #fff; border-radius: 20px; padding: 28px; max-width: 520px; box-shadow: 0 18px 50px rgba(15,23,42,0.12); text-align: center; }
+                h1 { margin: 0 0 12px; font-size: 24px; }
+                p { color: #475569; line-height: 1.5; margin: 0; }
+            </style>
+        </head>
+        <body>
+            <div class="card">
+                <h1>Database is reconnecting</h1>
+                <p>Please wait a few seconds. This page will refresh automatically.</p>
+            </div>
+        </body>
+        </html>
+    `);
+}
 
 // Connect to MongoDB with proper error handling
 async function connectDatabase() {
     try {
-        await mongoose.connect(process.env.MONGO_URI, {
-            serverSelectionTimeoutMS: 5000,
-            socketTimeoutMS: 45000,
-        });
+        await mongoose.connect(process.env.MONGO_URI, mongoConnectionOptions);
         logger.info('Connected to MongoDB successfully');
     } catch (err) {
         logger.error('Database connection error', { error: err.message, stack: err.stack });
@@ -112,7 +151,8 @@ async function connectDatabase() {
     }
 }
 
-mongoose.connection.on('disconnected', () => logger.warn('MongoDB disconnected'));
+mongoose.connection.on('connected', () => logger.info('MongoDB connected'));
+mongoose.connection.on('disconnected', () => logger.warn('MongoDB disconnected', { readyState: mongoose.connection.readyState }));
 mongoose.connection.on('error', err => logger.error('MongoDB connection error', { error: err.message }));
 mongoose.connection.on('reconnected', () => logger.info('MongoDB reconnected'));
 
@@ -150,16 +190,23 @@ const upload = multer({
     }
 });
 
+const sessionStore = MongoStore.create({
+    mongoUrl: process.env.MONGO_URI,
+    mongoOptions: mongoConnectionOptions,
+    touchAfter: 24 * 3600,
+    ttl: 24 * 60 * 60,
+    autoRemove: 'native'
+});
+
+sessionStore.on('error', (err) => {
+    logger.error('Mongo session store error', { error: err.message, stack: err.stack });
+});
+
 app.use(session({
     secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
-    store: new MongoStore({
-        mongoUrl: process.env.MONGO_URI,
-        touchAfter: 24 * 3600,
-        ttl: 24 * 60 * 60,
-        autoRemove: 'native'
-    }),
+    store: sessionStore,
     cookie: {
         maxAge: 1000 * 60 * 60 * 24,
         httpOnly: true,
@@ -592,6 +639,8 @@ app.get('/login', csrfProtection, (req, res) => {
 app.post('/login', loginLimiter, csrfProtection, async (req, res) => {
     const { username, password } = req.body;
     try {
+        if (!isDatabaseReady()) return sendDatabaseUnavailable(res);
+
         const user = await User.findOne({ username });
         if (user && await bcrypt.compare(password, user.password)) {
             req.session.userId = user._id;
@@ -626,6 +675,8 @@ app.get('/logout', (req, res) => {
 
 app.get('/admin', isAdmin, csrfProtection, async (req, res) => {
     try {
+        if (!isDatabaseReady()) return sendDatabaseUnavailable(res);
+
         const tests = await Test.find({}).sort({ type: 1, title: 1 });
         const teachers = await User.find({ role: 'teacher' }).populate('assignedTests');
         res.render('admin', {
@@ -1001,6 +1052,8 @@ app.post('/admin/assign-test', isAdmin, strictLimiter, async (req, res) => {
 
 app.get('/teacher-dashboard', isTeacher, csrfProtection, async (req, res) => {
     try {
+        if (!isDatabaseReady()) return sendDatabaseUnavailable(res);
+
         const page = Math.max(1, parseInt(req.query.page) || 1);
         const PAGE_SIZE = 20;
         const skip = (page - 1) * PAGE_SIZE;
@@ -1013,13 +1066,20 @@ app.get('/teacher-dashboard', isTeacher, csrfProtection, async (req, res) => {
             User.find({ teacherId: req.session.userId, role: 'student' }).sort({ username: 1 })
         ]);
 
+        if (!teacher) {
+            logger.warn('Teacher dashboard requested with stale session user', { userId: req.session.userId });
+            return req.session.destroy(() => res.redirect('/login'));
+        }
+
+        const assignedTestIds = Array.isArray(teacher.assignedTests) ? teacher.assignedTests.filter(Boolean) : [];
+
         const totalTests = await Test.countDocuments({
-            _id: { $in: teacher.assignedTests || [] }
+            _id: { $in: assignedTestIds }
         });
         const totalPages = Math.ceil(totalTests / PAGE_SIZE);
 
         const tests = await Test.find({
-            _id: { $in: teacher.assignedTests || [] }
+            _id: { $in: assignedTestIds }
         })
             .sort({ title: 1 })
             .skip(skip)
@@ -1034,8 +1094,8 @@ app.get('/teacher-dashboard', isTeacher, csrfProtection, async (req, res) => {
 
         const groupStatsByTestId = new Map();
         groups.forEach((group) => {
-            const uniqueStudentIds = [...new Set((group.students || []).map((student) => String(student._id)))];
-            (group.assignedTests || []).forEach((test) => {
+            const uniqueStudentIds = [...new Set((group.students || []).filter(Boolean).map((student) => String(student._id)))];
+            (group.assignedTests || []).filter(Boolean).forEach((test) => {
                 const key = String(test._id);
                 if (!groupStatsByTestId.has(key)) {
                     groupStatsByTestId.set(key, { groupCount: 0, studentIds: new Set() });
@@ -1090,6 +1150,7 @@ app.get('/teacher-dashboard', isTeacher, csrfProtection, async (req, res) => {
             csrfToken: req.csrfToken()
         });
     } catch (err) {
+        logger.error('Teacher dashboard error', { error: err.message, stack: err.stack, userId: req.session.userId });
         res.status(500).send("Error loading dashboard.");
     }
 });
@@ -1808,6 +1869,8 @@ app.get('/teacher/student-patterns/:studentId', isTeacher, async (req, res) => {
 app.get('/student-dashboard', async (req, res) => {
     if (!req.session.userId) return res.redirect('/login');
     try {
+        if (!isDatabaseReady()) return sendDatabaseUnavailable(res);
+
         const page = Math.max(1, parseInt(req.query.page) || 1);
         const search = (req.query.search || '').trim();
         const PAGE_SIZE = 10;
@@ -1820,18 +1883,25 @@ app.get('/student-dashboard', async (req, res) => {
             Submission.find({ studentId: req.session.userId }).select('testId score totalQuestions band percentage lastSubmittedAt')
         ]);
 
+        if (!student) {
+            logger.warn('Student dashboard requested with stale session user', { userId: req.session.userId });
+            return req.session.destroy(() => res.redirect('/login'));
+        }
+
         const submissionsByTestId = new Map(
             submissions.map((submission) => [String(submission.testId), submission])
         );
 
-        let allTests = student.groupId ? student.groupId.assignedTests : [];
+        let allTests = student.groupId ? (student.groupId.assignedTests || []).filter(Boolean) : [];
         const now = new Date();
         const scheduledTests = [];
 
         // Process scheduled tests
         if (student.groupId && student.groupId.testSchedule) {
             student.groupId.testSchedule.forEach(schedule => {
+                if (!schedule || !schedule.testId || !schedule.availableFrom) return;
                 const availableDate = new Date(schedule.availableFrom);
+                if (Number.isNaN(availableDate.getTime())) return;
                 if (availableDate > now) {
                     scheduledTests.push({
                         _id: schedule.testId,
@@ -1850,7 +1920,7 @@ app.get('/student-dashboard', async (req, res) => {
         // Apply search filter
         if (search) {
             allTests = allTests.filter(test =>
-                test.title.toLowerCase().includes(search.toLowerCase())
+                String(test.title || '').toLowerCase().includes(search.toLowerCase())
             );
         }
 
@@ -1874,6 +1944,7 @@ app.get('/student-dashboard', async (req, res) => {
             pagination: { page, totalPages, total, search }
         });
     } catch (err) {
+        logger.error('Student dashboard error', { error: err.message, stack: err.stack, userId: req.session.userId });
         res.status(500).send("Error loading student dashboard.");
     }
 });
@@ -2836,7 +2907,7 @@ app.post('/api/notifications/mark-all-read', async (req, res) => {
 app.post('/admin/backup-database', isAdmin, async (req, res) => {
     try {
         console.log('🔄 Manual backup triggered by admin:', req.session.username);
-        const result = await backupDatabase();
+        const result = await backupDatabase({ closeConnection: false });
         res.json({
             success: true,
             message: 'Backup completed successfully',
@@ -2918,7 +2989,7 @@ async function startServer() {
                 cron.schedule('0 2 * * *', async () => {
                     console.log('🔄 Running scheduled database backup...');
                     try {
-                        await backupDatabase();
+                        await backupDatabase({ closeConnection: false });
                         console.log('✅ Scheduled backup completed');
                     } catch (error) {
                         console.error('❌ Scheduled backup failed:', error.message);

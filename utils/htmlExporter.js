@@ -1916,7 +1916,7 @@ function injectReadingSubmissionHook(html, testDoc) {
 
     function buildPayload() {
         const scoreText = (document.getElementById('scoreValue')?.innerText || '').trim();
-        const match = scoreText.match(/(\d+)\s*\/\s*(\d+)/);
+        const match = scoreText.match(/(\\d+)\\s*\\/\\s*(\\d+)/);
         if (!match) return null;
 
         const score = Number(match[1]);
@@ -2021,7 +2021,7 @@ function injectListeningSubmissionHook(html, testDoc) {
         if (!resultModal || resultModal.style.display !== 'flex') return null;
 
         const scoreText = (document.getElementById('scoreValue')?.innerText || '').trim();
-        const match = scoreText.match(/(\d+)\s*\/\s*(\d+)/);
+        const match = scoreText.match(/(\\d+)\\s*\\/\\s*(\\d+)/);
         if (!match) return null;
 
         const score = Number(match[1]);

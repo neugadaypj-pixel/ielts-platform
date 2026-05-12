@@ -31,7 +31,7 @@ const session = require('express-session');
 const MongoStore = require('connect-mongo').default;
 const multer = require("multer");
 const mime = require('mime-types');
-const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
+const { S3Client, PutObjectCommand, GetObjectCommand } = require('@aws-sdk/client-s3');
 const rateLimit = require('express-rate-limit');
 const helmet = require('helmet');
 const csrf = require('csurf');
@@ -85,6 +85,12 @@ async function uploadToB2(buffer, filename, mimetype) {
         ACL: 'public-read'
     }));
     return `${process.env.B2_PUBLIC_URL}/${filename}`;
+}
+
+function extractB2Filename(value) {
+    const filename = path.basename(String(value || ''));
+    if (!/^listening-[a-zA-Z0-9_-]+-\d+\.[a-zA-Z0-9]+$/.test(filename)) return null;
+    return filename;
 }
 const app = express();
 
@@ -627,6 +633,37 @@ async function handleDelete(req, res, options) {
 }
 
 // --- 6. ROUTES ---
+
+app.get('/audio-files/:filename', async (req, res) => {
+    if (!req.session.userId) return res.status(401).send('Login required');
+
+    try {
+        const filename = extractB2Filename(req.params.filename);
+        if (!filename) return res.status(400).send('Invalid audio file');
+
+        const rangeHeader = req.headers.range;
+        const object = await s3.send(new GetObjectCommand({
+            Bucket: process.env.B2_BUCKET,
+            Key: filename,
+            Range: rangeHeader
+        }));
+
+        const contentType = object.ContentType || mime.lookup(filename) || 'audio/mpeg';
+        if (rangeHeader && object.ContentRange) {
+            res.status(206);
+            res.setHeader('Content-Range', object.ContentRange);
+        }
+        res.setHeader('Content-Type', contentType);
+        res.setHeader('Accept-Ranges', 'bytes');
+        res.setHeader('Cache-Control', 'private, max-age=3600');
+        if (object.ContentLength) res.setHeader('Content-Length', object.ContentLength);
+
+        object.Body.pipe(res);
+    } catch (err) {
+        logger.error('Audio proxy error', { error: err.message, filename: req.params.filename });
+        res.status(404).send('Audio not found');
+    }
+});
 
 app.get('/', (req, res) => {
     res.render('index', { user: req.session.username });
@@ -1496,7 +1533,8 @@ app.get('/download-test/:id', async (req, res) => {
                 : access.test;
 
             const html = generateHTMLFromTest(testForDownload, {
-                deepseekApiKey: process.env.DEEPSEEK_API_KEY || ''
+                deepseekApiKey: process.env.DEEPSEEK_API_KEY || '',
+                useAudioProxy: false
             });
             const stableHtml = injectPersistentStateForDownload(html, access.test);
             const safeTitle = access.test.title.replace(/[^a-z0-9]/gi, '_').toLowerCase();

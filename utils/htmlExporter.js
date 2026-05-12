@@ -378,6 +378,29 @@ function normalizeWritingContent(parsedContent = {}) {
     };
 }
 
+function proxifyListeningAudioUrl(value, options = {}) {
+    if (options.useAudioProxy === false || !value || typeof value !== 'string') return value;
+    if (value.startsWith('/audio-files/')) return value;
+    if (value.startsWith('data:') || value.startsWith('/')) return value;
+
+    const publicBase = String(process.env.B2_PUBLIC_URL || '').replace(/\/+$/, '');
+    if (!publicBase || !value.startsWith(`${publicBase}/`)) return value;
+
+    const filename = value.slice(publicBase.length + 1).split(/[?#]/)[0];
+    if (!/^listening-[a-zA-Z0-9_-]+-\d+\.[a-zA-Z0-9]+$/.test(filename)) return value;
+    return `/audio-files/${encodeURIComponent(filename)}`;
+}
+
+function proxifyListeningAudioContent(content, options = {}) {
+    return {
+        ...content,
+        fullAudio: proxifyListeningAudioUrl(content.fullAudio, options),
+        audioParts: Array.isArray(content.audioParts)
+            ? content.audioParts.map((audioUrl) => proxifyListeningAudioUrl(audioUrl, options))
+            : content.audioParts
+    };
+}
+
 function injectListeningUrlSupport(template) {
     // The builder template now natively includes a URL-aware createBlobUrl.
     // This function handles backward-compat for any older HTML that still
@@ -2727,7 +2750,7 @@ function generateReadingHtml(testDoc, parsedContent, studentName, options = {}) 
 }
 
 function generateListeningHtml(testDoc, parsedContent, studentName, options = {}) {
-    const content = normalizeListeningContent(parsedContent);
+    const content = proxifyListeningAudioContent(normalizeListeningContent(parsedContent), options);
     const stableSessionId = scopeSessionIdForStudent(createStableSessionId(testDoc, 'ielts_listening_'), studentName);
     let generatedHtml = runBuilderGenerateFile('listening', {
         q1_text: { value: content.p1 },

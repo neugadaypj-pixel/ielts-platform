@@ -639,7 +639,16 @@ app.get('/audio-files/:filename', async (req, res) => {
 
     try {
         const filename = extractB2Filename(req.params.filename);
-        if (!filename) return res.status(400).send('Invalid audio file');
+        logger.debug('Audio proxy request', { 
+            requestedFilename: req.params.filename, 
+            extractedFilename: filename,
+            bucket: process.env.B2_BUCKET
+        });
+        
+        if (!filename) {
+            logger.warn('Invalid audio filename', { filename: req.params.filename });
+            return res.status(400).send('Invalid audio file');
+        }
 
         const rangeHeader = req.headers.range;
         const object = await s3.send(new GetObjectCommand({

@@ -1467,7 +1467,8 @@ app.get('/view-test/:id', async (req, res) => {
             html = generateHTMLFromTest(access.test, {
                 deepseekApiKey: process.env.DEEPSEEK_API_KEY || '',
                 studentName: access.user ? (access.user.username || '') : '',
-                previewMode: isStaffPreview
+                previewMode: isStaffPreview,
+                useAudioProxy: false
             });
 
             // Cache the generated HTML

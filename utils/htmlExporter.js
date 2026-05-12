@@ -302,6 +302,8 @@ function normalizeReadingContent(parsedContent = {}, testDoc = {}) {
 }
 
 function normalizeListeningContent(parsedContent = {}) {
+    console.log('[normalizeListeningContent] Input parsedContent:', JSON.stringify(parsedContent, null, 2));
+    
     const partsSource = parsedContent.parts && typeof parsedContent.parts === 'object' ? parsedContent.parts : {};
     const getPartSource = (index) => (
         partsSource[index]
@@ -336,6 +338,8 @@ function normalizeListeningContent(parsedContent = {}) {
         : JSON.stringify(rawAnswerKey || {});
 
     let audioParts = parsedContent.audioParts ?? parsedContent.audio?.parts ?? [null, null, null, null];
+    console.log('[normalizeListeningContent] Extracted audioParts:', audioParts);
+    
     if (!Array.isArray(audioParts)) {
         audioParts = [null, null, null, null];
     }
@@ -346,16 +350,22 @@ function normalizeListeningContent(parsedContent = {}) {
         audioParts = audioParts.slice(0, 4);
     }
 
-    return {
+    const fullAudio = parsedContent.fullAudio ?? parsedContent.audio?.full ?? null;
+    console.log('[normalizeListeningContent] Extracted fullAudio:', fullAudio);
+
+    const result = {
         p1: parts[1].finalHtml || '',
         p2: parts[2].finalHtml || '',
         p3: parts[3].finalHtml || '',
         p4: parts[4].finalHtml || '',
         answerKey,
         audioParts,
-        fullAudio: parsedContent.fullAudio ?? parsedContent.audio?.full ?? null,
+        fullAudio,
         includePause: Boolean(parsedContent.includePause ?? parsedContent.audio?.usePause ?? false)
     };
+    
+    console.log('[normalizeListeningContent] Output result:', JSON.stringify(result, null, 2));
+    return result;
 }
 
 function normalizeWritingContent(parsedContent = {}) {

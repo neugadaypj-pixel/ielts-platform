@@ -253,6 +253,12 @@ ${commonInjectionStyles()}
 
     if (isEditMode) {
         const savedJson = JSON.parse(${builderJson});
+        let savedContent = null;
+        if (preloadedData && preloadedData.readingPassage) {
+            try {
+                savedContent = JSON.parse(preloadedData.readingPassage);
+            } catch (e) {}
+        }
         if (savedJson && savedJson.parts) {
             function applyListeningData() {
                 const el = document.getElementById('q1_text');
@@ -269,13 +275,25 @@ ${commonInjectionStyles()}
                     if (pauseCb) {
                         if (typeof savedJson.includePause !== 'undefined') {
                             pauseCb.checked = Boolean(savedJson.includePause);
-                        } else if (preloadedData && preloadedData.readingPassage) {
-                            try {
-                                const parsed = JSON.parse(preloadedData.readingPassage);
-                                if (parsed && typeof parsed.includePause !== 'undefined') {
-                                    pauseCb.checked = Boolean(parsed.includePause);
-                                }
-                            } catch (e) {}
+                        } else if (savedContent && typeof savedContent.includePause !== 'undefined') {
+                            pauseCb.checked = Boolean(savedContent.includePause);
+                        }
+                    }
+                    if (savedContent) {
+                        if (savedContent.fullAudio) {
+                            fullAudioData = savedContent.fullAudio;
+                            const statusFull = document.getElementById('status_full');
+                            if (statusFull) statusFull.innerText = '✅ Existing full audio loaded';
+                        }
+                        if (Array.isArray(savedContent.audioParts)) {
+                            audioParts = [0, 1, 2, 3].map(function(index) {
+                                return savedContent.audioParts[index] || null;
+                            });
+                            audioParts.forEach(function(audioUrl, index) {
+                                if (!audioUrl) return;
+                                const status = document.getElementById('status_' + (index + 1));
+                                if (status) status.innerText = '✅ Existing Part ' + (index + 1) + ' audio loaded';
+                            });
                         }
                     }
                 } catch (e) { console.error('Error loading builder JSON:', e); }

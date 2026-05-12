@@ -2750,7 +2750,8 @@ function generateReadingHtml(testDoc, parsedContent, studentName, options = {}) 
 }
 
 function generateListeningHtml(testDoc, parsedContent, studentName, options = {}) {
-    const content = normalizeListeningContent(parsedContent);
+    const rawContent = normalizeListeningContent(parsedContent);
+    const content = proxifyListeningAudioContent(rawContent, options);
     const stableSessionId = scopeSessionIdForStudent(createStableSessionId(testDoc, 'ielts_listening_'), studentName);
     let generatedHtml = runBuilderGenerateFile('listening', {
         q1_text: { value: content.p1 },

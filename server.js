@@ -226,13 +226,28 @@ const upload = multer({
     }
 });
 
-const sessionStore = MongoStore.create({
-    mongoUrl: process.env.MONGO_URI,
-    mongoOptions: mongoConnectionOptions,
-    touchAfter: 24 * 3600,
-    ttl: 24 * 60 * 60,
-    autoRemove: 'native'
-});
+let sessionStore;
+if (MongoStore.create) {
+    // connect-mongo v5+ API
+    sessionStore = MongoStore.create({
+        mongoUrl: process.env.MONGO_URI,
+        mongoOptions: mongoConnectionOptions,
+        touchAfter: 24 * 3600,
+        ttl: 24 * 60 * 60,
+        autoRemove: 'native'
+    });
+} else {
+    // connect-mongo v4 API: module itself is a factory function that takes session
+    const StoreFactory = require('connect-mongo');
+    const Store = StoreFactory(session);
+    sessionStore = new Store({
+        mongoUrl: process.env.MONGO_URI,
+        mongoOptions: mongoConnectionOptions,
+        touchAfter: 24 * 3600,
+        ttl: 24 * 60 * 60,
+        autoRemove: 'native'
+    });
+}
 
 sessionStore.on('error', (err) => {
     logger.error('Mongo session store error', { error: err.message, stack: err.stack });

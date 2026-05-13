@@ -28,7 +28,7 @@ const mongoose = require('mongoose');
 const path = require('path');
 const bcrypt = require('bcryptjs');
 const session = require('express-session');
-const MongoStore = require('connect-mongo').default;
+const MongoStore = require('connect-mongo');
 const multer = require("multer");
 const mime = require('mime-types');
 const { S3Client, PutObjectCommand, GetObjectCommand } = require('@aws-sdk/client-s3');
@@ -265,6 +265,12 @@ app.use((req, res, next) => {
             req.session.userId = String(raw);
         }
     }
+    next();
+});
+
+// Request logging for Render debugging
+app.use((req, res, next) => {
+    console.log(`[REQ] ${req.method} ${req.url} ${req.headers['x-forwarded-for'] || req.ip}`);
     next();
 });
 

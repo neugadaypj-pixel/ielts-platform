@@ -719,6 +719,15 @@ app.get('/audio-files/:filename', async (req, res) => {
     }
 });
 
+app.get('/health', (req, res) => {
+    res.status(200).json({
+        status: 'ok',
+        uptime: process.uptime(),
+        db: isDatabaseReady() ? 'connected' : 'disconnected',
+        timestamp: new Date().toISOString()
+    });
+});
+
 app.get('/', (req, res) => {
     res.render('index', { user: req.session.username });
 });

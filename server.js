@@ -226,36 +226,38 @@ const upload = multer({
     }
 });
 
-const connectMongoModule = require('connect-mongo');
-console.log('[DEBUG] connect-mongo typeof:', typeof connectMongoModule);
-console.log('[DEBUG] connect-mongo keys:', Object.keys(connectMongoModule || {}));
-console.log('[DEBUG] connect-mongo.default typeof:', typeof connectMongoModule?.default);
-console.log('[DEBUG] connect-mongo.create typeof:', typeof connectMongoModule?.create);
-console.log('[DEBUG] connect-mongo.MongoStore typeof:', typeof connectMongoModule?.MongoStore);
+let sessionStore;
+const connectMongoPkg = require('connect-mongo');
 
-// Find the actual MongoStore constructor across versions
-const MongoStoreCtor =
-    connectMongoModule?.create ? connectMongoModule :
-    connectMongoModule?.default?.create ? connectMongoModule.default :
-    connectMongoModule?.MongoStore ? connectMongoModule.MongoStore :
-    typeof connectMongoModule === 'function' ? connectMongoModule :
+// Log what connect-mongo exports so we can debug version issues
+console.log('[DEBUG] connect-mongo typeof:', typeof connectMongoPkg);
+console.log('[DEBUG] connect-mongo keys:', Object.keys(connectMongoPkg || {}));
+
+// Try multiple import patterns to handle different connect-mongo versions/builds
+const MongoStoreClass =
+    (connectMongoPkg && typeof connectMongoPkg.create === 'function') ? connectMongoPkg :
+    (connectMongoPkg && connectMongoPkg.default && typeof connectMongoPkg.default.create === 'function') ? connectMongoPkg.default :
+    (connectMongoPkg && connectMongoPkg.MongoStore && typeof connectMongoPkg.MongoStore.create === 'function') ? connectMongoPkg.MongoStore :
     null;
 
-if (!MongoStoreCtor || typeof MongoStoreCtor.create !== 'function') {
-    console.error('[FATAL] Could not resolve connect-mongo MongoStore. Exports:', connectMongoModule);
-    process.exit(1);
+if (MongoStoreClass) {
+    sessionStore = MongoStoreClass.create({
+        mongoUrl: process.env.MONGO_URI,
+        mongoOptions: mongoConnectionOptions,
+        touchAfter: 24 * 3600,
+        ttl: 24 * 60 * 60,
+        autoRemove: 'native'
+    });
+    console.log('[INFO] Using connect-mongo for session storage');
+} else {
+    // Fallback: use MemoryStore so the app can at least start
+    const MemoryStore = require('express-session').MemoryStore;
+    sessionStore = new MemoryStore();
+    console.warn('[WARN] connect-mongo not available; falling back to MemoryStore (sessions will not persist across restarts)');
 }
 
-const sessionStore = MongoStoreCtor.create({
-    mongoUrl: process.env.MONGO_URI,
-    mongoOptions: mongoConnectionOptions,
-    touchAfter: 24 * 3600,
-    ttl: 24 * 60 * 60,
-    autoRemove: 'native'
-});
-
 sessionStore.on('error', (err) => {
-    logger.error('Mongo session store error', { error: err.message, stack: err.stack });
+    logger.error('Session store error', { error: err.message, stack: err.stack });
 });
 
 app.use(session({

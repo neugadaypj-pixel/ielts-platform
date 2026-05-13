@@ -3063,6 +3063,33 @@ async function startServer() {
                     }
                 });
                 console.log('⏰ Automated daily backups scheduled for 2:00 AM');
+
+                // Schedule AI analysis cleanup: trim aiAnalysis from submissions older than 60 days
+                cron.schedule('30 3 * * *', async () => {
+                    console.log('🧹 Running AI analysis cleanup (60-day retention)...');
+                    try {
+                        const cutoff = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000);
+                        const result = await Submission.updateMany(
+                            {
+                                'details.aiAnalysis': { $exists: true, $ne: null },
+                                createdAt: { $lt: cutoff }
+                            },
+                            {
+                                $unset: { 'details.aiAnalysis': 1, 'details.aiAnalyzedAt': 1 }
+                            }
+                        );
+                        if (result.modifiedCount > 0) {
+                            console.log(`🧹 Trimmed AI analysis from ${result.modifiedCount} old submissions`);
+                            logger.info('AI analysis cleanup completed', { trimmedCount: result.modifiedCount });
+                        } else {
+                            console.log('🧹 No old AI analysis to trim');
+                        }
+                    } catch (error) {
+                        console.error('❌ AI analysis cleanup failed:', error.message);
+                        logger.error('AI analysis cleanup failed', { error: error.message });
+                    }
+                });
+                console.log('⏰ AI analysis cleanup scheduled for 3:30 AM daily');
             }
         });
     } catch (error) {

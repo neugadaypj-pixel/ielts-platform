@@ -151,12 +151,25 @@ async function connectDatabase() {
     try {
         await mongoose.connect(process.env.MONGO_URI, mongoConnectionOptions);
         logger.info('Connected to MongoDB successfully');
+    } catch (err) {
+        logger.error('Database connection error', { error: err.message, stack: err.stack });
+        process.exit(1);
+    }
+}
 
-        // Ensure the sessions collection has a TTL index so expired sessions auto-delete.
-        // connect-mongo stores an 'expires' field; without this index, stale sessions
-        // accumulate indefinitely and leak storage.
+mongoose.connection.on('connected', () => {
+    logger.info('MongoDB connected');
+
+    // Ensure the sessions collection has a TTL index so expired sessions auto-delete.
+    // connect-mongo stores an 'expires' field; without this index, stale sessions
+    // accumulate indefinitely and leak storage.
+    // We do this in the 'connected' event because mongoose.connection.db is only
+    // guaranteed to be non-null after the connection is fully established.
+    setImmediate(async () => {
         try {
-            const sessionsCollection = mongoose.connection.db.collection('sessions');
+            const db = mongoose.connection.db;
+            if (!db) return;
+            const sessionsCollection = db.collection('sessions');
             const existingIndexes = await sessionsCollection.indexes();
             const hasTTL = existingIndexes.some(idx =>
                 idx.key && idx.key.expires && idx.expireAfterSeconds !== undefined
@@ -173,13 +186,8 @@ async function connectDatabase() {
         } catch (indexErr) {
             logger.warn('Could not ensure sessions TTL index', { error: indexErr.message });
         }
-    } catch (err) {
-        logger.error('Database connection error', { error: err.message, stack: err.stack });
-        process.exit(1);
-    }
-}
-
-mongoose.connection.on('connected', () => logger.info('MongoDB connected'));
+    });
+});
 mongoose.connection.on('disconnected', () => logger.warn('MongoDB disconnected', { readyState: mongoose.connection.readyState }));
 mongoose.connection.on('error', err => logger.error('MongoDB connection error', { error: err.message }));
 mongoose.connection.on('reconnected', () => logger.info('MongoDB reconnected'));

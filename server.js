@@ -3128,6 +3128,23 @@ async function startServer() {
     }
 }
 
+// Global crash handlers — log the error before exiting so Render logs capture it
+process.on('uncaughtException', (err) => {
+    console.error('FATAL uncaughtException:', err.message);
+    console.error(err.stack);
+    logger.error('FATAL uncaughtException', { message: err.message, stack: err.stack });
+    process.exit(1);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+    const message = reason instanceof Error ? reason.message : String(reason);
+    const stack = reason instanceof Error ? reason.stack : 'No stack trace';
+    console.error('FATAL unhandledRejection:', message);
+    console.error(stack);
+    logger.error('FATAL unhandledRejection', { message, stack });
+    process.exit(1);
+});
+
 // Start the server
 startServer();
 

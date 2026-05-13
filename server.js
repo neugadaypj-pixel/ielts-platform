@@ -151,6 +151,28 @@ async function connectDatabase() {
     try {
         await mongoose.connect(process.env.MONGO_URI, mongoConnectionOptions);
         logger.info('Connected to MongoDB successfully');
+
+        // Ensure the sessions collection has a TTL index so expired sessions auto-delete.
+        // connect-mongo stores an 'expires' field; without this index, stale sessions
+        // accumulate indefinitely and leak storage.
+        try {
+            const sessionsCollection = mongoose.connection.db.collection('sessions');
+            const existingIndexes = await sessionsCollection.indexes();
+            const hasTTL = existingIndexes.some(idx =>
+                idx.key && idx.key.expires && idx.expireAfterSeconds !== undefined
+            );
+            if (!hasTTL) {
+                await sessionsCollection.createIndex(
+                    { expires: 1 },
+                    { expireAfterSeconds: 0 }
+                );
+                logger.info('Created TTL index on sessions collection');
+            } else {
+                logger.info('Sessions TTL index already exists');
+            }
+        } catch (indexErr) {
+            logger.warn('Could not ensure sessions TTL index', { error: indexErr.message });
+        }
     } catch (err) {
         logger.error('Database connection error', { error: err.message, stack: err.stack });
         process.exit(1);

@@ -2003,6 +2003,17 @@ function injectReadingSubmissionHook(html, testDoc) {
         };
     }
 
+    function showSyncError(msg) {
+        const existing = document.getElementById('platform-sync-error');
+        if (existing) existing.remove();
+        const el = document.createElement('div');
+        el.id = 'platform-sync-error';
+        el.style.cssText = 'position:fixed;top:12px;left:50%;transform:translateX(-50%);z-index:99999;padding:12px 20px;border-radius:12px;font-weight:800;font-size:0.95rem;color:#fff;background:linear-gradient(135deg,#ef4444,#dc2626);box-shadow:0 8px 20px rgba(239,68,68,0.3);';
+        el.textContent = msg;
+        document.body.appendChild(el);
+        setTimeout(() => { if (el.parentNode) el.remove(); }, 6000);
+    }
+
     function syncSubmission() {
         if (!canSync()) return;
         const payload = buildPayload();
@@ -2014,13 +2025,15 @@ function injectReadingSubmissionHook(html, testDoc) {
             credentials: 'same-origin',
             body: JSON.stringify(payload)
         })
-            .then((response) => response.ok ? response.json() : null)
+            .then((response) => response.ok ? response.json() : response.json().then(d => ({ ...d, __httpError: true })))
             .then((data) => {
                 if (data && data.success) {
                     rememberSync(payload.resultSignature);
+                } else if (data && data.__httpError) {
+                    showSyncError('Submission failed: ' + (data.message || 'Server error'));
                 }
             })
-            .catch(() => {});
+            .catch(() => { showSyncError('Submission failed: network error'); });
     }
 
     const originalCheckAnswers = typeof checkAnswers === 'function' ? checkAnswers : null;
@@ -2108,6 +2121,17 @@ function injectListeningSubmissionHook(html, testDoc) {
         };
     }
 
+    function showSyncError(msg) {
+        const existing = document.getElementById('platform-sync-error');
+        if (existing) existing.remove();
+        const el = document.createElement('div');
+        el.id = 'platform-sync-error';
+        el.style.cssText = 'position:fixed;top:12px;left:50%;transform:translateX(-50%);z-index:99999;padding:12px 20px;border-radius:12px;font-weight:800;font-size:0.95rem;color:#fff;background:linear-gradient(135deg,#ef4444,#dc2626);box-shadow:0 8px 20px rgba(239,68,68,0.3);';
+        el.textContent = msg;
+        document.body.appendChild(el);
+        setTimeout(() => { if (el.parentNode) el.remove(); }, 6000);
+    }
+
     function syncSubmissionWithRetry(attempt = 1) {
         if (!canSync()) return;
         if (attempt > 8) return;
@@ -2127,16 +2151,22 @@ function injectListeningSubmissionHook(html, testDoc) {
             credentials: 'same-origin',
             body: JSON.stringify(payload)
         })
-            .then((response) => response.ok ? response.json() : null)
+            .then((response) => response.ok ? response.json() : response.json().then(d => ({ ...d, __httpError: true })))
             .then((data) => {
                 if (data && data.success) {
                     rememberSync(payload.resultSignature);
+                } else if (data && data.__httpError) {
+                    showSyncError('Submission failed: ' + (data.message || 'Server error'));
                 } else if (attempt < 8) {
                     setTimeout(() => syncSubmissionWithRetry(attempt + 1), 450);
                 }
             })
             .catch(() => {
-                if (attempt < 8) setTimeout(() => syncSubmissionWithRetry(attempt + 1), 450);
+                if (attempt < 8) {
+                    setTimeout(() => syncSubmissionWithRetry(attempt + 1), 450);
+                } else {
+                    showSyncError('Submission failed: network error');
+                }
             });
     }
 
@@ -2419,6 +2449,17 @@ function injectWritingSubmissionHook(html, testDoc) {
         };
     }
 
+    function showSyncError(msg) {
+        const existing = document.getElementById('platform-sync-error');
+        if (existing) existing.remove();
+        const el = document.createElement('div');
+        el.id = 'platform-sync-error';
+        el.style.cssText = 'position:fixed;top:12px;left:50%;transform:translateX(-50%);z-index:99999;padding:12px 20px;border-radius:12px;font-weight:800;font-size:0.95rem;color:#fff;background:linear-gradient(135deg,#ef4444,#dc2626);box-shadow:0 8px 20px rgba(239,68,68,0.3);';
+        el.textContent = msg;
+        document.body.appendChild(el);
+        setTimeout(() => { if (el.parentNode) el.remove(); }, 6000);
+    }
+
     function syncSubmission() {
         if (!canSync()) return;
         const payload = buildPayload();
@@ -2430,13 +2471,15 @@ function injectWritingSubmissionHook(html, testDoc) {
             credentials: 'same-origin',
             body: JSON.stringify(payload)
         })
-            .then((response) => response.ok ? response.json() : null)
+            .then((response) => response.ok ? response.json() : response.json().then(d => ({ ...d, __httpError: true })))
             .then((data) => {
                 if (data && data.success) {
                     rememberSync(payload.resultSignature);
+                } else if (data && data.__httpError) {
+                    showSyncError('Submission failed: ' + (data.message || 'Server error'));
                 }
             })
-            .catch(() => {});
+            .catch(() => { showSyncError('Submission failed: network error'); });
     }
 
     const originalSubmitTest = typeof submitTest === 'function' ? submitTest : null;

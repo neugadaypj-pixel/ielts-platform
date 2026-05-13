@@ -223,6 +223,21 @@ app.use(session({
     name: 'sessionId'
 }));
 
+// Normalize session userId to string (handles legacy sessions stored as ObjectId objects)
+app.use((req, res, next) => {
+    if (req.session && req.session.userId != null) {
+        const raw = req.session.userId;
+        if (typeof raw === 'object' && raw._bsontype === 'ObjectId') {
+            req.session.userId = raw.toString();
+        } else if (Buffer.isBuffer(raw)) {
+            req.session.userId = raw.toString('hex');
+        } else if (typeof raw !== 'string') {
+            req.session.userId = String(raw);
+        }
+    }
+    next();
+});
+
 const loginLimiter = rateLimit({
     windowMs: 60 * 1000,
     max: 10,
@@ -689,7 +704,7 @@ app.post('/login', loginLimiter, csrfProtection, async (req, res) => {
 
         const user = await User.findOne({ username });
         if (user && await bcrypt.compare(password, user.password)) {
-            req.session.userId = user._id;
+            req.session.userId = user._id.toString();
             req.session.userRole = user.role;
             req.session.username = user.username;
 
@@ -1133,7 +1148,10 @@ app.get('/teacher-dashboard', isTeacher, csrfProtection, async (req, res) => {
 
         const testIds = tests.map(t => t._id);
         const submissions = await Submission.find({
-            teacherId: req.session.userId,
+            $or: [
+                { teacherId: req.session.userId },
+                { teacherId: null, testId: { $in: testIds } }
+            ],
             testId: { $in: testIds }
         }).select('testId studentId lastSubmittedAt');
 
@@ -1366,7 +1384,10 @@ app.get('/teacher/progress/:id', isTeacher, async (req, res) => {
 
         const submissionQuery = { testId: access.test._id };
         if (req.session.userRole === 'teacher') {
-            submissionQuery.teacherId = req.session.userId;
+            submissionQuery.$or = [
+                { teacherId: req.session.userId },
+                { teacherId: null }
+            ];
         }
 
         const [groups, submissions] = await Promise.all([
@@ -1927,7 +1948,7 @@ app.get('/student-dashboard', async (req, res) => {
                 path: 'groupId',
                 populate: { path: 'assignedTests', options: { sort: { type: 1, title: 1 } } }
             }),
-            Submission.find({ studentId: req.session.userId }).select('testId score totalQuestions band percentage lastSubmittedAt')
+            Submission.find({ studentId: req.session.userId }).select('testId score totalQuestions band percentage lastSubmittedAt details')
         ]);
 
         if (!student) {

@@ -226,28 +226,33 @@ const upload = multer({
     }
 });
 
-let sessionStore;
-if (MongoStore.create) {
-    // connect-mongo v5+ API
-    sessionStore = MongoStore.create({
-        mongoUrl: process.env.MONGO_URI,
-        mongoOptions: mongoConnectionOptions,
-        touchAfter: 24 * 3600,
-        ttl: 24 * 60 * 60,
-        autoRemove: 'native'
-    });
-} else {
-    // connect-mongo v4 API: module itself is a factory function that takes session
-    const StoreFactory = require('connect-mongo');
-    const Store = StoreFactory(session);
-    sessionStore = new Store({
-        mongoUrl: process.env.MONGO_URI,
-        mongoOptions: mongoConnectionOptions,
-        touchAfter: 24 * 3600,
-        ttl: 24 * 60 * 60,
-        autoRemove: 'native'
-    });
+const connectMongoModule = require('connect-mongo');
+console.log('[DEBUG] connect-mongo typeof:', typeof connectMongoModule);
+console.log('[DEBUG] connect-mongo keys:', Object.keys(connectMongoModule || {}));
+console.log('[DEBUG] connect-mongo.default typeof:', typeof connectMongoModule?.default);
+console.log('[DEBUG] connect-mongo.create typeof:', typeof connectMongoModule?.create);
+console.log('[DEBUG] connect-mongo.MongoStore typeof:', typeof connectMongoModule?.MongoStore);
+
+// Find the actual MongoStore constructor across versions
+const MongoStoreCtor =
+    connectMongoModule?.create ? connectMongoModule :
+    connectMongoModule?.default?.create ? connectMongoModule.default :
+    connectMongoModule?.MongoStore ? connectMongoModule.MongoStore :
+    typeof connectMongoModule === 'function' ? connectMongoModule :
+    null;
+
+if (!MongoStoreCtor || typeof MongoStoreCtor.create !== 'function') {
+    console.error('[FATAL] Could not resolve connect-mongo MongoStore. Exports:', connectMongoModule);
+    process.exit(1);
 }
+
+const sessionStore = MongoStoreCtor.create({
+    mongoUrl: process.env.MONGO_URI,
+    mongoOptions: mongoConnectionOptions,
+    touchAfter: 24 * 3600,
+    ttl: 24 * 60 * 60,
+    autoRemove: 'native'
+});
 
 sessionStore.on('error', (err) => {
     logger.error('Mongo session store error', { error: err.message, stack: err.stack });

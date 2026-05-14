@@ -135,6 +135,7 @@
     async function loadNotifications() {
         try {
             const res = await fetch('/api/notifications');
+            if (res.status === 401) return; // not logged in, silently skip
             const data = await res.json();
             if (data.success) {
                 renderNotifications(data.notifications);

@@ -98,7 +98,19 @@ const app = express();
 app.set('trust proxy', 1);
 
 app.disable('x-powered-by');
-app.use(helmet({ contentSecurityPolicy: false }));
+app.use(helmet({
+    contentSecurityPolicy: false,
+    permissionsPolicy: {
+        features: {
+            geolocation: ["'self'"],
+            microphone: ["'none'"],
+            camera: ["'none'"],
+            payment: ["'none'"],
+            usb: ["'none'"],
+            vr: ["'none'"]
+        }
+    }
+}));
 
 // --- 1. DATABASE CONNECTION ---
 // Set mongoose connection options for better stability

@@ -100,6 +100,9 @@ app.set('trust proxy', 1);
 app.disable('x-powered-by');
 app.use(helmet({
     contentSecurityPolicy: false,
+    crossOriginEmbedderPolicy: false,
+    crossOriginOpenerPolicy: false,
+    crossOriginResourcePolicy: false,
     permissionsPolicy: {
         features: {
             geolocation: ["'self'"],
@@ -280,7 +283,7 @@ app.use(session({
     cookie: {
         maxAge: 1000 * 60 * 60 * 24,
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
+        secure: false, // Must be false on HTTP; OCI VM has no HTTPS
         sameSite: 'lax'
     },
     rolling: true,

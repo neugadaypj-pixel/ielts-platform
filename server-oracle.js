@@ -13,6 +13,7 @@ const { S3Client, PutObjectCommand, GetObjectCommand } = require('@aws-sdk/clien
 const Sentry = require('@sentry/node');
 const crypto = require('crypto');
 const fetch = require('node-fetch');
+const cron = require('node-cron');
 
 // === ORACLE DB IMPORTS (replaces Mongoose) ===
 const { getPool } = require('./database/connection');
@@ -25,6 +26,9 @@ const Submission = require('./database/models/submission');
 const Group = require('./database/models/group');
 const Feedback = require('./database/models/feedback');
 const Notification = require('./database/models/notification');
+
+// === BACKUP SYSTEM ===
+const { backupDatabase } = require('./backup-database-oracle');
 
 // === UTILS ===
 const logger = require('./utils/logger');
@@ -1658,6 +1662,29 @@ app.post('/admin/delete-user/:id', isAdmin, async (req, res) => {
     });
 });
 
+// --- MANUAL BACKUP ENDPOINT (Admin only) ---
+app.post('/admin/backup-database', isAdmin, async (req, res) => {
+    try {
+        console.log('🔄 Manual backup triggered by admin:', req.session.username);
+        const result = await backupDatabase({ closeConnection: false });
+        res.json({
+            success: true,
+            filename: result.filename,
+            timestamp: new Date().toISOString(),
+            stats: {
+                sizeMB: (result.size / 1024 / 1024).toFixed(2)
+            }
+        });
+    } catch (error) {
+        console.error('❌ Manual backup failed:', error.message);
+        res.status(500).json({
+            success: false,
+            error: 'Backup failed',
+            message: error.message
+        });
+    }
+});
+
 // Remove student from group
 app.post('/teacher/remove-student-from-group/:groupId/:studentId', isTeacher, async (req, res) => {
     try {
@@ -2366,6 +2393,38 @@ async function startServer() {
             connectDatabase();
         }
     }, 30000);
+
+    // Schedule automated daily backups at 2 AM
+    if (process.env.NODE_ENV === 'production') {
+        cron.schedule('0 2 * * *', async () => {
+            console.log('🔄 Running scheduled database backup...');
+            try {
+                await backupDatabase({ closeConnection: false });
+                console.log('✅ Scheduled backup completed');
+            } catch (error) {
+                console.error('❌ Scheduled backup failed:', error.message);
+            }
+        });
+        console.log('⏰ Automated daily backups scheduled for 2:00 AM');
+
+        // Schedule AI analysis cleanup: trim aiAnalysis from submissions older than 60 days
+        cron.schedule('30 3 * * *', async () => {
+            console.log('🧹 Running AI analysis cleanup (60-day retention)...');
+            try {
+                const { execute } = require('./database/connection');
+                const result = await execute(
+                    `UPDATE submissions
+                     SET details = JSON_MERGEPATCH(details, JSON_OBJECT('aiAnalysis' VALUE NULL))
+                     WHERE JSON_EXISTS(details, '$.aiAnalysis')
+                       AND last_submitted_at < SYSTIMESTAMP - INTERVAL '60' DAY`
+                );
+                console.log(`✅ AI analysis cleaned from ${result.rowsAffected || 0} submissions`);
+            } catch (error) {
+                console.error('❌ AI analysis cleanup failed:', error.message);
+            }
+        });
+        console.log('⏰ AI analysis cleanup scheduled for 3:30 AM daily');
+    }
 }
 
 startServer();

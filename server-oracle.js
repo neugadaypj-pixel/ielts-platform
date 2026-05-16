@@ -605,11 +605,11 @@ app.post('/login', loginLimiter, csrfProtection, async (req, res) => {
             return res.render('login', { error: 'Invalid username or password', csrfToken: req.csrfToken() });
         }
 
-        req.session.userId = user.id;
+        req.session.userId = user._id;
         req.session.username = user.username;
         req.session.userRole = user.role;
 
-        logger.info('User logged in', { userId: user.id, username: user.username, role: user.role });
+        logger.info('User logged in', { userId: user._id, username: user.username, role: user.role });
 
         if (user.role === CONSTANTS.ROLES.ADMIN) return res.redirect('/admin');
         if (user.role === CONSTANTS.ROLES.TEACHER) return res.redirect('/teacher-dashboard');
@@ -628,24 +628,26 @@ app.get('/logout', (req, res) => {
 app.get('/admin', isAdmin, csrfProtection, async (req, res) => {
     try {
         if (!isDatabaseReady()) return sendDatabaseUnavailable(res);
-        
-        const t0 = Date.now();
-        logger.info('Admin dashboard: starting queries...');
 
         const [users, tests, groups, teacherCount, studentCount, testCount] = await Promise.all([
-            User.find({}).then(r => { logger.info(`Admin: User.find({}) took ${Date.now()-t0}ms`); return r; }),
-            Test.find({}).then(r => { logger.info(`Admin: Test.find({}) took ${Date.now()-t0}ms`); return r; }),
-            Group.find({}).then(r => { logger.info(`Admin: Group.find({}) took ${Date.now()-t0}ms`); return r; }),
-            User.countDocuments({ role: 'teacher' }).then(r => { logger.info(`Admin: teacherCount took ${Date.now()-t0}ms`); return r; }),
-            User.countDocuments({ role: 'student' }).then(r => { logger.info(`Admin: studentCount took ${Date.now()-t0}ms`); return r; }),
-            Test.countDocuments({}).then(r => { logger.info(`Admin: testCount took ${Date.now()-t0}ms`); return r; })
+            User.find({}),
+            Test.find({}),
+            Group.find({}),
+            User.countDocuments({ role: 'teacher' }),
+            User.countDocuments({ role: 'student' }),
+            Test.countDocuments({})
         ]);
-        logger.info(`Admin dashboard: all queries completed in ${Date.now()-t0}ms`);
+
+        const teachers = users.filter(u => u.role === 'teacher');
+        const students = users.filter(u => u.role === 'student');
 
         res.render('admin', {
             users,
+            teachers,
+            students,
             tests,
             groups,
+            testsByType: groupTestsByType(tests),
             csrfToken: req.csrfToken(),
             stats: {
                 teacherCount,

@@ -3,7 +3,7 @@ const { execute, executeMany } = require('../connection');
 const User = {
     async findById(id) {
         const result = await execute(
-            `SELECT id AS "id", username AS "username", password AS "password", role AS "role",
+            `SELECT id AS "_id", username AS "username", password AS "password", role AS "role",
                     teacher_id AS "teacherId", group_id AS "groupId",
                     TO_CHAR(created_at, 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS "createdAt",
                     TO_CHAR(updated_at, 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS "updatedAt"
@@ -21,7 +21,7 @@ const User = {
     },
 
     async findOne(filter) {
-        let sql = `SELECT id AS "id", username AS "username", password AS "password", role AS "role",
+        let sql = `SELECT id AS "_id", username AS "username", password AS "password", role AS "role",
                           teacher_id AS "teacherId", group_id AS "groupId",
                           TO_CHAR(created_at, 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS "createdAt",
                           TO_CHAR(updated_at, 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS "updatedAt"
@@ -35,7 +35,7 @@ const User = {
     },
 
     async find(filter) {
-        let sql = `SELECT id AS "id", username AS "username", role AS "role",
+        let sql = `SELECT id AS "_id", username AS "username", role AS "role",
                           teacher_id AS "teacherId", group_id AS "groupId",
                           TO_CHAR(created_at, 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS "createdAt"
                    FROM users WHERE 1=1`;

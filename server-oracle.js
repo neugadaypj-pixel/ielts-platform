@@ -628,15 +628,19 @@ app.get('/logout', (req, res) => {
 app.get('/admin', isAdmin, csrfProtection, async (req, res) => {
     try {
         if (!isDatabaseReady()) return sendDatabaseUnavailable(res);
+        
+        const t0 = Date.now();
+        logger.info('Admin dashboard: starting queries...');
 
         const [users, tests, groups, teacherCount, studentCount, testCount] = await Promise.all([
-            User.find({}),
-            Test.find({}),
-            Group.find({}),
-            User.countDocuments({ role: 'teacher' }),
-            User.countDocuments({ role: 'student' }),
-            Test.countDocuments({})
+            User.find({}).then(r => { logger.info(`Admin: User.find({}) took ${Date.now()-t0}ms`); return r; }),
+            Test.find({}).then(r => { logger.info(`Admin: Test.find({}) took ${Date.now()-t0}ms`); return r; }),
+            Group.find({}).then(r => { logger.info(`Admin: Group.find({}) took ${Date.now()-t0}ms`); return r; }),
+            User.countDocuments({ role: 'teacher' }).then(r => { logger.info(`Admin: teacherCount took ${Date.now()-t0}ms`); return r; }),
+            User.countDocuments({ role: 'student' }).then(r => { logger.info(`Admin: studentCount took ${Date.now()-t0}ms`); return r; }),
+            Test.countDocuments({}).then(r => { logger.info(`Admin: testCount took ${Date.now()-t0}ms`); return r; })
         ]);
+        logger.info(`Admin dashboard: all queries completed in ${Date.now()-t0}ms`);
 
         res.render('admin', {
             users,

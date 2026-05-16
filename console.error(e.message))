@@ -1,0 +1,9 @@
+Use --update-env to update environment variables
+[PM2] Applying action restartProcessId on app [test-platform](ids: [ 2 ])
+[PM2] [test-platform](2) ✓
+┌────┬───────────────────┬─────────────┬─────────┬─────────┬──────────┬────────┬──────┬───────────┬──────────┬──────────┬──────────┬──────────┐
+│ id │ name              │ namespace   │ version │ mode    │ pid      │ uptime │ ↺    │ status    │ cpu      │ mem      │ user     │ watching │
+├────┼───────────────────┼─────────────┼─────────┼─────────┼──────────┼────────┼──────┼───────────┼──────────┼──────────┼──────────┼──────────┤
+│ 0  │ ielts-platform    │ default     │ 1.0.0   │ fork    │ 0        │ 0      │ 15   │ errored   │ 0%       │ 0b       │ ubuntu   │ disabled │
+│ 2  │ test-platform     │ default     │ 1.0.0   │ fork    │ 34366    │ 0s     │ 167  │ online    │ 0%       │ 18.3mb   │ ubuntu   │ disabled │
+└────┴───────────────────┴─────────────┴─────────┴─────────┴──────────┴────────┴──────┴───────────┴──────────┴──────────┴──────────┴──────────┘

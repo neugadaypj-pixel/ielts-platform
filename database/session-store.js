@@ -14,8 +14,8 @@ class OracleSessionStore extends EventEmitter {
     }
 
     async set(sid, data, maxAge) {
-        const maxAgeMs = maxAge || (24 * 60 * 60 * 1000); // default 24 hours
-        const expires = new Date(Date.now() + maxAgeMs);
+        const ms = (typeof maxAge === 'number' && maxAge > 0) ? maxAge : (24 * 60 * 60 * 1000);
+        const expires = new Date(Date.now() + ms);
         await execute(
             `MERGE INTO sessions s
              USING dual ON (s.sid = :sid)
@@ -30,8 +30,8 @@ class OracleSessionStore extends EventEmitter {
     }
 
     async touch(sid, maxAge) {
-        const maxAgeMs = maxAge || (24 * 60 * 60 * 1000);
-        const expires = new Date(Date.now() + maxAgeMs);
+        const ms = (typeof maxAge === 'number' && maxAge > 0) ? maxAge : (24 * 60 * 60 * 1000);
+        const expires = new Date(Date.now() + ms);
         await execute(
             `UPDATE sessions SET expires = TO_TIMESTAMP(:expires, 'YYYY-MM-DD"T"HH24:MI:SS.FF3"Z"'), updated_at = CURRENT_TIMESTAMP WHERE sid = :sid`,
             { sid, expires: expires.toISOString() }

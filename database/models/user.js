@@ -1,4 +1,4 @@
-const { execute, executeMany } = require('../connection');
+Plconst { execute, executeMany } = require('../connection');
 
 const User = {
     async findById(id) {

@@ -7,12 +7,13 @@ const bcrypt = require('bcryptjs');
 const session = require('express-session');
 const rateLimit = require('express-rate-limit');
 const helmet = require('helmet');
+const cookieParser = require('cookie-parser');
+const csrf = require('csurf');
 const multer = require('multer');
 const NodeCache = require('node-cache');
 const { S3Client, PutObjectCommand, GetObjectCommand } = require('@aws-sdk/client-s3');
 const Sentry = require('@sentry/node');
 const crypto = require('crypto');
-const fetch = require('node-fetch');
 const cron = require('node-cron');
 
 // === ORACLE DB IMPORTS (replaces Mongoose) ===
@@ -134,7 +135,7 @@ function sendDatabaseUnavailable(res) {
 
 async function connectDatabase() {
     try {
-        const pool = getPool();
+        const pool = await getPool();
         // Test the pool
         const conn = await pool.getConnection();
         await conn.execute('SELECT 1 FROM dual');
@@ -182,6 +183,9 @@ app.set('trust proxy', 1);
 
 app.use(session(sessionConfig));
 
+// Cookie parser required for CSRF cookies
+app.use(cookieParser());
+
 // === RATE LIMITERS ===
 const loginLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
@@ -206,6 +210,9 @@ const testCreationLimiter = rateLimit({
     max: 10,
     message: { error: 'Too many test creation attempts.' }
 });
+
+// === CSRF PROTECTION ===
+const csrfProtection = csrf({ cookie: true });
 
 // === AUTH MIDDLEWARE ===
 function isAdmin(req, res, next) {
@@ -569,27 +576,32 @@ app.get('/health', (req, res) => {
 });
 
 // === AUTH ROUTES ===
-app.get('/login', (req, res) => {
-    if (req.session.userId) return res.redirect('/student-dashboard');
-    res.render('login', { error: null });
+app.get('/login', csrfProtection, (req, res) => {
+    if (req.session.userId) {
+        const role = req.session.userRole;
+        if (role === 'admin') return res.redirect('/admin');
+        if (role === 'teacher') return res.redirect('/teacher-dashboard');
+        if (role === 'student') return res.redirect('/student-dashboard');
+    }
+    res.render('login', { error: null, csrfToken: req.csrfToken() });
 });
 
-app.post('/login', loginLimiter, async (req, res) => {
+app.post('/login', loginLimiter, csrfProtection, async (req, res) => {
     try {
         const { username, password } = req.body;
         if (!username || !password) {
-            return res.render('login', { error: 'Username and password are required' });
+            return res.render('login', { error: 'Username and password are required', csrfToken: req.csrfToken() });
         }
         if (!isDatabaseReady()) return sendDatabaseUnavailable(res);
 
         const user = await User.findOne({ username });
         if (!user) {
-            return res.render('login', { error: 'Invalid username or password' });
+            return res.render('login', { error: 'Invalid username or password', csrfToken: req.csrfToken() });
         }
 
         const isValid = await bcrypt.compare(password, user.password);
         if (!isValid) {
-            return res.render('login', { error: 'Invalid username or password' });
+            return res.render('login', { error: 'Invalid username or password', csrfToken: req.csrfToken() });
         }
 
         req.session.userId = user.id;
@@ -603,7 +615,7 @@ app.post('/login', loginLimiter, async (req, res) => {
         res.redirect('/student-dashboard');
     } catch (err) {
         logger.error('Login error', { error: err.message });
-        res.render('login', { error: 'An error occurred during login' });
+        res.render('login', { error: 'An error occurred during login', csrfToken: req.csrfToken() });
     }
 });
 
@@ -612,7 +624,7 @@ app.get('/logout', (req, res) => {
 });
 
 // === ADMIN ROUTES ===
-app.get('/admin', isAdmin, async (req, res) => {
+app.get('/admin', isAdmin, csrfProtection, async (req, res) => {
     try {
         if (!isDatabaseReady()) return sendDatabaseUnavailable(res);
 
@@ -629,6 +641,7 @@ app.get('/admin', isAdmin, async (req, res) => {
             users,
             tests,
             groups,
+            csrfToken: req.csrfToken(),
             stats: {
                 teacherCount,
                 studentCount,
@@ -643,7 +656,7 @@ app.get('/admin', isAdmin, async (req, res) => {
 });
 
 // Add teacher
-app.post('/admin/add-teacher', isAdmin, async (req, res) => {
+app.post('/admin/add-teacher', isAdmin, csrfProtection, async (req, res) => {
     try {
         const { username, password } = req.body;
         if (!username || !password) {
@@ -671,7 +684,7 @@ app.post('/admin/add-teacher', isAdmin, async (req, res) => {
 });
 
 // Add student
-app.post('/admin/add-student', isAdmin, async (req, res) => {
+app.post('/admin/add-student', isAdmin, csrfProtection, async (req, res) => {
     try {
         const { username, password, teacherId } = req.body;
         if (!username || !password) {
@@ -700,11 +713,11 @@ app.post('/admin/add-student', isAdmin, async (req, res) => {
 });
 
 // === CREATE TEST (READING) ===
-app.get('/create-test-reading', isTeacher, (req, res) => {
-    res.render('create-test-reading', { error: null, success: null });
+app.get('/create-test-reading', isTeacher, csrfProtection, (req, res) => {
+    res.render('create-test-reading', { error: null, success: null, csrfToken: req.csrfToken() });
 });
 
-app.post('/create-test-reading', isTeacher, testCreationLimiter, upload.single('builderJson'), async (req, res) => {
+app.post('/create-test-reading', isTeacher, testCreationLimiter, csrfProtection, upload.single('builderJson'), async (req, res) => {
     try {
         if (!isDatabaseReady()) return sendDatabaseUnavailable(res);
 
@@ -765,11 +778,11 @@ app.post('/create-test-reading', isTeacher, testCreationLimiter, upload.single('
 });
 
 // === CREATE TEST (LISTENING) ===
-app.get('/create-test-listening', isTeacher, (req, res) => {
-    res.render('create-test-listening', { error: null, success: null });
+app.get('/create-test-listening', isTeacher, csrfProtection, (req, res) => {
+    res.render('create-test-listening', { error: null, success: null, csrfToken: req.csrfToken() });
 });
 
-app.post('/create-test-listening', isTeacher, testCreationLimiter, upload.fields([
+app.post('/create-test-listening', isTeacher, testCreationLimiter, csrfProtection, upload.fields([
     { name: 'builderJson', maxCount: 1 },
     { name: 'audioFiles', maxCount: 20 }
 ]), async (req, res) => {
@@ -834,11 +847,11 @@ app.post('/create-test-listening', isTeacher, testCreationLimiter, upload.fields
 });
 
 // === CREATE TEST (WRITING) ===
-app.get('/create-test-writing', isTeacher, (req, res) => {
-    res.render('create-test-writing', { error: null, success: null });
+app.get('/create-test-writing', isTeacher, csrfProtection, (req, res) => {
+    res.render('create-test-writing', { error: null, success: null, csrfToken: req.csrfToken() });
 });
 
-app.post('/create-test-writing', isTeacher, testCreationLimiter, async (req, res) => {
+app.post('/create-test-writing', isTeacher, testCreationLimiter, csrfProtection, async (req, res) => {
     try {
         if (!isDatabaseReady()) return sendDatabaseUnavailable(res);
 
@@ -880,7 +893,7 @@ app.post('/create-test-writing', isTeacher, testCreationLimiter, async (req, res
 });
 
 // === TEST EDIT ===
-app.get('/edit-test/:id', isTeacher, async (req, res) => {
+app.get('/edit-test/:id', isTeacher, csrfProtection, async (req, res) => {
     try {
         if (!isDatabaseReady()) return sendDatabaseUnavailable(res);
 
@@ -894,14 +907,14 @@ app.get('/edit-test/:id', isTeacher, async (req, res) => {
         if (test.type === 'listening') viewName = 'create-test-listening';
         else if (test.type === 'writing') viewName = 'create-test-writing';
 
-        res.render(viewName, { test, editing: true, error: null, success: null });
+        res.render(viewName, { test, editing: true, error: null, success: null, csrfToken: req.csrfToken() });
     } catch (err) {
         logger.error('Edit test error', { error: err.message });
         res.status(500).send('Error loading test');
     }
 });
 
-app.post('/edit-test/:id', isTeacher, async (req, res) => {
+app.post('/edit-test/:id', isTeacher, csrfProtection, async (req, res) => {
     try {
         if (!isDatabaseReady()) return sendDatabaseUnavailable(res);
 
@@ -939,7 +952,7 @@ app.post('/edit-test/:id', isTeacher, async (req, res) => {
 });
 
 // === TEACHER DASHBOARD ===
-app.get('/teacher-dashboard', isTeacher, async (req, res) => {
+app.get('/teacher-dashboard', isTeacher, csrfProtection, async (req, res) => {
     try {
         if (!isDatabaseReady()) return sendDatabaseUnavailable(res);
 
@@ -985,6 +998,7 @@ app.get('/teacher-dashboard', isTeacher, async (req, res) => {
             tests,
             groups,
             students: allStudents,
+            csrfToken: req.csrfToken(),
             stats: {
                 totalTests: tests.length,
                 totalStudents: allStudents.length,
@@ -1640,7 +1654,7 @@ app.post('/teacher/delete-student/:id', isTeacher, async (req, res) => {
     });
 });
 
-app.post('/admin/delete-user/:id', isAdmin, async (req, res) => {
+app.post('/admin/delete-user/:id', isAdmin, csrfProtection, async (req, res) => {
     await handleDelete(req, res, {
         model: User,
         modelName: 'User',
@@ -1663,7 +1677,7 @@ app.post('/admin/delete-user/:id', isAdmin, async (req, res) => {
 });
 
 // --- MANUAL BACKUP ENDPOINT (Admin only) ---
-app.post('/admin/backup-database', isAdmin, async (req, res) => {
+app.post('/admin/backup-database', isAdmin, csrfProtection, async (req, res) => {
     try {
         console.log('🔄 Manual backup triggered by admin:', req.session.username);
         const result = await backupDatabase({ closeConnection: false });
@@ -1768,7 +1782,7 @@ app.post('/teacher/remove-test-from-group/:groupId/:testId', isTeacher, async (r
 });
 
 // === PASSWORD VIEWERS ===
-app.get('/admin/view-password/:userId', isAdmin, async (req, res) => {
+app.get('/admin/view-password/:userId', isAdmin, csrfProtection, async (req, res) => {
     try {
         const user = await User.findById(req.params.userId);
         if (!user) return res.status(404).json({ error: 'User not found' });
@@ -1782,7 +1796,7 @@ app.get('/admin/view-password/:userId', isAdmin, async (req, res) => {
     }
 });
 
-app.post('/admin/reset-password/:userId', isAdmin, async (req, res) => {
+app.post('/admin/reset-password/:userId', isAdmin, csrfProtection, async (req, res) => {
     try {
         const { newPassword } = req.body;
         if (!newPassword || newPassword.length < 6) {
@@ -1842,7 +1856,7 @@ app.post('/teacher/reset-password/:studentId', isTeacher, async (req, res) => {
 });
 
 // === BULK DELETE ===
-app.post('/admin/bulk-delete', isAdmin, async (req, res) => {
+app.post('/admin/bulk-delete', isAdmin, csrfProtection, async (req, res) => {
     try {
         const { type, ids } = req.body;
         if (!Array.isArray(ids) || ids.length === 0) return res.status(400).json({ success: false, message: 'No items selected' });
@@ -1912,7 +1926,7 @@ app.get('/api/search-tests', isTeacher, async (req, res) => {
 });
 
 // === FEEDBACK ===
-app.get('/feedback', async (req, res) => {
+app.get('/feedback', csrfProtection, async (req, res) => {
     if (!req.session.userId) return res.redirect('/login');
     try {
         let submissions = [];
@@ -1923,14 +1937,14 @@ app.get('/feedback', async (req, res) => {
         }
 
         const feedbacks = await Feedback.find({});
-        res.render('feedback', { submissions, feedbacks });
+        res.render('feedback', { submissions, feedbacks, csrfToken: req.csrfToken() });
     } catch (err) {
         logger.error('Feedback page error', { error: err.message });
         res.status(500).send('Error loading feedback page');
     }
 });
 
-app.post('/feedback', async (req, res) => {
+app.post('/feedback', csrfProtection, async (req, res) => {
     if (!req.session.userId) return res.status(401).json({ error: 'Not logged in' });
     try {
         const [submissions, tests, students] = await Promise.all([
@@ -1951,7 +1965,7 @@ app.post('/feedback', async (req, res) => {
     }
 });
 
-app.post('/feedback/:id/reply', isTeacher, async (req, res) => {
+app.post('/feedback/:id/reply', isTeacher, csrfProtection, async (req, res) => {
     try {
         await Feedback.findByIdAndUpdate(req.params.id, {
             reply: req.body.reply,
@@ -2175,7 +2189,7 @@ app.post('/teacher/assign-test-group', isTeacher, async (req, res) => {
 });
 
 // === ADMIN LOG VIEWER ===
-app.get('/admin/logs', isAdmin, async (req, res) => {
+app.get('/admin/logs', isAdmin, csrfProtection, async (req, res) => {
     try {
         const level = (req.query.level || 'info').toLowerCase();
         const page = Math.max(1, parseInt(req.query.page) || 1);
@@ -2201,7 +2215,7 @@ app.get('/admin/logs', isAdmin, async (req, res) => {
 });
 
 // === CACHE STATISTICS ===
-app.get('/admin/cache-stats', isAdmin, (req, res) => {
+app.get('/admin/cache-stats', isAdmin, csrfProtection, (req, res) => {
     const stats = cache.getStats();
     const keys = cache.keys();
 
@@ -2222,7 +2236,7 @@ app.get('/admin/cache-stats', isAdmin, (req, res) => {
     });
 });
 
-app.post('/admin/clear-cache', isAdmin, (req, res) => {
+app.post('/admin/clear-cache', isAdmin, csrfProtection, (req, res) => {
     cache.flushAll();
     res.json({ success: true, message: 'Cache cleared' });
 });
@@ -2354,6 +2368,12 @@ app.use((req, res) => {
     });
 });
 
+// Import error handlers
+const { csrfErrorHandler, errorHandler } = require('./middleware/errorHandler');
+
+// CSRF error handler
+app.use(csrfErrorHandler);
+
 // Sentry error handler
 if (process.env.SENTRY_DSN) {
     app.use(Sentry.Handlers.errorHandler());
@@ -2381,7 +2401,7 @@ async function startServer() {
     // Periodic pool health check
     setInterval(async () => {
         try {
-            const pool = getPool();
+            const pool = await getPool();
             const conn = await pool.getConnection();
             await conn.execute('SELECT 1 FROM dual');
             await conn.close();

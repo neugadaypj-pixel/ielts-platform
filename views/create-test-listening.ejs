@@ -242,6 +242,7 @@
         </div>
         
         <form method="POST" action="/create-test-listening" enctype="multipart/form-data">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
             <div class="form-section">
                 <h2>📋 Test Information</h2>
                 

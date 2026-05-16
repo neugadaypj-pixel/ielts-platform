@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= error.status || 500 %> - <%= message %></title>
+    <style>
+        body { font-family: system-ui, sans-serif; background: #f8fafc; color: #0f172a; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; padding: 24px; }
+        .card { background: #fff; border-radius: 20px; padding: 28px; max-width: 520px; box-shadow: 0 18px 50px rgba(15,23,42,0.12); text-align: center; }
+        h1 { margin: 0 0 12px; font-size: 24px; color: #dc2626; }
+        p { color: #475569; line-height: 1.5; margin: 0; }
+        a { color: #2563eb; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1><%= error.status || 500 %></h1>
+        <p><%= message %></p>
+        <% if (error.status === 404) { %>
+        <p style="margin-top:12px"><a href="/">Go back home</a></p>
+        <% } %>
+    </div>
+</body>
+</html>

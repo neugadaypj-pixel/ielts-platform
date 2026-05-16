@@ -3,8 +3,8 @@ const { execute, executeMany } = require('../connection');
 const User = {
     async findById(id) {
         const result = await execute(
-            `SELECT id, username, password, role, teacher_id AS "teacherId",
-                    group_id AS "groupId",
+            `SELECT id AS "id", username AS "username", password AS "password", role AS "role",
+                    teacher_id AS "teacherId", group_id AS "groupId",
                     TO_CHAR(created_at, 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS "createdAt",
                     TO_CHAR(updated_at, 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS "updatedAt"
              FROM users WHERE id = :id`,
@@ -21,8 +21,8 @@ const User = {
     },
 
     async findOne(filter) {
-        let sql = `SELECT id, username, password, role, teacher_id AS "teacherId",
-                          group_id AS "groupId",
+        let sql = `SELECT id AS "id", username AS "username", password AS "password", role AS "role",
+                          teacher_id AS "teacherId", group_id AS "groupId",
                           TO_CHAR(created_at, 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS "createdAt",
                           TO_CHAR(updated_at, 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS "updatedAt"
                    FROM users WHERE 1=1`;
@@ -35,8 +35,8 @@ const User = {
     },
 
     async find(filter) {
-        let sql = `SELECT id, username, role, teacher_id AS "teacherId",
-                          group_id AS "groupId",
+        let sql = `SELECT id AS "id", username AS "username", role AS "role",
+                          teacher_id AS "teacherId", group_id AS "groupId",
                           TO_CHAR(created_at, 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS "createdAt"
                    FROM users WHERE 1=1`;
         const binds = {};
@@ -160,7 +160,7 @@ const User = {
     // Populate-like: find user with group and assigned tests (for student dashboard)
     async findByIdWithGroupAndTests(id) {
         const userResult = await execute(
-            `SELECT u.id, u.username, u.role, u.teacher_id AS "teacherId", u.group_id AS "groupId", g.name AS "groupName",
+            `SELECT u.id AS "id", u.username AS "username", u.role AS "role", u.teacher_id AS "teacherId", u.group_id AS "groupId", g.name AS "groupName",
                     TO_CHAR(u.created_at, 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS "createdAt"
              FROM users u LEFT JOIN groups g ON u.group_id = g.id WHERE u.id = :id`, { id }
         );
@@ -188,7 +188,7 @@ const User = {
     // Populate-like: find user with group name in one call
     async findByIdWithGroup(id) {
         const result = await execute(
-            `SELECT u.id, u.username, u.role, u.teacher_id AS "teacherId", u.group_id AS "groupId", g.name AS "groupName",
+            `SELECT u.id AS "id", u.username AS "username", u.role AS "role", u.teacher_id AS "teacherId", u.group_id AS "groupId", g.name AS "groupName",
                     TO_CHAR(u.created_at, 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS "createdAt"
              FROM users u LEFT JOIN groups g ON u.group_id = g.id WHERE u.id = :id`, { id }
         );

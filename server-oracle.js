@@ -110,6 +110,7 @@ app.use(helmet({
     crossOriginEmbedderPolicy: false,
     crossOriginOpenerPolicy: false,
     crossOriginResourcePolicy: false,
+    originAgentCluster: false,
     permissionsPolicy: {
         features: {
             camera: ["'self'"],

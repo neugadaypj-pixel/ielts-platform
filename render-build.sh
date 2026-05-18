@@ -26,7 +26,8 @@ cd lib
 wget -q http://archive.ubuntu.com/ubuntu/pool/main/liba/libaio/libaio1_0.3.112-5_amd64.deb
 ar x libaio1_0.3.112-5_amd64.deb
 tar xf data.tar.xz
-cp lib/x86_64-linux-gnu/libaio.so.1* ../instantclient/instantclient_23_4/
+# Find and copy the libaio library
+find . -name "libaio.so.1*" -exec cp {} ../instantclient/instantclient_23_4/ \;
 cd ..
 rm -rf lib
 

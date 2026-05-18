@@ -8,13 +8,13 @@
     "test:watch": "jest --watch",
     "test:unit": "jest tests/unit",
     "test:integration": "jest tests/integration",
+    "build": "bash render-build.sh",
     "start": "node server-oracle.js",
     "start:mongo": "node server.js",
     "dev": "nodemon server-oracle.js",
     "dev:mongo": "nodemon server.js",
     "clear-sessions": "node clear-sessions.js",
-    "predeploy": "node clear-sessions.js",
-    "heroku-postbuild": "bash render-build.sh"
+    "predeploy": "node clear-sessions.js"
   },
   "keywords": [],
   "author": "",

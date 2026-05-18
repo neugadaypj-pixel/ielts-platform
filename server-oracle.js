@@ -609,11 +609,18 @@ app.post('/login', loginLimiter, csrfProtection, async (req, res) => {
         req.session.username = user.username;
         req.session.userRole = user.role;
 
-        logger.info('User logged in', { userId: user._id, username: user.username, role: user.role });
+        req.session.save((err) => {
+            if (err) {
+                logger.error('Session save error', { error: err.message, stack: err.stack });
+                return res.render('login', { error: 'Login error. Please try again.', csrfToken: req.csrfToken() });
+            }
 
-        if (user.role === CONSTANTS.ROLES.ADMIN) return res.redirect('/admin');
-        if (user.role === CONSTANTS.ROLES.TEACHER) return res.redirect('/teacher-dashboard');
-        res.redirect('/student-dashboard');
+            logger.info('User logged in', { userId: user._id, username: user.username, role: user.role });
+
+            if (user.role === CONSTANTS.ROLES.ADMIN) return res.redirect('/admin');
+            if (user.role === CONSTANTS.ROLES.TEACHER) return res.redirect('/teacher-dashboard');
+            return res.redirect('/student-dashboard');
+        });
     } catch (err) {
         logger.error('Login error', { error: err.message });
         res.render('login', { error: 'An error occurred during login', csrfToken: req.csrfToken() });
@@ -1483,6 +1490,98 @@ app.get('/student-dashboard', async (req, res) => {
     } catch (err) {
         logger.error('Student dashboard error', { error: err.message, stack: err.stack, userId: req.session.userId });
         res.status(500).send("Error loading student dashboard.");
+    }
+});
+
+// === DOWNLOAD STANDALONE HTML TEST ===
+app.get('/download-test/:id', async (req, res) => {
+    if (!req.session.userId) return res.redirect('/login');
+    try {
+        if (!isDatabaseReady()) return sendDatabaseUnavailable(res);
+
+        const { test, isAllowed } = await getAccessibleTest(req, req.params.id);
+        if (!test) return res.status(404).send('Test not found.');
+        if (!isAllowed) return res.status(403).send('Not authorized to download this test.');
+
+        async function fileUrlToDataUri(fileUrl) {
+            if (!fileUrl || typeof fileUrl !== 'string') return fileUrl;
+            
+            // Handle B2/S3 URLs - convert to base64 for offline use
+            if (fileUrl.startsWith('http://') || fileUrl.startsWith('https://')) {
+                try {
+                    const publicBase = String(b2Config.endpoint || '').replace(/\/+$/, '');
+                    const bucket = b2Config.bucket;
+                    if (publicBase && bucket && fileUrl.includes(bucket)) {
+                        const filename = fileUrl.split(bucket + '/')[1]?.split(/[?#]/)[0];
+                        if (filename) {
+                            const object = await s3.send(new GetObjectCommand({
+                                Bucket: bucket,
+                                Key: filename
+                            }));
+                            
+                            const chunks = [];
+                            for await (const chunk of object.Body) {
+                                chunks.push(chunk);
+                            }
+                            const buffer = Buffer.concat(chunks);
+                            const contentType = object.ContentType || 'audio/mpeg';
+                            logger.info('[download-test] Converted B2 audio to base64', { filename, size: buffer.length });
+                            return `data:${contentType};base64,${buffer.toString('base64')}`;
+                        }
+                    }
+                    return fileUrl;
+                } catch (err) {
+                    logger.warn('[download-test] Unable to fetch B2 audio file:', fileUrl, err.message);
+                    return fileUrl;
+                }
+            }
+            
+            return fileUrl;
+        }
+
+        async function inlineListeningAudio(testDoc) {
+            const raw = testDoc.readingPassage;
+            if (!raw || typeof raw !== 'string') return testDoc;
+            let parsed;
+            try {
+                parsed = JSON.parse(raw);
+            } catch (err) {
+                return testDoc;
+            }
+
+            const next = { ...(parsed || {}) };
+            next.fullAudio = await fileUrlToDataUri(parsed.fullAudio);
+
+            if (Array.isArray(parsed.audioParts)) {
+                next.audioParts = await Promise.all(parsed.audioParts.map((part) => fileUrlToDataUri(part)));
+            }
+
+            return {
+                ...(typeof testDoc.toObject === 'function' ? testDoc.toObject() : { ...testDoc }),
+                readingPassage: JSON.stringify(next)
+            };
+        }
+
+        try {
+            const testForDownload = String(test.type || '').toLowerCase() === 'listening'
+                ? await inlineListeningAudio(test)
+                : test;
+
+            const html = generateHTMLFromTest(testForDownload, {
+                useAudioProxy: false
+            });
+            const stableHtml = require('./utils/htmlExporter').injectPersistentStateForDownload(html, test);
+            const safeTitle = test.title.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+            res.setHeader('Content-Disposition', `attachment; filename="${safeTitle}.html"`);
+            res.setHeader('Content-Type', 'text/html; charset=utf-8');
+            return res.send(stableHtml);
+        } catch (generatorErr) {
+            logger.error('HTML generation error for download', { error: generatorErr.message, stack: generatorErr.stack });
+            return res.status(500).send(`Error generating test HTML: ${generatorErr.message}`);
+        }
+    } catch (err) {
+        logger.error('Download test error', { error: err.message, stack: err.stack });
+        res.status(500).send(`Error downloading test: ${err.message}`);
     }
 });
 

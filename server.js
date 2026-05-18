@@ -1600,9 +1600,35 @@ app.get('/download-test/:id', async (req, res) => {
         if (!access.isAllowed) return res.status(403).send("Not authorized to download this test.");
 
         async function fileUrlToDataUri(fileUrl) {
-            // If it's a public URL (B2 or any https), keep it as-is — no need to inline
             if (!fileUrl || typeof fileUrl !== 'string') return fileUrl;
-            if (fileUrl.startsWith('http://') || fileUrl.startsWith('https://')) return fileUrl;
+            
+            // Handle B2/S3 URLs - convert to base64 for offline use
+            if (fileUrl.startsWith('http://') || fileUrl.startsWith('https://')) {
+                try {
+                    const publicBase = String(process.env.B2_PUBLIC_URL || '').replace(/\/+$/, '');
+                    if (publicBase && fileUrl.startsWith(`${publicBase}/`)) {
+                        const filename = fileUrl.slice(publicBase.length + 1).split(/[?#]/)[0];
+                        const object = await s3.send(new GetObjectCommand({
+                            Bucket: process.env.B2_BUCKET,
+                            Key: filename
+                        }));
+                        
+                        const chunks = [];
+                        for await (const chunk of object.Body) {
+                            chunks.push(chunk);
+                        }
+                        const buffer = Buffer.concat(chunks);
+                        const contentType = object.ContentType || mime.lookup(filename) || 'audio/mpeg';
+                        logger.info('[download-test] Converted B2 audio to base64', { filename, size: buffer.length });
+                        return `data:${contentType};base64,${buffer.toString('base64')}`;
+                    }
+                    return fileUrl;
+                } catch (err) {
+                    logger.warn('[download-test] Unable to fetch B2 audio file:', fileUrl, err.message);
+                    return fileUrl;
+                }
+            }
+            
             // Legacy local path fallback
             if (!fileUrl.startsWith('/uploads/')) return fileUrl;
             const localPath = path.join(__dirname, 'public', fileUrl.replace(/^\/+/, ''));

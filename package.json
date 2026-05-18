@@ -13,7 +13,8 @@
     "dev": "nodemon server-oracle.js",
     "dev:mongo": "nodemon server.js",
     "clear-sessions": "node clear-sessions.js",
-    "predeploy": "node clear-sessions.js"
+    "predeploy": "node clear-sessions.js",
+    "heroku-postbuild": "bash render-build.sh"
   },
   "keywords": [],
   "author": "",

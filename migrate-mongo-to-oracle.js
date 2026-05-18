@@ -45,9 +45,9 @@ async function connectOracle() {
     }
     
     oraclePool = await oracledb.createPool({
-        user: process.env.ORACLE_USER,
-        password: process.env.ORACLE_PASSWORD,
-        connectString: process.env.ORACLE_CONNECT_STRING,
+        user: process.env.DB_USER || process.env.ORACLE_USER,
+        password: process.env.DB_PASSWORD || process.env.ORACLE_PASSWORD,
+        connectString: process.env.DB_CONNECT_STRING || process.env.ORACLE_CONNECT_STRING,
         poolMin: 2,
         poolMax: 10
     });

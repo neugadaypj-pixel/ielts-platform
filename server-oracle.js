@@ -2501,42 +2501,21 @@ async function startServer() {
     // ---- AUTO-MIGRATION ON RENDER (no Shell tab needed) ----
     // Set DO_MIGRATE=true env var on Render → deploy → check logs → remove env var
     if (process.env.DO_MIGRATE === 'true') {
-        logger.info('========================================');
-        logger.info('DO_MIGRATE=true detected — running MongoDB → Oracle migration...');
-        logger.info('========================================');
+        console.log('========================================');
+        console.log('DO_MIGRATE=true detected — running MongoDB → Oracle migration...');
+        console.log('========================================');
         try {
-            // Load mongoose for MongoDB read
-            const mongoose = require('mongoose');
-            await mongoose.connect(process.env.MONGO_URI, {
-                serverSelectionTimeoutMS: 30000
-            });
-            logger.info('Connected to MongoDB for migration');
-
-            // Run the migration as a child process — migrate-to-oracle.js
-            // connects independently and calls process.exit() when done,
-            // so running it as a separate process is the safe approach.
-            const { execSync } = require('child_process');
-            const result = execSync('node migrate-to-oracle.js', {
-                cwd: __dirname,
-                stdio: 'pipe',
-                timeout: 300000, // 5 min timeout
-                env: { ...process.env }
-            });
-            logger.info('Migration output:\n' + result.stdout.toString());
-            if (result.stderr && result.stderr.length > 0) {
-                logger.warn('Migration stderr:\n' + result.stderr.toString());
-            }
-            logger.info('========================================');
-            logger.info('✅ Migration completed successfully!');
-            logger.info('========================================');
-
-            await mongoose.disconnect();
-            logger.info('MongoDB disconnected after migration');
-
+            // migrate-to-oracle.js exports { migrate } for direct use
+            const { migrate } = require('./migrate-to-oracle');
+            await migrate({ keepPoolAlive: true });
+            console.log('========================================');
+            console.log('✅ Migration completed successfully!');
+            console.log('========================================');
         } catch (err) {
-            logger.error('========================================');
-            logger.error('Migration FAILED', { error: err.message, stack: err.stack });
-            logger.error('========================================');
+            console.error('========================================');
+            console.error('Migration FAILED:', err.message);
+            console.error(err.stack);
+            console.error('========================================');
             // Don't crash — still start the server so you can check logs
         }
     }

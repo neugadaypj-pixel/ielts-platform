@@ -150,8 +150,10 @@ async function resyncSequences() {
 
 // ============================================================
 // MAIN MIGRATION FUNCTION
+// opts.keepPoolAlive: when true, don't close the Oracle pool
+// (used when called from server-oracle.js which owns the pool)
 // ============================================================
-async function migrate() {
+async function migrate(opts = {}) {
     console.log('\n╔══════════════════════════════════════════════════╗');
     console.log('║   MongoDB → Oracle Data Migration Tool v2       ║');
     console.log('╚══════════════════════════════════════════════════╝\n');
@@ -624,20 +626,31 @@ async function migrate() {
     // --- Cleanup ---
     await mongoose.disconnect();
     console.log('✅ MongoDB connection closed');
-    await closePool();
-    console.log('✅ Oracle pool closed');
+
+    // Only close the Oracle pool when running standalone.
+    // When called from server-oracle.js, the server owns the pool.
+    if (!opts || !opts.keepPoolAlive) {
+        await closePool();
+        console.log('✅ Oracle pool closed');
+    }
+
     console.log('\n✅ Migration complete!\n');
 }
 
 // ============================================================
-// Run migration
+// Run migration only when called directly (node migrate-to-oracle.js)
+// When required() from server-oracle.js, export the function instead
 // ============================================================
-migrate()
-    .then(() => {
-        console.log('Exiting successfully.');
-        process.exit(0);
-    })
-    .catch(err => {
-        console.error('❌ Migration failed:', err);
-        process.exit(1);
-    });
+module.exports = { migrate };
+
+if (require.main === module) {
+    migrate()
+        .then(() => {
+            console.log('Exiting successfully.');
+            process.exit(0);
+        })
+        .catch(err => {
+            console.error('❌ Migration failed:', err);
+            process.exit(1);
+        });
+}

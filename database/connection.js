@@ -1,5 +1,6 @@
 const oracledb = require('oracledb');
 const logger = require('../utils/logger');
+const path = require('path');
 
 // Optimize for low-memory OCI free tier (1GB RAM)
 oracledb.poolMax = 4;
@@ -13,8 +14,28 @@ let pool;
 async function getPool() {
     if (pool) return pool;
 
-    const libDir = process.env.LD_LIBRARY_PATH || '/opt/render/project/src/instantclient/instantclient_23_4';
-    oracledb.initOracleClient({ libDir });
+    // Determine Instant Client library directory
+    const libDir = '/opt/render/project/src/instantclient/instantclient_23_4';
+    
+    // CRITICAL: configDir must point to the wallet directory so the Oracle Client
+    // can find sqlnet.ora, tnsnames.ora, and the wallet files (cwallet.sso, ewallet.p12).
+    // Without this, ORA-28759 "failure to open file" occurs.
+    const configDir = process.env.TNS_ADMIN || path.join(__dirname, '..', 'wallet');
+    
+    logger.info('Initializing Oracle Client', { libDir, configDir });
+
+    try {
+        oracledb.initOracleClient({ libDir, configDir });
+        logger.info('Oracle Client initialized successfully');
+    } catch (err) {
+        // If already initialized (e.g., by another module), that's fine
+        if (err.message && err.message.includes('already been initialized')) {
+            logger.info('Oracle Client already initialized, continuing');
+        } else {
+            logger.error('Failed to initialize Oracle Client', { error: err.message });
+            throw err;
+        }
+    }
 
     pool = await oracledb.createPool({
         user: process.env.DB_USER || 'IELTS_APP',

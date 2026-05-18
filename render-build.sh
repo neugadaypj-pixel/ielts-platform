@@ -29,4 +29,13 @@ echo "✅ libaio library installed (size: $(stat -c%s instantclient/instantclien
 echo "📦 Installing npm packages..."
 npm install
 
+# Fix wallet file permissions (ORA-28759 prevention)
+echo "🔐 Setting wallet file permissions..."
+if [ -d "wallet" ]; then
+    chmod 644 wallet/*
+    echo "✅ Wallet permissions set to 644 (readable)"
+else
+    echo "⚠️  WARNING: wallet/ directory not found!"
+fi
+
 echo "✅ Build complete!"

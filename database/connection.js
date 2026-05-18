@@ -44,7 +44,8 @@ async function getPool() {
         poolMax: 4,
         poolMin: 1,
         poolIncrement: 1,
-        poolTimeout: 60
+        poolTimeout: 60,
+        queueTimeout: 10000  // Fail fast (10s) instead of hanging 60s if pool exhausted
     });
 
     logger.info('Oracle DB connection pool created (max 4 connections)');

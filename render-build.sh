@@ -1,6 +1,12 @@
 #!/bin/bash
 set -e
 
+echo "🔧 Installing system dependencies..."
+
+# Install libaio (required by Oracle Instant Client)
+echo "📦 Installing libaio..."
+apt-get update -qq && apt-get install -y -qq libaio1 libaio-dev
+
 echo "🔧 Installing Oracle Instant Client..."
 
 # Create directory in project root (Render allows writes here)

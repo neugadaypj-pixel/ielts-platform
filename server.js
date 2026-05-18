@@ -1602,6 +1602,12 @@ app.get('/download-test/:id', async (req, res) => {
         async function fileUrlToDataUri(fileUrl) {
             if (!fileUrl || typeof fileUrl !== 'string') return fileUrl;
             
+            // Skip base64 conversion on low-memory servers (Render free tier = 512MB)
+            if (process.env.DISABLE_AUDIO_BASE64 === 'true') {
+                logger.info('[download-test] Base64 conversion disabled, keeping URLs');
+                return fileUrl;
+            }
+            
             // Handle B2/S3 URLs - convert to base64 for offline use
             if (fileUrl.startsWith('http://') || fileUrl.startsWith('https://')) {
                 try {

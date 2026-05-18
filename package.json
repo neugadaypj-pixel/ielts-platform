@@ -8,8 +8,10 @@
     "test:watch": "jest --watch",
     "test:unit": "jest tests/unit",
     "test:integration": "jest tests/integration",
-    "start": "node server.js",
-    "dev": "nodemon server.js",
+    "start": "node server-oracle.js",
+    "start:mongo": "node server.js",
+    "dev": "nodemon server-oracle.js",
+    "dev:mongo": "nodemon server.js",
     "clear-sessions": "node clear-sessions.js",
     "predeploy": "node clear-sessions.js"
   },
@@ -32,10 +34,12 @@
     "express-rate-limit": "^8.5.0",
     "express-session": "^1.19.0",
     "helmet": "^8.1.0",
+    "mime-types": "^2.1.35",
     "mongoose": "^9.4.1",
     "multer": "^2.1.1",
     "node-cache": "^5.1.2",
     "node-cron": "^4.2.1",
+    "oracledb": "^6.7.0",
     "xss": "^1.0.15"
   },
   "devDependencies": {

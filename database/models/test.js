@@ -3,10 +3,10 @@ const { execute } = require('../connection');
 const Test = {
     async findById(id) {
         const result = await execute(
-            `SELECT id AS "_id", title, type, teacher_name AS "teacherName",
+            `SELECT id AS "_id", title AS "title", type AS "type", teacher_name AS "teacherName",
                     created_by AS "createdBy", reading_passage AS "readingPassage",
                     builder_json AS "builderJson", custom_title AS "customTitle",
-                    folder, questions,
+                    folder AS "folder", questions AS "questions",
                     TO_CHAR(created_at, 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS "createdAt",
                     TO_CHAR(updated_at, 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS "updatedAt"
              FROM tests WHERE id = :id`,
@@ -16,10 +16,10 @@ const Test = {
     },
 
     async findOne(filter) {
-        let sql = `SELECT id AS "_id", title, type, teacher_name AS "teacherName",
+        let sql = `SELECT id AS "_id", title AS "title", type AS "type", teacher_name AS "teacherName",
                           created_by AS "createdBy", reading_passage AS "readingPassage",
                           builder_json AS "builderJson", custom_title AS "customTitle",
-                          folder, questions,
+                          folder AS "folder", questions AS "questions",
                           TO_CHAR(created_at, 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS "createdAt"
                    FROM tests WHERE 1=1`;
         const binds = {};
@@ -33,11 +33,12 @@ const Test = {
     },
 
     async find(filter) {
-        let sql = `SELECT id AS "_id", title, type, teacher_name AS "teacherName",
+        let sql = `SELECT id AS "_id", title AS "title", type AS "type", teacher_name AS "teacherName",
                           created_by AS "createdBy", reading_passage AS "readingPassage",
                           builder_json AS "builderJson", custom_title AS "customTitle",
-                          folder, questions,
-                          TO_CHAR(created_at, 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS "createdAt"
+                          folder AS "folder", questions AS "questions",
+                          TO_CHAR(created_at, 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS "createdAt",
+                          TO_CHAR(updated_at, 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS "updatedAt"
                    FROM tests WHERE 1=1`;
         const binds = {};
 
@@ -197,10 +198,10 @@ const Test = {
     // Populate: test with creator info
     async findByIdWithCreator(id) {
         const result = await execute(
-            `SELECT t.id AS "_id", t.title, t.type, t.teacher_name AS "teacherName",
+            `SELECT t.id AS "_id", t.title AS "title", t.type AS "type", t.teacher_name AS "teacherName",
                     t.created_by AS "createdBy", t.reading_passage AS "readingPassage",
                     t.builder_json AS "builderJson", t.custom_title AS "customTitle",
-                    t.folder, t.questions,
+                    t.folder AS "folder", t.questions AS "questions",
                     u.username AS "creatorUsername", u.role AS "creatorRole",
                     TO_CHAR(t.created_at, 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS "createdAt"
              FROM tests t

@@ -5,7 +5,7 @@ const Feedback = {
         const result = await execute(
             `SELECT id AS "_id", student_id AS "studentId", student_name AS "studentName",
                     test_type AS "testType", question_type AS "questionType",
-                    issue_description AS "issueDescription", status,
+                    issue_description AS "issueDescription", status AS "status",
                     admin_notes AS "adminNotes", admin_reply AS "adminReply",
                     TO_CHAR(created_at, 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS "createdAt",
                     TO_CHAR(updated_at, 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS "updatedAt"
@@ -18,7 +18,7 @@ const Feedback = {
     async findOne(filter) {
         let sql = `SELECT id AS "_id", student_id AS "studentId", student_name AS "studentName",
                           test_type AS "testType", question_type AS "questionType",
-                          issue_description AS "issueDescription", status,
+                          issue_description AS "issueDescription", status AS "status",
                           admin_notes AS "adminNotes", admin_reply AS "adminReply",
                           TO_CHAR(created_at, 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS "createdAt"
                    FROM feedbacks WHERE 1=1`;
@@ -34,7 +34,7 @@ const Feedback = {
     async find(filter) {
         let sql = `SELECT id AS "_id", student_id AS "studentId", student_name AS "studentName",
                           test_type AS "testType", question_type AS "questionType",
-                          issue_description AS "issueDescription", status,
+                          issue_description AS "issueDescription", status AS "status",
                           admin_notes AS "adminNotes", admin_reply AS "adminReply",
                           TO_CHAR(created_at, 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS "createdAt"
                    FROM feedbacks WHERE 1=1`;

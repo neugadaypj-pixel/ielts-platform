@@ -3,7 +3,7 @@ const { execute } = require('../connection');
 const Group = {
     async findById(id) {
         const result = await execute(
-            `SELECT id AS "_id", name, teacher_id AS "teacherId",
+            `SELECT id AS "_id", name AS "name", teacher_id AS "teacherId",
                     TO_CHAR(created_at, 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS "createdAt",
                     TO_CHAR(updated_at, 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS "updatedAt"
              FROM groups WHERE id = :id`,
@@ -48,7 +48,7 @@ const Group = {
         studentIds.forEach((sid, i) => { binds[`sid${i}`] = sid; });
 
         const result = await execute(
-            `SELECT id AS "_id", username, role, group_id AS "groupId",
+            `SELECT id AS "_id", username AS "username", role AS "role", group_id AS "groupId",
                     TO_CHAR(created_at, 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS "createdAt"
              FROM users WHERE id IN (${placeholders})`,
             binds
@@ -58,7 +58,7 @@ const Group = {
     },
 
     async findOne(filter) {
-        let sql = `SELECT id AS "_id", name, teacher_id AS "teacherId",
+        let sql = `SELECT id AS "_id", name AS "name", teacher_id AS "teacherId",
                           TO_CHAR(created_at, 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS "createdAt"
                    FROM groups WHERE 1=1`;
         const binds = {};
@@ -71,7 +71,7 @@ const Group = {
     },
 
     async find(filter) {
-        let sql = `SELECT id AS "_id", name, teacher_id AS "teacherId",
+        let sql = `SELECT id AS "_id", name AS "name", teacher_id AS "teacherId",
                           TO_CHAR(created_at, 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS "createdAt"
                    FROM groups WHERE 1=1`;
         const binds = {};

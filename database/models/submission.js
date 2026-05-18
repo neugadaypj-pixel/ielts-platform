@@ -5,10 +5,10 @@ const Submission = {
         const result = await execute(
             `SELECT id AS "_id", test_id AS "testId", student_id AS "studentId",
                     teacher_id AS "teacherId", group_id AS "groupId",
-                    type, student_name AS "studentName", status,
-                    attempt_count AS "attemptCount", score, total_questions AS "totalQuestions",
-                    percentage, band, word_count1 AS "wordCount1", word_count2 AS "wordCount2",
-                    time_remaining_text AS "timeRemainingText", details,
+                    type AS "type", student_name AS "studentName", status AS "status",
+                    attempt_count AS "attemptCount", score AS "score", total_questions AS "totalQuestions",
+                    percentage AS "percentage", band AS "band", word_count1 AS "wordCount1", word_count2 AS "wordCount2",
+                    time_remaining_text AS "timeRemainingText", details AS "details",
                     TO_CHAR(first_submitted_at, 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS "firstSubmittedAt",
                     TO_CHAR(last_submitted_at, 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS "lastSubmittedAt"
              FROM submissions WHERE id = :id`,
@@ -20,10 +20,10 @@ const Submission = {
     async findOne(filter) {
         let sql = `SELECT id AS "_id", test_id AS "testId", student_id AS "studentId",
                           teacher_id AS "teacherId", group_id AS "groupId",
-                          type, student_name AS "studentName", status,
-                          attempt_count AS "attemptCount", score, total_questions AS "totalQuestions",
-                          percentage, band, word_count1 AS "wordCount1", word_count2 AS "wordCount2",
-                          time_remaining_text AS "timeRemainingText", details,
+                          type AS "type", student_name AS "studentName", status AS "status",
+                          attempt_count AS "attemptCount", score AS "score", total_questions AS "totalQuestions",
+                          percentage AS "percentage", band AS "band", word_count1 AS "wordCount1", word_count2 AS "wordCount2",
+                          time_remaining_text AS "timeRemainingText", details AS "details",
                           TO_CHAR(first_submitted_at, 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS "firstSubmittedAt",
                           TO_CHAR(last_submitted_at, 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS "lastSubmittedAt"
                    FROM submissions WHERE 1=1`;
@@ -43,10 +43,10 @@ const Submission = {
     async find(filter) {
         let sql = `SELECT id AS "_id", test_id AS "testId", student_id AS "studentId",
                           teacher_id AS "teacherId", group_id AS "groupId",
-                          type, student_name AS "studentName", status,
-                          attempt_count AS "attemptCount", score, total_questions AS "totalQuestions",
-                          percentage, band, word_count1 AS "wordCount1", word_count2 AS "wordCount2",
-                          time_remaining_text AS "timeRemainingText", details,
+                          type AS "type", student_name AS "studentName", status AS "status",
+                          attempt_count AS "attemptCount", score AS "score", total_questions AS "totalQuestions",
+                          percentage AS "percentage", band AS "band", word_count1 AS "wordCount1", word_count2 AS "wordCount2",
+                          time_remaining_text AS "timeRemainingText", details AS "details",
                           TO_CHAR(first_submitted_at, 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS "firstSubmittedAt",
                           TO_CHAR(last_submitted_at, 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS "lastSubmittedAt"
                    FROM submissions WHERE 1=1`;

@@ -1614,24 +1614,42 @@ app.get('/download-test/:id', async (req, res) => {
                     const publicBase = String(process.env.B2_PUBLIC_URL || '').replace(/\/+$/, '');
                     if (publicBase && fileUrl.startsWith(`${publicBase}/`)) {
                         const filename = fileUrl.slice(publicBase.length + 1).split(/[?#]/)[0];
-                        const object = await s3.send(new GetObjectCommand({
-                            Bucket: process.env.B2_BUCKET,
-                            Key: filename
-                        }));
                         
-                        const chunks = [];
-                        for await (const chunk of object.Body) {
-                            chunks.push(chunk);
-                        }
-                        const buffer = Buffer.concat(chunks);
-                        const contentType = object.ContentType || mime.lookup(filename) || 'audio/mpeg';
-                        logger.info('[download-test] Converted B2 audio to base64', { filename, size: buffer.length });
-                        return `data:${contentType};base64,${buffer.toString('base64')}`;
+                        // Add timeout to prevent hanging requests
+                        const timeoutPromise = new Promise((_, reject) => 
+                            setTimeout(() => reject(new Error('Audio fetch timeout')), 10000)
+                        );
+                        
+                        const fetchPromise = (async () => {
+                            const object = await s3.send(new GetObjectCommand({
+                                Bucket: process.env.B2_BUCKET,
+                                Key: filename
+                            }));
+                            
+                            const chunks = [];
+                            let totalSize = 0;
+                            const maxSize = 20 * 1024 * 1024; // 20MB limit per file
+                            
+                            for await (const chunk of object.Body) {
+                                totalSize += chunk.length;
+                                if (totalSize > maxSize) {
+                                    throw new Error(`Audio file too large: ${filename} (>${maxSize / 1024 / 1024}MB)`);
+                                }
+                                chunks.push(chunk);
+                            }
+                            
+                            const buffer = Buffer.concat(chunks);
+                            const contentType = object.ContentType || mime.lookup(filename) || 'audio/mpeg';
+                            logger.info('[download-test] Converted B2 audio to base64', { filename, size: buffer.length });
+                            return `data:${contentType};base64,${buffer.toString('base64')}`;
+                        })();
+                        
+                        return await Promise.race([fetchPromise, timeoutPromise]);
                     }
                     return fileUrl;
                 } catch (err) {
                     logger.warn('[download-test] Unable to fetch B2 audio file:', fileUrl, err.message);
-                    return fileUrl;
+                    return fileUrl; // Fallback to URL if conversion fails
                 }
             }
             

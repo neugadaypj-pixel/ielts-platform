@@ -13,7 +13,8 @@ let pool;
 async function getPool() {
     if (pool) return pool;
 
-    oracledb.initOracleClient({ libDir: '/opt/oracle/instantclient_23_4' });
+    const libDir = process.env.LD_LIBRARY_PATH || '/opt/render/project/src/instantclient/instantclient_23_4';
+    oracledb.initOracleClient({ libDir });
 
     pool = await oracledb.createPool({
         user: process.env.DB_USER || 'IELTS_APP',

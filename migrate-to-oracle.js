@@ -135,15 +135,24 @@ async function setupMappingTable() {
 // ============================================================
 async function resyncSequences() {
     console.log('[SYNC] Resynchronizing ID sequences...');
-    const tables = ['users', 'tests', 'groups', 'submissions', 'feedbacks', 'notifications', 'group_test_schedule'];
-    for (const table of tables) {
+    // Map table name → sequence name (they may differ)
+    const seqMap = {
+        users: 'users_seq',
+        tests: 'tests_seq',
+        groups: 'groups_seq',
+        submissions: 'submissions_seq',
+        feedbacks: 'feedbacks_seq',
+        notifications: 'notifications_seq',
+        group_test_schedule: 'test_schedule_seq'  // schema defines test_schedule_seq, not group_test_schedule_seq
+    };
+    for (const [table, seqName] of Object.entries(seqMap)) {
         try {
             const result = await execute(`SELECT NVL(MAX(id), 0) AS max_id FROM ${table}`);
             const maxId = result.rows[0].MAX_ID;
-            await execute(`ALTER SEQUENCE ${table}_seq RESTART START WITH ${maxId + 1}`);
-            console.log(`        ${table}_seq → ${maxId + 1}`);
+            await execute(`ALTER SEQUENCE ${seqName} RESTART START WITH ${maxId + 1}`);
+            console.log(`        ${seqName} → ${maxId + 1}`);
         } catch (e) {
-            console.log(`        ${table}_seq: ${e.message}`);
+            console.log(`        ${seqName}: ${e.message}`);
         }
     }
 }
@@ -161,10 +170,23 @@ async function migrate(opts = {}) {
     // --- Step A: Run schema first ---
     await runSchema();
 
+    // --- Step 0: Check if Oracle already has data ---
+    console.log('[PRE-CHECK] Checking if Oracle tables already contain data...');
+    const existingCount = await execute(`SELECT COUNT(*) AS cnt FROM users`);
+    const existingUsers = existingCount.rows[0].CNT;
+    console.log(`           Oracle users table has ${existingUsers} rows`);
+    if (existingUsers > 0 && !opts.force) {
+        console.log('           ⚠️  Oracle already has data! Migration skipped to prevent duplicates.');
+        console.log('           To force re-migration (will truncate + re-import), set opts.force=true');
+        console.log('           or first clear Oracle tables via: npm run clear-oracle\n');
+        return;
+    }
+    console.log('           Oracle is empty — proceeding with migration.\n');
+
     // --- Step B: Setup mapping table ---
     await setupMappingTable();
 
-    // --- Step 0: Connect to MongoDB ---
+    // --- Step 0b: Connect to MongoDB ---
     console.log('[0/10] Connecting to MongoDB...');
     await mongoose.connect(process.env.MONGO_URI, {
         serverSelectionTimeoutMS: 30000

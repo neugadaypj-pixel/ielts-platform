@@ -2378,9 +2378,10 @@ app.get('/api/notifications', async (req, res) => {
     if (!req.session.userId) return res.status(401).json({ error: 'Not logged in' });
     try {
         const notifications = await Notification.find({ userId: req.session.userId });
-        res.json(notifications);
+        const unreadCount = notifications.filter(n => !n.isRead).length;
+        res.json({ success: true, notifications, unreadCount });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ success: false, error: err.message });
     }
 });
 
@@ -2391,6 +2392,29 @@ app.post('/api/notifications/mark-read', async (req, res) => {
             { userId: req.session.userId, isRead: 0 },
             { isRead: 1 }
         );
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.post('/api/notifications/mark-all-read', async (req, res) => {
+    if (!req.session.userId) return res.status(401).json({ error: 'Not logged in' });
+    try {
+        await Notification.updateMany(
+            { userId: req.session.userId, isRead: 0 },
+            { isRead: 1 }
+        );
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.post('/api/notifications/:id/read', async (req, res) => {
+    if (!req.session.userId) return res.status(401).json({ error: 'Not logged in' });
+    try {
+        await Notification.findByIdAndUpdate(req.params.id, { isRead: true });
         res.json({ success: true });
     } catch (err) {
         res.status(500).json({ error: err.message });

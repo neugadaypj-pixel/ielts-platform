@@ -19,19 +19,11 @@ rm instantclient-basic-linux.x64-23.4.0.24.05.zip
 
 echo "✅ Oracle Instant Client installed at $(pwd)/instantclient/instantclient_23_4"
 
-# Download libaio library directly
-echo "📦 Downloading libaio library..."
-cd instantclient/instantclient_23_4
-# Download libaio from a direct source
-wget -q -O libaio.so.1 https://github.com/oracle/node-oracledb/releases/download/v6.0.0/libaio.so.1 || \
-wget -q http://ftp.us.debian.org/debian/pool/main/liba/libaio/libaio1_0.3.113-5_amd64.deb && \
-ar x libaio1_0.3.113-5_amd64.deb && \
-tar xf data.tar.xz ./lib/x86_64-linux-gnu/libaio.so.1.0.1 --strip-components=3 && \
-ln -sf libaio.so.1.0.1 libaio.so.1 && \
-rm -f libaio1_0.3.113-5_amd64.deb control.tar.* data.tar.*
-cd ../..
-
-echo "✅ libaio library installed"
+# Copy libaio library from repo
+echo "📦 Installing libaio library from repo..."
+cp libs/libaio.so.1 instantclient/instantclient_23_4/libaio.so.1
+chmod +x instantclient/instantclient_23_4/libaio.so.1
+echo "✅ libaio library installed (size: $(stat -c%s instantclient/instantclient_23_4/libaio.so.1) bytes)"
 
 # Install Node dependencies
 echo "📦 Installing npm packages..."

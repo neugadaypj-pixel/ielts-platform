@@ -1,12 +1,6 @@
 #!/bin/bash
 set -e
 
-echo "🔧 Installing system dependencies..."
-
-# Install libaio (required by Oracle Instant Client)
-echo "📦 Installing libaio..."
-apt-get update -qq && apt-get install -y -qq libaio1 libaio-dev
-
 echo "🔧 Installing Oracle Instant Client..."
 
 # Create directory in project root (Render allows writes here)
@@ -24,6 +18,19 @@ unzip -q instantclient-basic-linux.x64-23.4.0.24.05.zip -d instantclient
 rm instantclient-basic-linux.x64-23.4.0.24.05.zip
 
 echo "✅ Oracle Instant Client installed at $(pwd)/instantclient/instantclient_23_4"
+
+# Download libaio library directly (Ubuntu 20.04 version)
+echo "📦 Downloading libaio library..."
+mkdir -p lib
+cd lib
+wget -q http://archive.ubuntu.com/ubuntu/pool/main/liba/libaio/libaio1_0.3.112-5_amd64.deb
+ar x libaio1_0.3.112-5_amd64.deb
+tar xf data.tar.xz
+cp lib/x86_64-linux-gnu/libaio.so.1* ../instantclient/instantclient_23_4/
+cd ..
+rm -rf lib
+
+echo "✅ libaio library installed"
 
 # Install Node dependencies
 echo "📦 Installing npm packages..."

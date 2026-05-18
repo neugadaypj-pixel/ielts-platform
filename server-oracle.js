@@ -2347,6 +2347,53 @@ app.post('/admin/clear-cache', isAdmin, csrfProtection, (req, res) => {
     res.json({ success: true, message: 'Cache cleared' });
 });
 
+// === DIAGNOSTIC ENDPOINT (admin-only) ===
+// Visit: https://your-site.com/api/debug/oracle-data
+app.get('/api/debug/oracle-data', isAdmin, async (req, res) => {
+    try {
+        const { execute } = require('./database/connection');
+
+        // Raw counts
+        const usersResult = await execute(`SELECT COUNT(*) AS cnt FROM users`);
+        const testsResult = await execute(`SELECT COUNT(*) AS cnt FROM tests`);
+        const groupsResult = await execute(`SELECT COUNT(*) AS cnt FROM groups`);
+
+        // Sample tests (first 5, raw)
+        const sampleTests = await execute(
+            `SELECT id, title, type, teacher_name, created_by, folder, created_at FROM tests WHERE ROWNUM <= 5 ORDER BY created_at DESC`
+        );
+
+        // Sample users (first 5)
+        const sampleUsers = await execute(
+            `SELECT id, username, role FROM users WHERE ROWNUM <= 5 ORDER BY id ASC`
+        );
+
+        // Test via the model to see what comes back
+        const Test = require('./database/models/test');
+        const modelTests = await Test.find({});
+        const modelUsers = await require('./database/models/user').find({});
+
+        res.json({
+            success: true,
+            rawCounts: {
+                users: usersResult.rows[0].CNT,
+                tests: testsResult.rows[0].CNT,
+                groups: groupsResult.rows[0].CNT
+            },
+            sampleTests: sampleTests.rows,
+            sampleUsers: sampleUsers.rows,
+            modelResults: {
+                testsViaModel: modelTests.length,
+                usersViaModel: modelUsers.length,
+                firstTestTitle: modelTests.length > 0 ? modelTests[0].title : null,
+                firstTestType: modelTests.length > 0 ? modelTests[0].type : null
+            }
+        });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message, stack: err.stack });
+    }
+});
+
 // === ANALYTICS ===
 app.get('/analytics', isTeacher, async (req, res) => {
     try {

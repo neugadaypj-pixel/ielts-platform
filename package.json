@@ -13,6 +13,9 @@
     "start:mongo": "node server.js",
     "dev": "nodemon server-oracle.js",
     "dev:mongo": "nodemon server.js",
+    "migrate": "node migrate-to-oracle.js",
+    "clear-oracle": "node clear-oracle.js",
+    "check-oracle": "node check-oracle-data.js",
     "clear-sessions": "node clear-sessions.js",
     "predeploy": "node clear-sessions.js"
   },

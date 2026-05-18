@@ -5,7 +5,7 @@ const fs = require('fs');
 const path = require('path');
 
 // ============================================================
-// MongoDB Models (old — read-only)
+// MongoDB Models (old — read-only source)
 // ============================================================
 const UserMongo = require('./models/User');
 const TestMongo = require('./models/Test');
@@ -17,7 +17,7 @@ const NotificationMongo = require('./models/Notification');
 // ============================================================
 // Oracle connection (reuse existing pool)
 // ============================================================
-const { getPool, execute, executeMany } = require('./database/connection');
+const { getPool, execute, executeMany, closePool } = require('./database/connection');
 
 // ============================================================
 // Track MongoDB ObjectId → Oracle Number ID
@@ -54,40 +54,128 @@ function toOracleDate(val) {
 // ============================================================
 // MAIN MIGRATION FUNCTION
 // ============================================================
+// ============================================================
+// Helper: convert any date value to a JS Date object for oracledb
+// ============================================================
+function toOracleDate(val) {
+    if (!val) return new Date();
+    return new Date(val);
+}
+
+// ============================================================
+// Run the schema to ensure all tables exist
+// ============================================================
+async function runSchema() {
+    console.log('[SCHEMA] Running schema.sql...');
+    const schemaPath = path.join(__dirname, 'database', 'schema.sql');
+    const rawSql = fs.readFileSync(schemaPath, 'utf8');
+    console.log(`         Read schema.sql (${rawSql.length} bytes)`);
+
+    const statements = rawSql
+        .split(/\n\/\s*\n|\n\/\s*$/)
+        .map(s => s.trim())
+        .filter(s => s.length > 0 && !s.split('\n').every(l => l.trim() === '' || l.trim().startsWith('--')));
+
+    const skipErrors = ['ORA-00955', 'ORA-02275', 'ORA-01430', 'ORA-02264', 'ORA-00942', 'ORA-01418', 'ORA-00904', 'ORA-01408'];
+
+    let total = 0, ok = 0, fail = 0;
+    for (const stmt of statements) {
+        total++;
+        const preview = stmt.substring(0, 75).replace(/\n/g, ' ');
+        try {
+            await execute(stmt);
+            console.log(`  [OK]    #${total}: ${preview}...`);
+            ok++;
+        } catch (err) {
+            const msg = err.message || '';
+            if (skipErrors.some(code => msg.includes(code))) {
+                console.log(`  [SKIP]  #${total}: Already exists — ${preview.substring(0, 52)}...`);
+                ok++;
+            } else {
+                console.error(`  [FAIL]  #${total}: ${preview}...`);
+                console.error(`          ${msg}`);
+                fail++;
+            }
+        }
+    }
+    console.log(`         Schema: ${total} statements, ${ok} OK/skip, ${fail} failed\n`);
+    if (fail > 5) throw new Error('Too many schema errors — aborting');
+}
+
+// ============================================================
+// Reset id_mapping table for a fresh migration
+// ============================================================
+async function setupMappingTable() {
+    console.log('[SETUP] Preparing id_mapping tracking table...');
+    try {
+        // Clear existing mappings but keep the table
+        await execute(`TRUNCATE TABLE id_mapping`);
+        console.log('        id_mapping table truncated');
+    } catch (e) {
+        // Create if doesn't exist
+        try {
+            await execute(`
+                CREATE TABLE id_mapping (
+                    collection VARCHAR2(50) NOT NULL,
+                    mongo_id   VARCHAR2(24) NOT NULL,
+                    oracle_id  NUMBER NOT NULL,
+                    PRIMARY KEY (collection, mongo_id)
+                )
+            `);
+            console.log('        id_mapping table created');
+        } catch (e2) {
+            console.error('        Could not create id_mapping:', e2.message);
+            throw e2;
+        }
+    }
+}
+
+// ============================================================
+// Resync sequences after migration
+// ============================================================
+async function resyncSequences() {
+    console.log('[SYNC] Resynchronizing ID sequences...');
+    const tables = ['users', 'tests', 'groups', 'submissions', 'feedbacks', 'notifications', 'group_test_schedule'];
+    for (const table of tables) {
+        try {
+            const result = await execute(`SELECT NVL(MAX(id), 0) AS max_id FROM ${table}`);
+            const maxId = result.rows[0].MAX_ID;
+            await execute(`ALTER SEQUENCE ${table}_seq RESTART START WITH ${maxId + 1}`);
+            console.log(`        ${table}_seq → ${maxId + 1}`);
+        } catch (e) {
+            console.log(`        ${table}_seq: ${e.message}`);
+        }
+    }
+}
+
+// ============================================================
+// MAIN MIGRATION FUNCTION
+// ============================================================
 async function migrate() {
     console.log('\n╔══════════════════════════════════════════════════╗');
-    console.log('║   MongoDB → Oracle Data Migration Tool          ║');
+    console.log('║   MongoDB → Oracle Data Migration Tool v2       ║');
     console.log('╚══════════════════════════════════════════════════╝\n');
 
+    // --- Step A: Run schema first ---
+    await runSchema();
+
+    // --- Step B: Setup mapping table ---
+    await setupMappingTable();
+
     // --- Step 0: Connect to MongoDB ---
-    console.log('[0/9] Connecting to MongoDB...');
-    await mongoose.connect(process.env.MONGO_URI);
-    console.log('      ✅ Connected to MongoDB');
+    console.log('[0/10] Connecting to MongoDB...');
+    await mongoose.connect(process.env.MONGO_URI, {
+        serverSelectionTimeoutMS: 30000
+    });
+    console.log('       ✅ Connected to MongoDB');
 
     // --- Step 0b: Verify Oracle is ready ---
-    console.log('[0/9] Connecting to Oracle...');
+    console.log('[0/10] Connecting to Oracle...');
     const pool = await getPool();
     const testConn = await pool.getConnection();
     await testConn.execute('SELECT 1 FROM dual');
     await testConn.close();
-    console.log('      ✅ Connected to Oracle');
-
-    // --- Step 0c: Drop and recreate id_mapping table ---
-    console.log('[0/9] Setting up migration tracking...');
-    try {
-        await execute(`DROP TABLE id_mapping PURGE`);
-    } catch (e) {
-        // Table doesn't exist yet — that's fine
-    }
-    await execute(`
-        CREATE TABLE id_mapping (
-            collection VARCHAR2(50) NOT NULL,
-            mongo_id   VARCHAR2(24) NOT NULL,
-            oracle_id  NUMBER NOT NULL,
-            PRIMARY KEY (collection, mongo_id)
-        )
-    `);
-    console.log('      ✅ Migration tracking table ready');
+    console.log('       ✅ Connected to Oracle');
 
     // ========================================================
     // Step 1: Migrate Users (basic fields only)
@@ -529,10 +617,16 @@ async function migrate() {
         console.log('\n✅ All collections migrated successfully with matching row counts!');
     }
 
+    // --- Step 10: Resync sequences ---
+    console.log('\n[10/10] Resynchronizing ID sequences...');
+    await resyncSequences();
+
     // --- Cleanup ---
     await mongoose.disconnect();
-    console.log('\n✅ MongoDB connection closed');
-    console.log('✅ Migration complete!\n');
+    console.log('✅ MongoDB connection closed');
+    await closePool();
+    console.log('✅ Oracle pool closed');
+    console.log('\n✅ Migration complete!\n');
 }
 
 // ============================================================

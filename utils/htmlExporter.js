@@ -36,18 +36,28 @@ function stringifyContent(content) {
 }
 
 function parseStoredContent(raw, fieldName) {
-    if (!raw) {
+    // Oracle returns empty CLOBs as '' (empty string), which is falsy in JS.
+    // Only treat null/undefined as truly missing; empty strings are valid (e.g., writing tests).
+    if (raw === null || raw === undefined) {
         throw new Error(`Invalid test document: missing ${fieldName}`);
     }
 
     if (typeof raw === 'string') {
         const trimmed = raw.trim();
+        if (!trimmed) {
+            // Empty content is valid for writing tests or tests without reading passages
+            return {};
+        }
 
         if (trimmed.startsWith('<!DOCTYPE html') || trimmed.startsWith('<html')) {
             return { __rawHtml: raw };
         }
 
-        return JSON.parse(raw);
+        try {
+            return JSON.parse(raw);
+        } catch (parseErr) {
+            throw new Error(`Invalid test document: ${fieldName} is not valid JSON`);
+        }
     }
 
     if (typeof raw === 'object') {
@@ -3014,7 +3024,7 @@ function generateHTMLFromTest(testDoc, options = {}) {
         return html;
     }
 
-const rawContent = plainTest.readingPassage ?? plainTest.content;
+const rawContent = plainTest.readingPassage || plainTest.content || '{}';
 const parsedContent = parseStoredContent(rawContent, 'readingPassage');
 
 if (parsedContent.__rawHtml) {

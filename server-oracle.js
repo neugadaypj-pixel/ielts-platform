@@ -214,7 +214,9 @@ const testCreationLimiter = rateLimit({
 });
 
 // === CSRF PROTECTION ===
-const csrfProtection = csrf({ cookie: true });
+// Session-based CSRF — avoids separate _csrf cookie that caused 403 errors
+// on routes without csrfProtection. The secret lives in express-session instead.
+const csrfProtection = csrf({ sessionKey: 'csrfSecret' });
 
 // === AUTH MIDDLEWARE ===
 function isAdmin(req, res, next) {
@@ -756,9 +758,10 @@ app.post('/admin/assign-test', isAdmin, csrfProtection, async (req, res) => {
 
         await User.findByIdAndUpdate(teacherId, { $addToSet: { assignedTests: testId } });
         
-        // Verify assignment
+        // Verify assignment - use String() for type-safe comparison (Oracle may return Number or String)
         const updatedUser = await User.findById(teacherId);
-        const assigned = updatedUser && updatedUser.assignedTests && updatedUser.assignedTests.includes(testId);
+        const assigned = updatedUser && updatedUser.assignedTests &&
+            updatedUser.assignedTests.some(id => String(id) === String(testId));
         logger.info('Test assigned to teacher', { testId, teacherId, adminId: req.session.userId, verified: assigned });
         
         if (assigned) {
@@ -793,7 +796,8 @@ app.get('/create-test-reading', isTeacher, csrfProtection, (req, res) => {
     }
 });
 
-app.post('/create-test-reading', isTeacher, testCreationLimiter, csrfProtection, upload.single('builderJson'), async (req, res) => {
+// NOTE: csrfProtection must come AFTER multer for multipart forms so req.body._csrf is available
+app.post('/create-test-reading', isTeacher, testCreationLimiter, upload.single('builderJson'), csrfProtection, async (req, res) => {
     try {
         if (!isDatabaseReady()) return sendDatabaseUnavailable(res);
 
@@ -896,10 +900,11 @@ app.get('/create-test-listening', isTeacher, csrfProtection, (req, res) => {
     }
 });
 
-app.post('/create-test-listening', isTeacher, testCreationLimiter, csrfProtection, upload.fields([
+// NOTE: csrfProtection must come AFTER multer for multipart forms so req.body._csrf is available
+app.post('/create-test-listening', isTeacher, testCreationLimiter, upload.fields([
     { name: 'builderJson', maxCount: 1 },
     { name: 'audioFiles', maxCount: 20 }
-]), async (req, res) => {
+]), csrfProtection, async (req, res) => {
     try {
         if (!isDatabaseReady()) return sendDatabaseUnavailable(res);
 
@@ -961,13 +966,14 @@ app.post('/create-test-listening', isTeacher, testCreationLimiter, csrfProtectio
 });
 
 // Alias route for builder compatibility (builder posts to /create-test/listening)
-app.post('/create-test/listening', isTeacher, testCreationLimiter, csrfProtection, upload.fields([
+// NOTE: csrfProtection must come AFTER multer for multipart forms so req.body._csrf is available
+app.post('/create-test/listening', isTeacher, testCreationLimiter, upload.fields([
     { name: 'audioFile', maxCount: 1 },
     { name: 'part1', maxCount: 1 },
     { name: 'part2', maxCount: 1 },
     { name: 'part3', maxCount: 1 },
     { name: 'part4', maxCount: 1 }
-]), async (req, res) => {
+]), csrfProtection, async (req, res) => {
     try {
         if (!isDatabaseReady()) return sendDatabaseUnavailable(res);
 
@@ -1161,7 +1167,17 @@ app.get('/teacher-dashboard', isTeacher, csrfProtection, async (req, res) => {
         }
 
         // Get tests created by teacher + assigned tests
-        const totalTests = await Test.countDocuments({ createdBy: userId });
+        // Load assigned test IDs first so pagination accounts for them
+        let assignedTestIds = [];
+        try {
+            const teacherUser = await User.findById(userId);
+            assignedTestIds = (teacherUser && teacherUser.assignedTests) || [];
+        } catch (assignErr) {
+            logger.warn('Failed to load assigned tests for teacher', { error: assignErr.message, userId });
+        }
+
+        const createdCount = await Test.countDocuments({ createdBy: userId });
+        const totalTests = createdCount + assignedTestIds.length;
         const totalPages = Math.ceil(totalTests / PAGE_SIZE);
         const createdTests = await Test.find({
             createdBy: userId,
@@ -1169,18 +1185,12 @@ app.get('/teacher-dashboard', isTeacher, csrfProtection, async (req, res) => {
             $skip: skip,
             $limit: PAGE_SIZE
         });
-        // Load assigned tests (from admin) safely
+        // Load assigned tests (from admin) and merge with created
         let tests = createdTests;
-        try {
-            const teacherUser = await User.findById(userId);
-            const assignedTestIds = (teacherUser && teacherUser.assignedTests) || [];
-            if (assignedTestIds.length > 0) {
-                const assignedTests = await Test.find({ _id: { $in: assignedTestIds } });
-                const createdTestIdSet = new Set(createdTests.map(t => String(t._id)));
-                tests = [...createdTests, ...assignedTests.filter(t => !createdTestIdSet.has(String(t._id)))];
-            }
-        } catch (assignErr) {
-            logger.warn('Failed to load assigned tests for teacher', { error: assignErr.message, userId });
+        if (assignedTestIds.length > 0) {
+            const assignedTests = await Test.find({ _id: { $in: assignedTestIds } });
+            const createdTestIdSet = new Set(createdTests.map(t => String(t._id)));
+            tests = [...createdTests, ...assignedTests.filter(t => !createdTestIdSet.has(String(t._id)))];
         }
 
         // Get submissions for teacher's students
@@ -1271,7 +1281,7 @@ app.post('/teacher/add-student', isTeacher, csrfProtection, async (req, res) => 
 });
 
 // Teacher adds student to group
-app.post('/teacher/add-student-to-group', isTeacher, async (req, res) => {
+app.post('/teacher/add-student-to-group', isTeacher, csrfProtection, async (req, res) => {
     try {
         const { studentId, groupId } = req.body;
         const [student, group] = await Promise.all([
@@ -1365,8 +1375,8 @@ app.get('/teacher-progress', isTeacher, async (req, res) => {
         // Build student rows with submission data
         const studentRows = new Map();
         students.forEach(s => {
-            studentRows.set(String(s.id), {
-                _id: s.id,
+            studentRows.set(String(s._id), {
+                _id: s._id,
                 username: s.username,
                 groupId: s.groupId,
                 totalSubmissions: 0,
@@ -1438,7 +1448,7 @@ app.get('/test/:id', async (req, res) => {
 });
 
 // === SUBMISSION ===
-app.post('/submit-test', apiLimiter, async (req, res) => {
+app.post('/submit-test', apiLimiter, csrfProtection, async (req, res) => {
     if (!req.session.userId) return res.status(401).json({ success: false, message: 'Not logged in' });
     try {
         if (!isDatabaseReady()) return sendDatabaseUnavailable(res);
@@ -1457,7 +1467,7 @@ app.post('/submit-test', apiLimiter, async (req, res) => {
     }
 });
 
-app.post('/submit-writing', apiLimiter, async (req, res) => {
+app.post('/submit-writing', apiLimiter, csrfProtection, async (req, res) => {
     if (!req.session.userId) return res.status(401).json({ success: false, message: 'Not logged in' });
     try {
         if (!isDatabaseReady()) return sendDatabaseUnavailable(res);
@@ -1823,8 +1833,34 @@ app.get('/download-test/:id', async (req, res) => {
         }
 
         async function inlineListeningAudio(testDoc) {
-            const raw = testDoc.readingPassage;
-            if (!raw || typeof raw !== 'string') return testDoc;
+            // Oracle returns empty CLOBs as '' (empty string), which is falsy in JS.
+            // Try readingPassage first, then fall back to builderJson for audio URLs.
+            let raw = testDoc.readingPassage;
+            if ((!raw || typeof raw !== 'string' || !raw.trim()) && String(testDoc.type || '').toLowerCase() === 'listening') {
+                // Fallback: try builderJson which may contain audio URLs for listening tests
+                if (testDoc.builderJson && typeof testDoc.builderJson === 'string' && testDoc.builderJson.trim()) {
+                    try {
+                        const bj = JSON.parse(testDoc.builderJson);
+                        // Extract audioUrls from builderJson if present
+                        if (bj.audioUrls || bj.audioParts || bj.fullAudio) {
+                            const audioParts = bj.audioUrls || bj.audioParts || [];
+                            const reconstructed = {
+                                audioParts: Array.isArray(audioParts) ? audioParts : [audioParts],
+                                fullAudio: bj.fullAudio || null
+                            };
+                            raw = JSON.stringify(reconstructed);
+                        } else {
+                            return testDoc;
+                        }
+                    } catch (parseErr) {
+                        return testDoc;
+                    }
+                } else {
+                    return testDoc;
+                }
+            }
+            if (!raw || typeof raw !== 'string' || !raw.trim()) return testDoc;
+
             let parsed;
             try {
                 parsed = JSON.parse(raw);
@@ -1980,7 +2016,7 @@ app.get('/teacher/live/:testId', isTeacher, async (req, res) => {
 });
 
 // === DELETE ROUTES ===
-app.post('/teacher/delete-test/:id', isTeacher, async (req, res) => {
+app.post('/teacher/delete-test/:id', isTeacher, csrfProtection, async (req, res) => {
     await handleDelete(req, res, {
         model: Test,
         modelName: 'Test',
@@ -2001,7 +2037,7 @@ app.post('/teacher/delete-test/:id', isTeacher, async (req, res) => {
     });
 });
 
-app.post('/teacher/delete-group/:id', isTeacher, async (req, res) => {
+app.post('/teacher/delete-group/:id', isTeacher, csrfProtection, async (req, res) => {
     await handleDelete(req, res, {
         model: Group,
         modelName: 'Group',
@@ -2022,7 +2058,7 @@ app.post('/teacher/delete-group/:id', isTeacher, async (req, res) => {
     });
 });
 
-app.post('/teacher/delete-student/:id', isTeacher, async (req, res) => {
+app.post('/teacher/delete-student/:id', isTeacher, csrfProtection, async (req, res) => {
     await handleDelete(req, res, {
         model: User,
         modelName: 'Student',
@@ -2089,7 +2125,7 @@ app.post('/admin/backup-database', isAdmin, csrfProtection, async (req, res) => 
 });
 
 // Remove student from group
-app.post('/teacher/remove-student-from-group/:groupId/:studentId', isTeacher, async (req, res) => {
+app.post('/teacher/remove-student-from-group/:groupId/:studentId', isTeacher, csrfProtection, async (req, res) => {
     try {
         const { groupId, studentId } = req.params;
         const groupValidation = validateObjectId(groupId);
@@ -2141,7 +2177,7 @@ app.post('/teacher/remove-student-from-group/:groupId/:studentId', isTeacher, as
 });
 
 // Remove test from group
-app.post('/teacher/remove-test-from-group/:groupId/:testId', isTeacher, async (req, res) => {
+app.post('/teacher/remove-test-from-group/:groupId/:testId', isTeacher, csrfProtection, async (req, res) => {
     try {
         const { groupId, testId } = req.params;
         const groupValidation = validateObjectId(groupId);
@@ -2221,7 +2257,7 @@ app.get('/teacher/view-password/:studentId', isTeacher, async (req, res) => {
     }
 });
 
-app.post('/teacher/reset-password/:studentId', isTeacher, async (req, res) => {
+app.post('/teacher/reset-password/:studentId', isTeacher, csrfProtection, async (req, res) => {
     try {
         const { newPassword } = req.body;
         if (!newPassword || newPassword.length < 6) {
@@ -2277,7 +2313,7 @@ app.post('/admin/bulk-delete', isAdmin, csrfProtection, async (req, res) => {
     }
 });
 
-app.post('/teacher/bulk-delete-students', isTeacher, async (req, res) => {
+app.post('/teacher/bulk-delete-students', isTeacher, csrfProtection, async (req, res) => {
     try {
         const { ids } = req.body;
         if (!Array.isArray(ids) || ids.length === 0) return res.status(400).json({ success: false, message: 'No students selected' });
@@ -2762,7 +2798,7 @@ app.get('/settings', async (req, res) => {
     }
 });
 
-app.post('/settings/change-password', async (req, res) => {
+app.post('/settings/change-password', csrfProtection, async (req, res) => {
     if (!req.session.userId) return res.status(401).json({ error: 'Not logged in' });
     try {
         const { currentPassword, newPassword } = req.body;

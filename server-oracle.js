@@ -214,9 +214,10 @@ const testCreationLimiter = rateLimit({
 });
 
 // === CSRF PROTECTION ===
-// Session-based CSRF — avoids separate _csrf cookie that caused 403 errors
-// on routes without csrfProtection. The secret lives in express-session instead.
-const csrfProtection = csrf({ sessionKey: 'csrfSecret' });
+// Cookie-based CSRF. The _csrf cookie is set the first time any route with
+// csrfProtection middleware renders. All GET routes that serve pages with forms
+// should include csrfProtection so the cookie is always available.
+const csrfProtection = csrf({ cookie: true });
 
 // === AUTH MIDDLEWARE ===
 function isAdmin(req, res, next) {

@@ -1261,7 +1261,7 @@ app.post('/teacher/add-student-to-group', isTeacher, async (req, res) => {
 });
 
 // Create group
-app.post('/teacher/create-group', isTeacher, async (req, res) => {
+app.post('/teacher/create-group', isTeacher, csrfProtection, async (req, res) => {
     try {
         const { name } = req.body;
         if (!name) return res.status(400).json({ success: false, message: 'Group name required' });
@@ -1275,6 +1275,39 @@ app.post('/teacher/create-group', isTeacher, async (req, res) => {
     } catch (err) {
         logger.error('Create group error', { error: err.message });
         res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+// Assign student to group (alias route)
+app.post('/teacher/assign-to-group', isTeacher, csrfProtection, async (req, res) => {
+    try {
+        const { studentId, groupId } = req.body;
+        const [student, group] = await Promise.all([
+            User.findById(studentId),
+            Group.findById(groupId)
+        ]);
+
+        if (!student || student.role !== 'student') {
+            return res.status(404).send("Student not found. <a href='/teacher-dashboard'>Go back</a>");
+        }
+        if (!group) {
+            return res.status(404).send("Group not found. <a href='/teacher-dashboard'>Go back</a>");
+        }
+        if (req.session.userRole !== 'admin' && String(group.teacherId) !== String(req.session.userId)) {
+            return res.status(403).send("Not authorized to manage this group. <a href='/teacher-dashboard'>Go back</a>");
+        }
+        if (req.session.userRole !== 'admin' && String(student.teacherId) !== String(req.session.userId)) {
+            return res.status(403).send("Not authorized to assign this student. <a href='/teacher-dashboard'>Go back</a>");
+        }
+
+        await Group.findByIdAndUpdate(groupId, { $addToSet: { students: studentId } });
+        await User.findByIdAndUpdate(studentId, { $set: { groupId: groupId } });
+
+        logger.info('Student assigned to group', { studentId, groupId, teacherId: req.session.userId });
+        res.redirect('/teacher-dashboard');
+    } catch (err) {
+        logger.error('Assign to group error', { error: err.message });
+        res.status(500).send("Error assigning student to group: " + err.message);
     }
 });
 
@@ -2400,7 +2433,7 @@ app.get('/settings/export-report', async (req, res) => {
 });
 
 // === SCHEDULED TEST ACCESS ===
-app.post('/teacher/assign-test-group', isTeacher, async (req, res) => {
+app.post('/teacher/assign-test-group', isTeacher, csrfProtection, async (req, res) => {
     const { testId, groupId, scheduleType, availableFrom } = req.body;
     try {
         const group = await Group.findByIdWithStudents(groupId);

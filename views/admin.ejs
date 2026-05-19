@@ -832,6 +832,7 @@
                     </div>
                 </div>
                 <form action="/admin/assign-test" method="POST" class="assign-form">
+                    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
                     <select name="testId" required>
                         <option value="">Select a test</option>
                         <% tests.forEach(test=> { %>

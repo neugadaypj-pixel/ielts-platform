@@ -1614,6 +1614,7 @@
                     <div class="panel-card">
                         <h3>Create New Group</h3>
                         <form action="/teacher/create-group" method="POST" class="field-stack">
+                            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
                             <input type="text" name="groupName" placeholder="e.g. IELTS Evening Group" required>
                             <button type="submit" class="btn btn-success">Create Group</button>
                         </form>
@@ -1622,6 +1623,7 @@
                     <div class="panel-card">
                         <h3>Add Student To Group</h3>
                         <form action="/teacher/assign-to-group" method="POST" class="field-stack">
+                            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
                             <select name="studentId" required>
                                 <option value="">Select Student</option>
                                 <% allStudents.forEach(student=> { %>
@@ -1645,6 +1647,7 @@
                     <div class="panel-card">
                         <h3>Assign Test To Group</h3>
                         <form action="/teacher/assign-test-group" method="POST" class="field-stack">
+                            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
                             <select name="testId" required>
                                 <option value="">Select Test</option>
                                 <% tests.forEach(test=> { %>

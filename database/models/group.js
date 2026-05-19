@@ -159,21 +159,35 @@ const Group = {
         // $addToSet: students
         if (update.$addToSet && update.$addToSet.students) {
             await execute(
-                `MERGE INTO group_students gs
-                 USING (SELECT :gid AS group_id, :uid AS user_id FROM dual) src
-                 ON (gs.group_id = src.group_id AND gs.user_id = src.user_id)
-                 WHEN NOT MATCHED THEN INSERT (group_id, user_id) VALUES (src.group_id, src.user_id)`,
-                { gid: id, uid: update.$addToSet.students }
+                `INSERT INTO group_students (group_id, user_id)
+                 SELECT :gid, :uid FROM dual
+                 WHERE NOT EXISTS (
+                     SELECT 1 FROM group_students 
+                     WHERE group_id = :gid2 AND user_id = :uid2
+                 )`,
+                { 
+                    gid: id, 
+                    uid: update.$addToSet.students,
+                    gid2: id,
+                    uid2: update.$addToSet.students
+                }
             );
         }
         // $addToSet: assignedTests
         if (update.$addToSet && update.$addToSet.assignedTests) {
             await execute(
-                `MERGE INTO group_assigned_tests gat
-                 USING (SELECT :gid AS group_id, :tid AS test_id FROM dual) src
-                 ON (gat.group_id = src.group_id AND gat.test_id = src.test_id)
-                 WHEN NOT MATCHED THEN INSERT (group_id, test_id) VALUES (src.group_id, src.test_id)`,
-                { gid: id, tid: update.$addToSet.assignedTests }
+                `INSERT INTO group_assigned_tests (group_id, test_id)
+                 SELECT :gid, :tid FROM dual
+                 WHERE NOT EXISTS (
+                     SELECT 1 FROM group_assigned_tests 
+                     WHERE group_id = :gid2 AND test_id = :tid2
+                 )`,
+                { 
+                    gid: id, 
+                    tid: update.$addToSet.assignedTests,
+                    gid2: id,
+                    tid2: update.$addToSet.assignedTests
+                }
             );
         }
 

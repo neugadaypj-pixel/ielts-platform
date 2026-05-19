@@ -78,12 +78,20 @@ const User = {
     async findByIdAndUpdate(id, update) {
         // $addToSet: assignedTests
         if (update.$addToSet && update.$addToSet.assignedTests) {
+            // Use INSERT ... WHERE NOT EXISTS for simpler, more reliable behavior
             await execute(
-                `MERGE INTO user_assigned_tests uat 
-                 USING (SELECT :uid AS user_id, :tid AS test_id FROM dual) src
-                 ON (uat.user_id = src.user_id AND uat.test_id = src.test_id)
-                 WHEN NOT MATCHED THEN INSERT (user_id, test_id) VALUES (src.user_id, src.test_id)`,
-                { uid: id, tid: update.$addToSet.assignedTests }
+                `INSERT INTO user_assigned_tests (user_id, test_id)
+                 SELECT :uid, :tid FROM dual
+                 WHERE NOT EXISTS (
+                     SELECT 1 FROM user_assigned_tests 
+                     WHERE user_id = :uid2 AND test_id = :tid2
+                 )`,
+                { 
+                    uid: id, 
+                    tid: update.$addToSet.assignedTests,
+                    uid2: id,
+                    tid2: update.$addToSet.assignedTests
+                }
             );
         }
         // $pull: assignedTests

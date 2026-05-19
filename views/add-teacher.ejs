@@ -162,6 +162,7 @@
             </div>
             
             <form method="POST" action="/admin/add-teacher">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
                 <div class="form-group">
                     <label for="username">Username *</label>
                     <input type="text" id="username" name="username" required placeholder="e.g. teacher_john" autocomplete="username">

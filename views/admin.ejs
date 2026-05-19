@@ -611,9 +611,13 @@
 
         function deleteItem(type, id, name) {
             showConfirm(`Delete ${type} "${name}"? This cannot be undone.`, () => {
+                const csrfToken = '<%= csrfToken %>';
                 fetch(`/delete-${type}/${id}`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'x-csrf-token': csrfToken
+                    },
                     body: JSON.stringify({ redirect: '/admin' })
                 })
                     .then((response) => response.json())

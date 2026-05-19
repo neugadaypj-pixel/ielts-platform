@@ -242,10 +242,12 @@
             submitBtn.textContent = 'Creating...';
             
             try {
+                const csrfToken = '<%= csrfToken %>';
                 const response = await fetch('/teacher/add-student', {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json'
+                        'Content-Type': 'application/json',
+                        'x-csrf-token': csrfToken
                     },
                     body: JSON.stringify({ username, password })
                 });

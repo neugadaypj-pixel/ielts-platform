@@ -1102,9 +1102,13 @@
 
         function deleteItem(type, id, name) {
             showConfirm(`Delete ${type} "${name}"? This cannot be undone.`, () => {
+                const csrfToken = '<%= csrfToken %>';
                 fetch(`/delete-${type}/${id}`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'x-csrf-token': csrfToken
+                    },
                     body: JSON.stringify({ redirect: '/teacher-dashboard' })
                 })
                     .then((response) => response.json())
@@ -1122,9 +1126,13 @@
 
         function removeStudentFromGroup(groupId, studentId, studentName) {
             showConfirm(`Remove ${studentName} from this group?`, () => {
+                const csrfToken = '<%= csrfToken %>';
                 fetch(`/remove-student-from-group/${groupId}/${studentId}`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'x-csrf-token': csrfToken
+                    },
                     body: JSON.stringify({ redirect: '/teacher-dashboard' })
                 })
                     .then((response) => response.json())

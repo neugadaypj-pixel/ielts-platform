@@ -1202,7 +1202,7 @@ app.get('/teacher-dashboard', isTeacher, csrfProtection, async (req, res) => {
 });
 
 // Teacher adds student
-app.post('/teacher/add-student', isTeacher, async (req, res) => {
+app.post('/teacher/add-student', isTeacher, csrfProtection, async (req, res) => {
     try {
         const { username, password } = req.body;
         if (!username || !password) {

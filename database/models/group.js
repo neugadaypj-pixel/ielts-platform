@@ -160,8 +160,9 @@ const Group = {
         if (update.$addToSet && update.$addToSet.students) {
             await execute(
                 `MERGE INTO group_students gs
-                 USING dual ON (gs.group_id = :gid AND gs.user_id = :uid)
-                 WHEN NOT MATCHED THEN INSERT (group_id, user_id) VALUES (:gid, :uid)`,
+                 USING (SELECT :gid AS group_id, :uid AS user_id FROM dual) src
+                 ON (gs.group_id = src.group_id AND gs.user_id = src.user_id)
+                 WHEN NOT MATCHED THEN INSERT (group_id, user_id) VALUES (src.group_id, src.user_id)`,
                 { gid: id, uid: update.$addToSet.students }
             );
         }
@@ -169,8 +170,9 @@ const Group = {
         if (update.$addToSet && update.$addToSet.assignedTests) {
             await execute(
                 `MERGE INTO group_assigned_tests gat
-                 USING dual ON (gat.group_id = :gid AND gat.test_id = :tid)
-                 WHEN NOT MATCHED THEN INSERT (group_id, test_id) VALUES (:gid, :tid)`,
+                 USING (SELECT :gid AS group_id, :tid AS test_id FROM dual) src
+                 ON (gat.group_id = src.group_id AND gat.test_id = src.test_id)
+                 WHEN NOT MATCHED THEN INSERT (group_id, test_id) VALUES (src.group_id, src.test_id)`,
                 { gid: id, tid: update.$addToSet.assignedTests }
             );
         }

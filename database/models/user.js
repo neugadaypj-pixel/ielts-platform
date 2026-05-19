@@ -79,7 +79,10 @@ const User = {
         // $addToSet: assignedTests
         if (update.$addToSet && update.$addToSet.assignedTests) {
             await execute(
-                `MERGE INTO user_assigned_tests uat USING dual ON (uat.user_id = :uid AND uat.test_id = :tid) WHEN NOT MATCHED THEN INSERT (user_id, test_id) VALUES (:uid, :tid)`,
+                `MERGE INTO user_assigned_tests uat 
+                 USING (SELECT :uid AS user_id, :tid AS test_id FROM dual) src
+                 ON (uat.user_id = src.user_id AND uat.test_id = src.test_id)
+                 WHEN NOT MATCHED THEN INSERT (user_id, test_id) VALUES (src.user_id, src.test_id)`,
                 { uid: id, tid: update.$addToSet.assignedTests }
             );
         }

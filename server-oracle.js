@@ -726,6 +726,11 @@ app.post('/admin/add-student', isAdmin, csrfProtection, async (req, res) => {
     }
 });
 
+// === CREATE TEST HUB ===
+app.get('/create-test', isTeacher, (req, res) => {
+    res.render('create-test-hub');
+});
+
 // === CREATE TEST (READING) ===
 app.get('/create-test-reading', isTeacher, csrfProtection, (req, res) => {
     res.render('create-test-reading', { error: null, success: null, csrfToken: req.csrfToken() });

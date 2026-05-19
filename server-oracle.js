@@ -670,6 +670,11 @@ app.get('/admin', isAdmin, csrfProtection, async (req, res) => {
     }
 });
 
+// Add teacher page
+app.get('/admin/add-teacher', isAdmin, csrfProtection, (req, res) => {
+    res.render('add-teacher', { csrfToken: req.csrfToken() });
+});
+
 // Add teacher
 app.post('/admin/add-teacher', isAdmin, csrfProtection, async (req, res) => {
     try {
@@ -1199,6 +1204,11 @@ app.get('/teacher-dashboard', isTeacher, csrfProtection, async (req, res) => {
         logger.error('Teacher dashboard error', { error: err.message, stack: err.stack });
         res.status(500).send('Error loading teacher dashboard');
     }
+});
+
+// Add student page
+app.get('/teacher/add-student', isTeacher, csrfProtection, (req, res) => {
+    res.render('add-student', { csrfToken: req.csrfToken() });
 });
 
 // Teacher adds student

@@ -971,26 +971,42 @@ app.get('/teacher-dashboard', isTeacher, csrfProtection, async (req, res) => {
         if (!isDatabaseReady()) return sendDatabaseUnavailable(res);
 
         const userId = req.session.userId;
+        const page = Math.max(1, parseInt(req.query.page) || 1);
+        const PAGE_SIZE = 20;
+        const skip = (page - 1) * PAGE_SIZE;
+
         const [teacher, groups, allStudents] = await Promise.all([
             User.findByIdWithGroup(userId),
             Group.find({ teacherId: userId }),
             User.find({ role: 'student', teacherId: userId })
         ]);
 
-        // Get tests created by teacher
-        const tests = await Test.find({ createdBy: userId });
+        if (!teacher) {
+            return req.session.destroy(() => res.redirect('/login'));
+        }
+
+        // Get tests created by teacher (with pagination)
+        const totalTests = await Test.countDocuments({ createdBy: userId });
+        const totalPages = Math.ceil(totalTests / PAGE_SIZE);
+        const tests = await Test.find({
+            createdBy: userId,
+            $sort: { createdAt: -1 },
+            $skip: skip,
+            $limit: PAGE_SIZE
+        });
 
         // Get submissions for teacher's students
         const studentIds = allStudents.map(s => s._id);
+        const testIds = tests.map(t => t._id);
         const submissions = [];
 
-        if (studentIds.length > 0) {
-            // Get recent submissions by these students
+        if (testIds.length > 0) {
             const recentSubs = await Submission.find({
                 $or: [
                     { teacherId: userId },
                     ...(studentIds.length > 0 ? [{ studentId: { $in: studentIds } }] : [])
-                ]
+                ],
+                testId: { $in: testIds }
             });
             submissions.push(...(recentSubs || []));
         }
@@ -1010,15 +1026,18 @@ app.get('/teacher-dashboard', isTeacher, csrfProtection, async (req, res) => {
         res.render('teacher-dashboard', {
             teacher,
             tests,
+            testsByType: groupTestsByType(tests),
             groups,
             students: allStudents,
+            allStudents,
             csrfToken: req.csrfToken(),
             stats: {
-                totalTests: tests.length,
+                totalTests,
                 totalStudents: allStudents.length,
                 totalGroups: groups.length,
                 totalSubmissions: submissions.length
-            }
+            },
+            pagination: { page, totalPages, totalTests, pageSize: PAGE_SIZE }
         });
     } catch (err) {
         logger.error('Teacher dashboard error', { error: err.message, stack: err.stack });

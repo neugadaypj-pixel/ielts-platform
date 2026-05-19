@@ -2102,6 +2102,86 @@ app.post('/admin/delete-user/:id', isAdmin, csrfProtection, async (req, res) => 
     });
 });
 
+// === BACKWARD-COMPATIBLE DELETE ROUTES (unprefixed paths matching frontend deleteItem()) ===
+app.post('/delete-test/:id', isTeacher, csrfProtection, async (req, res) => {
+    await handleDelete(req, res, {
+        model: Test,
+        modelName: 'Test',
+        ownerCheck: async (req, doc) => {
+            if (req.session.userRole === CONSTANTS.ROLES.ADMIN) return true;
+            return String(doc.createdBy) === String(req.session.userId);
+        },
+        cascades: [
+            async (doc) => {
+                await Group.updateMany({}, { $pull: { assignedTests: { $in: [doc._id] }, testSchedule: { testId: doc._id } } });
+                await User.updateMany({}, { $pull: { assignedTests: { $in: [doc._id] } } });
+                await Submission.deleteMany({ testId: doc._id });
+            }
+        ]
+    });
+});
+
+app.post('/delete-group/:id', isTeacher, csrfProtection, async (req, res) => {
+    await handleDelete(req, res, {
+        model: Group,
+        modelName: 'Group',
+        ownerCheck: async (req, doc) => {
+            if (req.session.userRole === CONSTANTS.ROLES.ADMIN) return true;
+            return String(doc.teacherId) === String(req.session.userId);
+        },
+        cascades: [
+            async (doc) => {
+                if (doc.students) {
+                    for (const sid of doc.students) {
+                        await User.findByIdAndUpdate(sid, { $unset: { groupId: 1 } });
+                    }
+                }
+            }
+        ]
+    });
+});
+
+app.post('/delete-student/:id', isTeacher, csrfProtection, async (req, res) => {
+    await handleDelete(req, res, {
+        model: User,
+        modelName: 'Student',
+        ownerCheck: async (req, doc) => {
+            if (req.session.userRole === CONSTANTS.ROLES.ADMIN) return true;
+            return String(doc.teacherId) === String(req.session.userId) && doc.role === 'student';
+        },
+        cascades: [
+            async (doc) => {
+                if (doc.groupId) {
+                    await Group.findByIdAndUpdate(doc.groupId, { $pull: { students: doc._id } });
+                }
+                await Submission.deleteMany({ studentId: doc._id });
+            }
+        ]
+    });
+});
+
+app.post('/delete-teacher/:id', isAdmin, csrfProtection, async (req, res) => {
+    await handleDelete(req, res, {
+        model: User,
+        modelName: 'User',
+        ownerCheck: async () => true,
+        cascades: [
+            async (doc) => {
+                if (doc.role === 'teacher') {
+                    const tests = await Test.find({ createdBy: doc._id });
+                    for (const test of tests) {
+                        await Test.findByIdAndDelete(test._id);
+                    }
+                }
+                if (doc.groupId) {
+                    await Group.findByIdAndUpdate(doc.groupId, { $pull: { students: doc._id } });
+                }
+                await Submission.deleteMany({ studentId: doc._id });
+            }
+        ]
+    });
+});
+
 // --- MANUAL BACKUP ENDPOINT (Admin only) ---
 app.post('/admin/backup-database', isAdmin, csrfProtection, async (req, res) => {
     try {

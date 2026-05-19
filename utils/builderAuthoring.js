@@ -561,9 +561,15 @@ ${commonInjectionStyles()}
 </script>`;
 }
 
-function getAuthoringPageHtml(type, testData = null) {
+function getAuthoringPageHtml(type, testData = null, csrfToken = null) {
     const normalizedType = String(type || '').toLowerCase();
-    const source = readBuilderSource(normalizedType);
+    let source = readBuilderSource(normalizedType);
+
+    // Inject CSRF token meta tag if provided
+    if (csrfToken) {
+        const csrfMeta = `<meta name="csrf-token" content="${csrfToken}">`;
+        source = source.replace('</head>', `${csrfMeta}\n</head>`);
+    }
 
     let injection = '';
     if (normalizedType === 'reading') {

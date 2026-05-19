@@ -733,9 +733,9 @@ app.get('/create-test', isTeacher, (req, res) => {
 });
 
 // === CREATE TEST (READING) ===
-app.get('/create-test-reading', isTeacher, (req, res) => {
+app.get('/create-test-reading', isTeacher, csrfProtection, (req, res) => {
     try {
-        const html = getAuthoringPageHtml('reading');
+        const html = getAuthoringPageHtml('reading', null, req.csrfToken());
         res.send(html);
     } catch (err) {
         logger.error('Error loading reading builder', { error: err.message });
@@ -836,9 +836,9 @@ app.post('/create-test/reading', isTeacher, testCreationLimiter, csrfProtection,
 });
 
 // === CREATE TEST (LISTENING) ===
-app.get('/create-test-listening', isTeacher, (req, res) => {
+app.get('/create-test-listening', isTeacher, csrfProtection, (req, res) => {
     try {
-        const html = getAuthoringPageHtml('listening');
+        const html = getAuthoringPageHtml('listening', null, req.csrfToken());
         res.send(html);
     } catch (err) {
         logger.error('Error loading listening builder', { error: err.message });
@@ -951,9 +951,9 @@ app.post('/create-test/listening', isTeacher, testCreationLimiter, csrfProtectio
 });
 
 // === CREATE TEST (WRITING) ===
-app.get('/create-test-writing', isTeacher, (req, res) => {
+app.get('/create-test-writing', isTeacher, csrfProtection, (req, res) => {
     try {
-        const html = getAuthoringPageHtml('writing');
+        const html = getAuthoringPageHtml('writing', null, req.csrfToken());
         res.send(html);
     } catch (err) {
         logger.error('Error loading writing builder', { error: err.message });
@@ -1035,7 +1035,7 @@ app.post('/create-test/writing', isTeacher, testCreationLimiter, csrfProtection,
 });
 
 // === TEST EDIT ===
-app.get('/edit-test/:id', isTeacher, async (req, res) => {
+app.get('/edit-test/:id', isTeacher, csrfProtection, async (req, res) => {
     try {
         if (!isDatabaseReady()) return sendDatabaseUnavailable(res);
 
@@ -1045,7 +1045,7 @@ app.get('/edit-test/:id', isTeacher, async (req, res) => {
         const canEdit = await canEditTest(req, req.params.id);
         if (!canEdit) return res.status(403).send('You cannot edit this test');
 
-        const html = getAuthoringPageHtml(test.type, test);
+        const html = getAuthoringPageHtml(test.type, test, req.csrfToken());
         res.send(html);
     } catch (err) {
         logger.error('Edit test error', { error: err.message });

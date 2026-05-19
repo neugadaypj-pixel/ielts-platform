@@ -758,7 +758,12 @@ app.post('/admin/assign-test', isAdmin, csrfProtection, async (req, res) => {
         logger.info('Test assigned to teacher', { testId, teacherId, adminId: req.session.userId });
         res.send('<h1>Success!</h1><p>Test assigned to teacher.</p><a href="/admin">Back to Admin</a>');
     } catch (err) {
-        logger.error('Assign test error', { error: err.message });
+        logger.error('Assign test error', { 
+            error: err.message, 
+            stack: err.stack,
+            teacherId: req.body.teacherId,
+            testId: req.body.testId
+        });
         res.status(500).send('Error assigning test. <a href="/admin">Back</a>');
     }
 });

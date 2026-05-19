@@ -1151,15 +1151,25 @@ app.get('/teacher-dashboard', isTeacher, csrfProtection, async (req, res) => {
             return req.session.destroy(() => res.redirect('/login'));
         }
 
-        // Get tests created by teacher (with pagination)
+        // Get tests created by teacher + assigned tests
+        const teacherUser = await User.findById(userId);
+        const assignedTestIds = (teacherUser && teacherUser.assignedTests) || [];
         const totalTests = await Test.countDocuments({ createdBy: userId });
         const totalPages = Math.ceil(totalTests / PAGE_SIZE);
-        const tests = await Test.find({
+        const createdTests = await Test.find({
             createdBy: userId,
             $sort: { createdAt: -1 },
             $skip: skip,
             $limit: PAGE_SIZE
         });
+        // Load assigned tests (from admin)
+        let assignedTests = [];
+        if (assignedTestIds.length > 0) {
+            assignedTests = await Test.find({ _id: { $in: assignedTestIds } });
+        }
+        // Merge without duplicates
+        const createdTestIdSet = new Set(createdTests.map(t => String(t._id)));
+        const tests = [...createdTests, ...assignedTests.filter(t => !createdTestIdSet.has(String(t._id)))];
 
         // Get submissions for teacher's students
         const studentIds = allStudents.map(s => s._id);

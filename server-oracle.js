@@ -1152,8 +1152,6 @@ app.get('/teacher-dashboard', isTeacher, csrfProtection, async (req, res) => {
         }
 
         // Get tests created by teacher + assigned tests
-        const teacherUser = await User.findById(userId);
-        const assignedTestIds = (teacherUser && teacherUser.assignedTests) || [];
         const totalTests = await Test.countDocuments({ createdBy: userId });
         const totalPages = Math.ceil(totalTests / PAGE_SIZE);
         const createdTests = await Test.find({
@@ -1162,14 +1160,19 @@ app.get('/teacher-dashboard', isTeacher, csrfProtection, async (req, res) => {
             $skip: skip,
             $limit: PAGE_SIZE
         });
-        // Load assigned tests (from admin)
-        let assignedTests = [];
-        if (assignedTestIds.length > 0) {
-            assignedTests = await Test.find({ _id: { $in: assignedTestIds } });
+        // Load assigned tests (from admin) safely
+        let tests = createdTests;
+        try {
+            const teacherUser = await User.findById(userId);
+            const assignedTestIds = (teacherUser && teacherUser.assignedTests) || [];
+            if (assignedTestIds.length > 0) {
+                const assignedTests = await Test.find({ _id: { $in: assignedTestIds } });
+                const createdTestIdSet = new Set(createdTests.map(t => String(t._id)));
+                tests = [...createdTests, ...assignedTests.filter(t => !createdTestIdSet.has(String(t._id)))];
+            }
+        } catch (assignErr) {
+            logger.warn('Failed to load assigned tests for teacher', { error: assignErr.message, userId });
         }
-        // Merge without duplicates
-        const createdTestIdSet = new Set(createdTests.map(t => String(t._id)));
-        const tests = [...createdTests, ...assignedTests.filter(t => !createdTestIdSet.has(String(t._id)))];
 
         // Get submissions for teacher's students
         const studentIds = allStudents.map(s => s._id);

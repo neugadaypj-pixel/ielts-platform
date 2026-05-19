@@ -803,6 +803,38 @@ app.post('/create-test-reading', isTeacher, testCreationLimiter, csrfProtection,
     }
 });
 
+// Alias route for builder compatibility (builder posts to /create-test/reading)
+app.post('/create-test/reading', isTeacher, testCreationLimiter, csrfProtection, async (req, res) => {
+    try {
+        if (!isDatabaseReady()) return sendDatabaseUnavailable(res);
+
+        const title = req.body.title || 'Reading Test';
+        const content = typeof req.body.content === 'string' ? JSON.parse(req.body.content) : req.body.content;
+        const builderJson = req.body.builderJson;
+
+        const newTest = await saveValidatedTest({
+            title,
+            type: 'reading',
+            content,
+            builderJson,
+            req
+        });
+
+        logger.info('Reading test created via builder', { userId: req.session.userId, testId: newTest._id });
+        res.json({
+            success: true,
+            test: newTest,
+            redirect: '/teacher-dashboard'
+        });
+    } catch (err) {
+        logger.error('Reading test creation error (builder)', { error: err.message });
+        res.status(CONSTANTS.STATUS.INTERNAL_ERROR).json({
+            success: false,
+            message: err.message
+        });
+    }
+});
+
 // === CREATE TEST (LISTENING) ===
 app.get('/create-test-listening', isTeacher, (req, res) => {
     try {
@@ -878,6 +910,46 @@ app.post('/create-test-listening', isTeacher, testCreationLimiter, csrfProtectio
     }
 });
 
+// Alias route for builder compatibility (builder posts to /create-test/listening)
+app.post('/create-test/listening', isTeacher, testCreationLimiter, csrfProtection, upload.fields([
+    { name: 'audioFile', maxCount: 1 },
+    { name: 'part1', maxCount: 1 },
+    { name: 'part2', maxCount: 1 },
+    { name: 'part3', maxCount: 1 },
+    { name: 'part4', maxCount: 1 }
+]), async (req, res) => {
+    try {
+        if (!isDatabaseReady()) return sendDatabaseUnavailable(res);
+
+        const title = req.body.title || 'Listening Test';
+        const builderJson = req.body.builderJson;
+        const parts = req.body.parts ? JSON.parse(req.body.parts) : {};
+        const answerKey = req.body.answerKey ? JSON.parse(req.body.answerKey) : {};
+        const usePause = req.body.usePause === 'true';
+
+        const newTest = await saveValidatedTest({
+            title,
+            type: 'listening',
+            content: { parts, answerKey, includePause: usePause },
+            builderJson,
+            req
+        });
+
+        logger.info('Listening test created via builder', { userId: req.session.userId, testId: newTest._id });
+        res.json({
+            success: true,
+            test: newTest,
+            redirect: '/teacher-dashboard'
+        });
+    } catch (err) {
+        logger.error('Listening test creation error (builder)', { error: err.message });
+        res.status(CONSTANTS.STATUS.INTERNAL_ERROR).json({
+            success: false,
+            message: err.message
+        });
+    }
+});
+
 // === CREATE TEST (WRITING) ===
 app.get('/create-test-writing', isTeacher, (req, res) => {
     try {
@@ -923,6 +995,38 @@ app.post('/create-test-writing', isTeacher, testCreationLimiter, csrfProtection,
         });
     } catch (err) {
         logger.error('Writing test creation error', { error: err.message });
+        res.status(CONSTANTS.STATUS.INTERNAL_ERROR).json({
+            success: false,
+            message: err.message
+        });
+    }
+});
+
+// Alias route for builder compatibility (builder posts to /create-test/writing)
+app.post('/create-test/writing', isTeacher, testCreationLimiter, csrfProtection, async (req, res) => {
+    try {
+        if (!isDatabaseReady()) return sendDatabaseUnavailable(res);
+
+        const title = req.body.title || 'Writing Test';
+        const content = typeof req.body.content === 'string' ? JSON.parse(req.body.content) : req.body.content;
+        const builderJson = req.body.builderJson;
+
+        const newTest = await saveValidatedTest({
+            title,
+            type: 'writing',
+            content,
+            builderJson,
+            req
+        });
+
+        logger.info('Writing test created via builder', { userId: req.session.userId, testId: newTest._id });
+        res.json({
+            success: true,
+            test: newTest,
+            redirect: '/teacher-dashboard'
+        });
+    } catch (err) {
+        logger.error('Writing test creation error (builder)', { error: err.message });
         res.status(CONSTANTS.STATUS.INTERNAL_ERROR).json({
             success: false,
             message: err.message

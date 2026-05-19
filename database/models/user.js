@@ -77,32 +77,32 @@ const User = {
 
     async findByIdAndUpdate(id, update) {
         // $addToSet: assignedTests
+        // NOTE: 'uid' is a reserved Oracle pseudo-column, must use different bind names
         if (update.$addToSet && update.$addToSet.assignedTests) {
-            // Use INSERT ... WHERE NOT EXISTS for simpler, more reliable behavior
             await execute(
                 `INSERT INTO user_assigned_tests (user_id, test_id)
-                 SELECT :uid, :tid FROM dual
+                 SELECT :p_user_id, :p_test_id FROM dual
                  WHERE NOT EXISTS (
                      SELECT 1 FROM user_assigned_tests 
-                     WHERE user_id = :uid2 AND test_id = :tid2
+                     WHERE user_id = :p_user_id2 AND test_id = :p_test_id2
                  )`,
                 { 
-                    uid: id, 
-                    tid: update.$addToSet.assignedTests,
-                    uid2: id,
-                    tid2: update.$addToSet.assignedTests
+                    p_user_id: id, 
+                    p_test_id: update.$addToSet.assignedTests,
+                    p_user_id2: id,
+                    p_test_id2: update.$addToSet.assignedTests
                 }
             );
         }
         // $pull: assignedTests
         if (update.$pull && update.$pull.assignedTests) {
-            await execute(`DELETE FROM user_assigned_tests WHERE user_id = :uid AND test_id = :tid`, { uid: id, tid: update.$pull.assignedTests });
+            await execute(`DELETE FROM user_assigned_tests WHERE user_id = :p_user_id AND test_id = :p_test_id`, { p_user_id: id, p_test_id: update.$pull.assignedTests });
         }
         // $pull: assignedTests with $in (for bulk delete)
         if (update.$pull && update.$pull.assignedTests && update.$pull.assignedTests.$in) {
-            const ids = update.$pull.assignedTests.$in.map((x, i) => { return { k: `tid${i}`, v: x }; });
+            const ids = update.$pull.assignedTests.$in.map((x, i) => { return { k: `p_tid${i}`, v: x }; });
             if (ids.length > 0) {
-                await execute(`DELETE FROM user_assigned_tests WHERE user_id = :uid AND test_id IN (${ids.map(d => `:${d.k}`).join(',')})`, Object.assign({ uid: id }, Object.fromEntries(ids.map(d => [d.k, d.v]))));
+                await execute(`DELETE FROM user_assigned_tests WHERE user_id = :p_user_id AND test_id IN (${ids.map(d => `:${d.k}`).join(',')})`, Object.assign({ p_user_id: id }, Object.fromEntries(ids.map(d => [d.k, d.v]))));
             }
         }
         // Direct field updates

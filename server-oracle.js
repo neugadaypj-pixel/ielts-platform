@@ -735,7 +735,8 @@ app.post('/admin/add-student', isAdmin, csrfProtection, async (req, res) => {
 // Assign test to teacher
 app.post('/admin/assign-test', isAdmin, csrfProtection, async (req, res) => {
     try {
-        const { teacherId, testId } = req.body;
+        const teacherId = Number(req.body.teacherId);
+        const testId = Number(req.body.testId);
         
         if (!teacherId || !testId) {
             return res.status(400).send('Teacher ID and Test ID required. <a href="/admin">Back</a>');
@@ -755,8 +756,16 @@ app.post('/admin/assign-test', isAdmin, csrfProtection, async (req, res) => {
 
         await User.findByIdAndUpdate(teacherId, { $addToSet: { assignedTests: testId } });
         
-        logger.info('Test assigned to teacher', { testId, teacherId, adminId: req.session.userId });
-        res.send('<h1>Success!</h1><p>Test assigned to teacher.</p><a href="/admin">Back to Admin</a>');
+        // Verify assignment
+        const updatedUser = await User.findById(teacherId);
+        const assigned = updatedUser && updatedUser.assignedTests && updatedUser.assignedTests.includes(testId);
+        logger.info('Test assigned to teacher', { testId, teacherId, adminId: req.session.userId, verified: assigned });
+        
+        if (assigned) {
+            res.send('<h1>Success!</h1><p>Test assigned to teacher.</p><a href="/admin">Back to Admin</a>');
+        } else {
+            res.status(500).send('Assignment may have failed - test not found in teacher assignments. <a href="/admin">Back</a>');
+        }
     } catch (err) {
         logger.error('Assign test error', { 
             error: err.message, 

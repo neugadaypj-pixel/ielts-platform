@@ -1726,6 +1726,44 @@ app.get('/student-dashboard', async (req, res) => {
     }
 });
 
+// === VIEW/PREVIEW TEST ===
+app.get('/view-test/:id', async (req, res) => {
+    if (!req.session.userId) return res.redirect('/login');
+    try {
+        if (!isDatabaseReady()) return sendDatabaseUnavailable(res);
+
+        const isStaffPreview = req.session.userRole === 'teacher' || req.session.userRole === 'admin';
+        const cacheKey = `test_html_${req.params.id}_${req.session.userId}_${isStaffPreview ? 'preview' : 'student'}`;
+        let html = cache.get(cacheKey);
+
+        if (html) {
+            return res.send(html);
+        }
+
+        const access = await getAccessibleTest(req, req.params.id);
+        if (!access.test) return res.status(404).send('Test not found.');
+        if (!access.isAllowed) return res.status(403).send('Not authorized to view this test.');
+
+        try {
+            html = generateHTMLFromTest(access.test, {
+                deepseekApiKey: process.env.DEEPSEEK_API_KEY || '',
+                studentName: '',
+                previewMode: isStaffPreview,
+                useAudioProxy: false
+            });
+
+            cache.set(cacheKey, html);
+            return res.send(html);
+        } catch (genErr) {
+            logger.error('HTML generation error', { error: genErr.message, stack: genErr.stack });
+            return res.status(500).send('Error generating test HTML: ' + genErr.message);
+        }
+    } catch (err) {
+        logger.error('View test error', { error: err.message, stack: err.stack });
+        res.status(500).send('Error loading test: ' + err.message);
+    }
+});
+
 // === DOWNLOAD STANDALONE HTML TEST ===
 app.get('/download-test/:id', async (req, res) => {
     if (!req.session.userId) return res.redirect('/login');

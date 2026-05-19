@@ -88,7 +88,49 @@ const Group = {
 
         sql += ` ORDER BY created_at DESC`;
         const result = await execute(sql, binds);
-        return result.rows;
+        const groups = result.rows;
+
+        if (groups.length === 0) return groups;
+
+        // Bulk-load students, assignedTests, and testSchedule for all groups
+        const groupIds = groups.map(g => g._id);
+        const placeholders = groupIds.map((_, i) => `:gid${i}`).join(',');
+        const idBinds = {};
+        groupIds.forEach((id, i) => { idBinds[`gid${i}`] = id; });
+
+        const [studentsRes, testsRes, scheduleRes] = await Promise.all([
+            execute(`SELECT group_id AS "groupId", user_id AS "userId" FROM group_students WHERE group_id IN (${placeholders})`, idBinds),
+            execute(`SELECT group_id AS "groupId", test_id AS "testId" FROM group_assigned_tests WHERE group_id IN (${placeholders})`, idBinds),
+            execute(`SELECT group_id AS "groupId", test_id AS "testId",
+                            TO_CHAR(available_from, 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS "availableFrom"
+                     FROM group_test_schedule WHERE group_id IN (${placeholders})`, idBinds)
+        ]);
+
+        // Initialize arrays on each group
+        groups.forEach(g => {
+            g.students = [];
+            g.assignedTests = [];
+            g.testSchedule = [];
+        });
+
+        // Index groups by id for fast lookup
+        const byId = {};
+        groups.forEach(g => { byId[String(g._id)] = g; });
+
+        studentsRes.rows.forEach(r => {
+            const g = byId[String(r.groupId)];
+            if (g) g.students.push(r.userId);
+        });
+        testsRes.rows.forEach(r => {
+            const g = byId[String(r.groupId)];
+            if (g) g.assignedTests.push(r.testId);
+        });
+        scheduleRes.rows.forEach(r => {
+            const g = byId[String(r.groupId)];
+            if (g) g.testSchedule.push({ testId: r.testId, availableFrom: r.availableFrom });
+        });
+
+        return groups;
     },
 
     async create(data) {

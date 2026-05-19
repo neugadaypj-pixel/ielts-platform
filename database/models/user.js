@@ -160,7 +160,7 @@ const User = {
     // Populate-like: find user with group and assigned tests (for student dashboard)
     async findByIdWithGroupAndTests(id) {
         const userResult = await execute(
-            `SELECT u.id AS "id", u.username AS "username", u.role AS "role", u.teacher_id AS "teacherId", u.group_id AS "groupId", g.name AS "groupName",
+            `SELECT u.id AS "_id", u.username AS "username", u.role AS "role", u.teacher_id AS "teacherId", u.group_id AS "groupId", g.name AS "groupName",
                     TO_CHAR(u.created_at, 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS "createdAt"
              FROM users u LEFT JOIN groups g ON u.group_id = g.id WHERE u.id = :id`, { id }
         );
@@ -188,7 +188,7 @@ const User = {
     // Populate-like: find user with group name in one call
     async findByIdWithGroup(id) {
         const result = await execute(
-            `SELECT u.id AS "id", u.username AS "username", u.role AS "role", u.teacher_id AS "teacherId", u.group_id AS "groupId", g.name AS "groupName",
+            `SELECT u.id AS "_id", u.username AS "username", u.role AS "role", u.teacher_id AS "teacherId", u.group_id AS "groupId", g.name AS "groupName",
                     TO_CHAR(u.created_at, 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS "createdAt"
              FROM users u LEFT JOIN groups g ON u.group_id = g.id WHERE u.id = :id`, { id }
         );

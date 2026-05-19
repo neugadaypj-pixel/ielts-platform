@@ -981,7 +981,7 @@ app.get('/teacher-dashboard', isTeacher, csrfProtection, async (req, res) => {
         const tests = await Test.find({ createdBy: userId });
 
         // Get submissions for teacher's students
-        const studentIds = allStudents.map(s => s.id);
+        const studentIds = allStudents.map(s => s._id);
         const submissions = [];
 
         if (studentIds.length > 0) {
@@ -1977,7 +1977,7 @@ app.post('/admin/bulk-delete', isAdmin, csrfProtection, async (req, res) => {
         } else if (type === 'teacher') {
             const teachers = await User.find({ _id: { $in: ids }, role: 'teacher' });
             for (const teacher of teachers) {
-                const tests = await Test.find({ createdBy: teacher.id });
+                const tests = await Test.find({ createdBy: teacher._id });
                 const testIds = tests.map(t => t._id);
                 if (testIds.length > 0) {
                     await Group.updateMany({}, { $pull: { assignedTests: { $in: testIds }, testSchedule: { testId: { $in: testIds } } } });
@@ -2000,11 +2000,11 @@ app.post('/teacher/bulk-delete-students', isTeacher, async (req, res) => {
         if (!Array.isArray(ids) || ids.length === 0) return res.status(400).json({ success: false, message: 'No students selected' });
 
         const students = await User.find({ _id: { $in: ids }, role: 'student', teacherId: req.session.userId });
-        const validIds = students.map(s => s.id);
+        const validIds = students.map(s => s._id);
 
         for (const student of students) {
-            if (student.groupId) await Group.findByIdAndUpdate(student.groupId, { $pull: { students: student.id } });
-            await Submission.deleteMany({ studentId: student.id });
+            if (student.groupId) await Group.findByIdAndUpdate(student.groupId, { $pull: { students: student._id } });
+            await Submission.deleteMany({ studentId: student._id });
         }
         await User.deleteMany({ _id: { $in: validIds } });
 

@@ -37,6 +37,7 @@ const CONSTANTS = require('./utils/constants');
 const { generateHTMLFromTest } = require('./utils/htmlExporter');
 const { analyzeWriting, analyzePatterns } = require('./utils/aiAnalysis');
 const { validateEnv } = require('./utils/config');
+const { getAuthoringPageHtml } = require('./utils/builderAuthoring');
 
 // Validate environment
 validateEnv();
@@ -732,8 +733,14 @@ app.get('/create-test', isTeacher, (req, res) => {
 });
 
 // === CREATE TEST (READING) ===
-app.get('/create-test-reading', isTeacher, csrfProtection, (req, res) => {
-    res.render('create-test-reading', { error: null, success: null, csrfToken: req.csrfToken() });
+app.get('/create-test-reading', isTeacher, (req, res) => {
+    try {
+        const html = getAuthoringPageHtml('reading');
+        res.send(html);
+    } catch (err) {
+        logger.error('Error loading reading builder', { error: err.message });
+        res.status(500).send('Error loading reading builder');
+    }
 });
 
 app.post('/create-test-reading', isTeacher, testCreationLimiter, csrfProtection, upload.single('builderJson'), async (req, res) => {
@@ -797,8 +804,14 @@ app.post('/create-test-reading', isTeacher, testCreationLimiter, csrfProtection,
 });
 
 // === CREATE TEST (LISTENING) ===
-app.get('/create-test-listening', isTeacher, csrfProtection, (req, res) => {
-    res.render('create-test-listening', { error: null, success: null, csrfToken: req.csrfToken() });
+app.get('/create-test-listening', isTeacher, (req, res) => {
+    try {
+        const html = getAuthoringPageHtml('listening');
+        res.send(html);
+    } catch (err) {
+        logger.error('Error loading listening builder', { error: err.message });
+        res.status(500).send('Error loading listening builder');
+    }
 });
 
 app.post('/create-test-listening', isTeacher, testCreationLimiter, csrfProtection, upload.fields([
@@ -866,8 +879,14 @@ app.post('/create-test-listening', isTeacher, testCreationLimiter, csrfProtectio
 });
 
 // === CREATE TEST (WRITING) ===
-app.get('/create-test-writing', isTeacher, csrfProtection, (req, res) => {
-    res.render('create-test-writing', { error: null, success: null, csrfToken: req.csrfToken() });
+app.get('/create-test-writing', isTeacher, (req, res) => {
+    try {
+        const html = getAuthoringPageHtml('writing');
+        res.send(html);
+    } catch (err) {
+        logger.error('Error loading writing builder', { error: err.message });
+        res.status(500).send('Error loading writing builder');
+    }
 });
 
 app.post('/create-test-writing', isTeacher, testCreationLimiter, csrfProtection, async (req, res) => {
@@ -912,7 +931,7 @@ app.post('/create-test-writing', isTeacher, testCreationLimiter, csrfProtection,
 });
 
 // === TEST EDIT ===
-app.get('/edit-test/:id', isTeacher, csrfProtection, async (req, res) => {
+app.get('/edit-test/:id', isTeacher, async (req, res) => {
     try {
         if (!isDatabaseReady()) return sendDatabaseUnavailable(res);
 
@@ -922,11 +941,8 @@ app.get('/edit-test/:id', isTeacher, csrfProtection, async (req, res) => {
         const canEdit = await canEditTest(req, req.params.id);
         if (!canEdit) return res.status(403).send('You cannot edit this test');
 
-        let viewName = 'create-test-reading';
-        if (test.type === 'listening') viewName = 'create-test-listening';
-        else if (test.type === 'writing') viewName = 'create-test-writing';
-
-        res.render(viewName, { test, editing: true, error: null, success: null, csrfToken: req.csrfToken() });
+        const html = getAuthoringPageHtml(test.type, test);
+        res.send(html);
     } catch (err) {
         logger.error('Edit test error', { error: err.message });
         res.status(500).send('Error loading test');

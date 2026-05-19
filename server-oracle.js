@@ -727,6 +727,37 @@ app.post('/admin/add-student', isAdmin, csrfProtection, async (req, res) => {
     }
 });
 
+// Assign test to teacher
+app.post('/admin/assign-test', isAdmin, csrfProtection, async (req, res) => {
+    try {
+        const { teacherId, testId } = req.body;
+        
+        if (!teacherId || !testId) {
+            return res.status(400).send('Teacher ID and Test ID required. <a href="/admin">Back</a>');
+        }
+
+        const [teacher, test] = await Promise.all([
+            User.findById(teacherId),
+            Test.findById(testId)
+        ]);
+
+        if (!teacher || teacher.role !== 'teacher') {
+            return res.status(404).send('Teacher not found. <a href="/admin">Back</a>');
+        }
+        if (!test) {
+            return res.status(404).send('Test not found. <a href="/admin">Back</a>');
+        }
+
+        await User.findByIdAndUpdate(teacherId, { $addToSet: { assignedTests: testId } });
+        
+        logger.info('Test assigned to teacher', { testId, teacherId, adminId: req.session.userId });
+        res.send('<h1>Success!</h1><p>Test assigned to teacher.</p><a href="/admin">Back to Admin</a>');
+    } catch (err) {
+        logger.error('Assign test error', { error: err.message });
+        res.status(500).send('Error assigning test. <a href="/admin">Back</a>');
+    }
+});
+
 // === CREATE TEST HUB ===
 app.get('/create-test', isTeacher, (req, res) => {
     res.render('create-test-hub');

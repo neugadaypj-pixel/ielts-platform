@@ -1797,57 +1797,25 @@ app.get('/download-test/:id', async (req, res) => {
         if (!test) return res.status(404).send('Test not found.');
         if (!isAllowed) return res.status(403).send('Not authorized to download this test.');
 
-        // Prevent OOM: skip base64 conversion for files larger than 8MB.
-        // Base64 encoding adds ~33%, so an 8MB file becomes ~10.7MB in the HTML.
-        // With 4-5 audio parts per test, this keeps total memory well under 512MB.
-        const MAX_AUDIO_BYTES = 8 * 1024 * 1024;
-
-        async function getAudioFileSize(url) {
+        // Memory-safe streaming base64 converter: fetches one audio file at a time,
+        // encodes to base64, and returns a data URI without holding all files in RAM.
+        async function audioUrlToBase64(url) {
+            if (!url || typeof url !== 'string' || !url.startsWith('http')) return url;
             try {
-                const head = await fetch(url, { method: 'HEAD', signal: AbortSignal.timeout(5000) });
-                const len = head.headers.get('content-length');
-                return len ? parseInt(len, 10) : null;
-            } catch {
-                return null;
+                const response = await fetch(url, { signal: AbortSignal.timeout(120000) });
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                const buffer = await response.buffer();
+                const ct = response.headers.get('content-type') || 'audio/mpeg';
+                logger.info('[download-test] Encoded audio to base64', { url, size: buffer.length });
+                return `data:${ct};base64,${buffer.toString('base64')}`;
+            } catch (err) {
+                logger.warn('[download-test] Audio fetch failed, keeping URL:', url, err.message);
+                return url;
             }
         }
 
-        async function fileUrlToDataUri(fileUrl) {
-            if (!fileUrl || typeof fileUrl !== 'string') return fileUrl;
-            
-            if (fileUrl.startsWith('http://') || fileUrl.startsWith('https://')) {
-                try {
-                    // Check file size via HEAD first to avoid OOM on large audio files
-                    const size = await getAudioFileSize(fileUrl);
-                    if (size !== null && size > MAX_AUDIO_BYTES) {
-                        logger.info('[download-test] Skipping base64 for large file, keeping URL', { url: fileUrl, size, maxBytes: MAX_AUDIO_BYTES });
-                        return fileUrl;
-                    }
-
-                    const response = await fetch(fileUrl, { signal: AbortSignal.timeout(30000) });
-                    if (!response.ok) {
-                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                    }
-                    const arrayBuffer = await response.arrayBuffer();
-                    if (arrayBuffer.byteLength > MAX_AUDIO_BYTES) {
-                        logger.info('[download-test] Skipping base64 for large file after download, keeping URL', { url: fileUrl, size: arrayBuffer.byteLength });
-                        return fileUrl;
-                    }
-                    const buffer = Buffer.from(arrayBuffer);
-                    const contentType = response.headers.get('content-type') || 'audio/mpeg';
-                    logger.info('[download-test] Converted audio to base64', { url: fileUrl, size: buffer.length });
-                    return `data:${contentType};base64,${buffer.toString('base64')}`;
-                } catch (err) {
-                    logger.warn('[download-test] Unable to convert audio to base64, keeping URL:', fileUrl, err.message);
-                    return fileUrl;
-                }
-            }
-            
-            return fileUrl;
-        }
-
-        async function inlineListeningAudio(testDoc) {
-            // Oracle returns empty CLOBs as '' (empty string), which is falsy in JS.
+        // Ensure listening tests have audio URLs in readingPassage (from readingPassage or builderJson)
+        function ensureAudioUrls(testDoc) {
             let raw = testDoc.readingPassage;
             if ((!raw || typeof raw !== 'string' || !raw.trim()) && String(testDoc.type || '').toLowerCase() === 'listening') {
                 if (testDoc.builderJson && typeof testDoc.builderJson === 'string' && testDoc.builderJson.trim()) {
@@ -1855,61 +1823,77 @@ app.get('/download-test/:id', async (req, res) => {
                         const bj = JSON.parse(testDoc.builderJson);
                         if (bj.audioUrls || bj.audioParts || bj.fullAudio) {
                             const audioParts = bj.audioUrls || bj.audioParts || [];
-                            const reconstructed = {
+                            raw = JSON.stringify({
                                 audioParts: Array.isArray(audioParts) ? audioParts : [audioParts],
                                 fullAudio: bj.fullAudio || null
-                            };
-                            raw = JSON.stringify(reconstructed);
-                        } else {
-                            return testDoc;
+                            });
                         }
-                    } catch (parseErr) {
-                        return testDoc;
-                    }
-                } else {
-                    return testDoc;
+                    } catch (e) { /* keep raw as-is */ }
                 }
             }
-            if (!raw || typeof raw !== 'string' || !raw.trim()) return testDoc;
-
-            let parsed;
-            try {
-                parsed = JSON.parse(raw);
-            } catch (err) {
-                return testDoc;
+            if (raw && typeof raw === 'string' && raw.trim()) {
+                try {
+                    const parsed = JSON.parse(raw);
+                    return { ...(typeof testDoc.toObject === 'function' ? testDoc.toObject() : { ...testDoc }), readingPassage: JSON.stringify(parsed) };
+                } catch (e) { /* use original */ }
             }
-
-            const next = { ...(parsed || {}) };
-            // Process audio sequentially to keep peak memory low
-            next.fullAudio = await fileUrlToDataUri(parsed.fullAudio);
-
-            if (Array.isArray(parsed.audioParts)) {
-                const converted = [];
-                for (const part of parsed.audioParts) {
-                    converted.push(await fileUrlToDataUri(part));
-                }
-                next.audioParts = converted;
-            }
-
-            const converted = { ...(typeof testDoc.toObject === 'function' ? testDoc.toObject() : { ...testDoc }), readingPassage: JSON.stringify(next) };
-            // Wipe renderedHtml so generateHTMLFromTest regenerates from the audio-enriched readingPassage
-            delete converted.renderedHtml;
-            return converted;
+            return testDoc;
         }
 
         try {
             const testForDownload = String(test.type || '').toLowerCase() === 'listening'
-                ? await inlineListeningAudio(test)
+                ? ensureAudioUrls(test)
                 : test;
 
-            const html = generateHTMLFromTest(testForDownload, {
-                useAudioProxy: false
-            });
-            const stableHtml = require('./utils/htmlExporter').injectPersistentStateForDownload(html, test);
+            // Wipe renderedHtml so generateHTMLFromTest regenerates fresh HTML
+            if (testForDownload.renderedHtml !== undefined) delete testForDownload.renderedHtml;
+
+            let html = generateHTMLFromTest(testForDownload, { useAudioProxy: false });
+            html = require('./utils/htmlExporter').injectPersistentStateForDownload(html, test);
+
             const safeTitle = test.title.replace(/[^a-z0-9]/gi, '_').toLowerCase();
             res.setHeader('Content-Disposition', `attachment; filename="${safeTitle}.html"`);
             res.setHeader('Content-Type', 'text/html; charset=utf-8');
-            return res.send(stableHtml);
+
+            // For listening tests: stream the response, replacing B2 audio URLs with
+            // base64 data URIs one at a time to keep peak memory under control.
+            const isListening = String(test.type || '').toLowerCase() === 'listening';
+            if (!isListening) {
+                return res.send(html);
+            }
+
+            // Match B2 audio URLs in the HTML: https://f004.backblazeb2.com/file/ielts-audio/listening-*.mp3
+            const B2_URL_RE = /https?:\/\/f\d+\.backblazeb2\.com\/file\/ielts-audio\/[^\s"']+\.mp3/gi;
+            const audioUrls = html.match(B2_URL_RE) || [];
+            // Deduplicate URLs (same file may appear in multiple places)
+            const uniqueUrls = [...new Set(audioUrls)];
+
+            // Build a cache so we only fetch each URL once
+            const base64Cache = new Map();
+
+            // Stream the HTML, replacing each URL with its base64 data URI
+            let remaining = html;
+            for (const url of uniqueUrls) {
+                const idx = remaining.indexOf(url);
+                if (idx === -1) continue;
+
+                // Write everything before this URL
+                res.write(remaining.substring(0, idx));
+
+                // Fetch and encode (or use cache)
+                let dataUri = base64Cache.get(url);
+                if (!dataUri) {
+                    dataUri = await audioUrlToBase64(url);
+                    base64Cache.set(url, dataUri);
+                }
+                res.write(dataUri);
+
+                // Advance past the URL
+                remaining = remaining.substring(idx + url.length);
+            }
+            // Write whatever remains after the last URL
+            res.write(remaining);
+            return res.end();
         } catch (generatorErr) {
             logger.error('HTML generation error for download', { error: generatorErr.message, stack: generatorErr.stack });
             return res.status(500).send(`Error generating test HTML: ${generatorErr.message}`);

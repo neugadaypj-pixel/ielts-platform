@@ -43,7 +43,7 @@ const Test = {
         const binds = {};
 
         if (filter.type) { sql += ` AND type = :type`; binds.type = filter.type; }
-        if (filter.createdBy) { sql += ` AND created_by = :createdBy`; binds.createdBy = filter.createdBy; }
+        if (filter.createdBy && !filter.createdBy.$in) { sql += ` AND created_by = :createdBy`; binds.createdBy = filter.createdBy; }
         if (filter.folder) { sql += ` AND folder = :folder`; binds.folder = filter.folder; }
 
         // $in

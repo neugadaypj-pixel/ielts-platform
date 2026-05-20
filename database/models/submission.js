@@ -53,9 +53,9 @@ const Submission = {
         const binds = {};
 
         if (filter.teacherId) { sql += ` AND teacher_id = :teacherId`; binds.teacherId = filter.teacherId; }
-        if (filter.studentId) { sql += ` AND student_id = :studentId`; binds.studentId = filter.studentId; }
-        if (filter.testId) { sql += ` AND test_id = :testId`; binds.testId = filter.testId; }
-        if (filter.groupId) { sql += ` AND group_id = :groupId`; binds.groupId = filter.groupId; }
+        if (filter.studentId && !filter.studentId.$in) { sql += ` AND student_id = :studentId`; binds.studentId = filter.studentId; }
+        if (filter.testId && !filter.testId.$in) { sql += ` AND test_id = :testId`; binds.testId = filter.testId; }
+        if (filter.groupId && !filter.groupId.$in) { sql += ` AND group_id = :groupId`; binds.groupId = filter.groupId; }
         if (filter.type) { sql += ` AND type = :type`; binds.type = filter.type; }
         if (filter.status) { sql += ` AND status = :status`; binds.status = filter.status; }
 

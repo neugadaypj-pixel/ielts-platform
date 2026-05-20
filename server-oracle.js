@@ -35,7 +35,7 @@ const { backupDatabase } = require('./backup-database-oracle');
 const logger = require('./utils/logger');
 const CONSTANTS = require('./utils/constants');
 const { generateHTMLFromTest } = require('./utils/htmlExporter');
-const { analyzeWriting, analyzePatterns } = require('./utils/aiAnalysis');
+const { analyzeWriting, analyzePatterns, detectPatterns } = require('./utils/aiAnalysis');
 const { validateEnv } = require('./utils/config');
 const { getAuthoringPageHtml } = require('./utils/builderAuthoring');
 
@@ -2958,6 +2958,12 @@ app.get('/', (req, res) => {
     if (req.session.userRole === CONSTANTS.ROLES.ADMIN) return res.redirect('/admin');
     if (req.session.userRole === CONSTANTS.ROLES.TEACHER) return res.redirect('/teacher-dashboard');
     res.redirect('/student-dashboard');
+});
+
+// Oracle-missing routes (aliases + new handlers) — must be before 404 handler
+require('./routes/missing-routes')(app, {
+    csrfProtection, apiLimiter, isTeacher, isAdmin,
+    canEditTest, getAccessibleTest, saveStudentSubmission
 });
 
 // 404 Handler

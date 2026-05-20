@@ -1219,7 +1219,7 @@ app.get('/teacher-dashboard', isTeacher, csrfProtection, async (req, res) => {
         // Get submissions for teacher's students
         const studentIds = allStudents.map(s => s._id);
         const testIds = tests.map(t => t._id);
-        const submissions = [];
+        let submissions = [];
 
         if (testIds.length > 0) {
             const recentSubs = await Submission.find({
@@ -1229,25 +1229,64 @@ app.get('/teacher-dashboard', isTeacher, csrfProtection, async (req, res) => {
                 ],
                 testId: { $in: testIds }
             });
-            submissions.push(...(recentSubs || []));
+            submissions = recentSubs || [];
         }
 
-        // Map submissions to test
-        const submissionsByTest = {};
-        submissions.forEach(sub => {
-            const key = String(sub.testId);
-            if (!submissionsByTest[key]) submissionsByTest[key] = [];
-            submissionsByTest[key].push(sub);
+        // Compute per-test metrics using the same logic as Mongoose server.js (lines 1240-1281)
+        // Build group stats: which groups contain each test, plus unique student count
+        const groupStatsByTestId = new Map();
+        groups.forEach((group) => {
+            const uniqueStudentIds = [...new Set(
+                (group.students || []).filter(Boolean).map(student =>
+                    String(typeof student === 'object' ? student._id : student)
+                )
+            )];
+            (group.assignedTests || []).filter(Boolean).forEach((test) => {
+                const key = String(typeof test === 'object' ? test._id : test);
+                if (!groupStatsByTestId.has(key)) {
+                    groupStatsByTestId.set(key, { groupCount: 0, studentIds: new Set() });
+                }
+                const current = groupStatsByTestId.get(key);
+                current.groupCount += 1;
+                uniqueStudentIds.forEach((studentId) => current.studentIds.add(studentId));
+            });
         });
 
-        tests.forEach(test => {
-            test.submissionCount = (submissionsByTest[String(test._id)] || []).length;
+        // Build submission stats: unique completed student count per test
+        const submissionStatsByTestId = new Map();
+        submissions.forEach((submission) => {
+            const key = String(submission.testId);
+            if (!submissionStatsByTestId.has(key)) {
+                submissionStatsByTestId.set(key, { completedCount: 0, studentIds: new Set(), latestSubmissionAt: null });
+            }
+            const current = submissionStatsByTestId.get(key);
+            const studentKey = String(submission.studentId);
+            if (!current.studentIds.has(studentKey)) {
+                current.studentIds.add(studentKey);
+                current.completedCount += 1;
+            }
+            if (!current.latestSubmissionAt || (submission.lastSubmittedAt || submission.createdAt) > current.latestSubmissionAt) {
+                current.latestSubmissionAt = submission.lastSubmittedAt || submission.createdAt;
+            }
+        });
+
+        // Enrich each test with the three metrics the template expects
+        const enrichedTests = tests.map((test) => {
+            const groupStats = groupStatsByTestId.get(String(test._id));
+            const submissionStats = submissionStatsByTestId.get(String(test._id));
+            return {
+                ...test,
+                assignedGroupCount: groupStats ? groupStats.groupCount : 0,
+                assignedStudentCount: groupStats ? groupStats.studentIds.size : 0,
+                completedStudentCount: submissionStats ? submissionStats.completedCount : 0,
+                latestSubmissionAt: submissionStats ? submissionStats.latestSubmissionAt : null
+            };
         });
 
         res.render('teacher-dashboard', {
             teacher,
-            tests,
-            testsByType: groupTestsByType(tests),
+            tests: enrichedTests,
+            testsByType: groupTestsByType(enrichedTests),
             groups,
             students: allStudents,
             allStudents,

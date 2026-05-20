@@ -94,8 +94,8 @@ const User = {
                 }
             );
         }
-        // $pull: assignedTests
-        if (update.$pull && update.$pull.assignedTests) {
+        // $pull: assignedTests (scalar — skip if $in to avoid binding object as scalar)
+        if (update.$pull && update.$pull.assignedTests && !update.$pull.assignedTests.$in) {
             await execute(`DELETE FROM user_assigned_tests WHERE user_id = :p_user_id AND test_id = :p_test_id`, { p_user_id: id, p_test_id: update.$pull.assignedTests });
         }
         // $pull: assignedTests with $in (for bulk delete)

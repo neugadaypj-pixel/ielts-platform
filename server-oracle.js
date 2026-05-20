@@ -1804,7 +1804,9 @@ app.get('/download-test/:id', async (req, res) => {
             try {
                 const response = await fetch(url, { signal: AbortSignal.timeout(120000) });
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                const buffer = await response.buffer();
+                // Node.js native fetch() has arrayBuffer(), not buffer()
+                const arrayBuffer = await response.arrayBuffer();
+                const buffer = Buffer.from(arrayBuffer);
                 const ct = response.headers.get('content-type') || 'audio/mpeg';
                 logger.info('[download-test] Encoded audio to base64', { url, size: buffer.length });
                 return `data:${ct};base64,${buffer.toString('base64')}`;

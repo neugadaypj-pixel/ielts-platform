@@ -1567,14 +1567,20 @@ app.post('/submit-writing', apiLimiter, csrfProtection, async (req, res) => {
 app.get('/ai-chat', async (req, res) => {
     if (!req.session.userId) return res.redirect('/login');
     try {
+        const submissions = await Submission.find({ studentId: req.session.userId });
+        const scopedSubmissions = submissions.filter(s => s.percentage != null && Number.isFinite(Number(s.percentage)));
         const stats = {
-            readingCount: await Submission.countDocuments({ studentId: req.session.userId, type: 'reading' }),
-            listeningCount: await Submission.countDocuments({ studentId: req.session.userId, type: 'listening' }),
-            writingCount: await Submission.countDocuments({ studentId: req.session.userId, type: 'writing' })
+            totalTests: submissions.length,
+            readingTests: submissions.filter(s => s.type === 'reading').length,
+            listeningTests: submissions.filter(s => s.type === 'listening').length,
+            writingTests: submissions.filter(s => s.type === 'writing').length,
+            avgScore: scopedSubmissions.length > 0
+                ? Math.round(scopedSubmissions.reduce((sum, s) => sum + Number(s.percentage), 0) / scopedSubmissions.length)
+                : null
         };
 
         res.render('ai-chat', {
-            student: { username: req.session.username },
+            studentName: req.session.username,
             stats
         });
     } catch (err) {
@@ -2860,22 +2866,13 @@ app.get('/api/debug/oracle-data', isAdmin, async (req, res) => {
 app.get('/analytics', isTeacher, async (req, res) => {
     try {
         const teacherId = req.session.userId;
-        const [totalStudents, totalTests, totalSubmissions, totalGroups] = await Promise.all([
-            User.countDocuments({ role: 'student', teacherId }),
-            Test.countDocuments({ createdBy: teacherId }),
-            Submission.countDocuments({ teacherId }),
-            Group.countDocuments({ teacherId })
+        const [submissions, tests, students] = await Promise.all([
+            Submission.find({ teacherId }),
+            Test.find({ createdBy: teacherId }),
+            User.find({ teacherId, role: 'student' })
         ]);
 
-        res.render('analytics', {
-            stats: {
-                totalStudents,
-                totalTests,
-                totalSubmissions,
-                totalGroups,
-                avgScore: 0
-            }
-        });
+        res.render('analytics', { submissions, tests, students });
     } catch (err) {
         logger.error('Analytics error', { error: err.message });
         res.status(500).send('Error loading analytics');

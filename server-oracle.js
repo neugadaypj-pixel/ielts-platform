@@ -1176,6 +1176,15 @@ app.get('/teacher-dashboard', isTeacher, csrfProtection, async (req, res) => {
 
         const userId = req.session.userId;
         const page = Math.max(1, parseInt(req.query.page) || 1);
+
+        // Dashboard caching: avoid 14 DB round-trips on every page load
+        const cacheKey = `dashboard_teacher_${userId}_page${page}`;
+        const cached = cache.get(cacheKey);
+        if (cached) {
+            cached.csrfToken = req.csrfToken();
+            return res.render('teacher-dashboard', cached);
+        }
+
         const PAGE_SIZE = 20;
         const skip = (page - 1) * PAGE_SIZE;
 
@@ -1286,7 +1295,7 @@ app.get('/teacher-dashboard', isTeacher, csrfProtection, async (req, res) => {
             };
         });
 
-        res.render('teacher-dashboard', {
+        const viewData = {
             teacher,
             tests: enrichedTests,
             testsByType: groupTestsByType(enrichedTests),
@@ -1301,7 +1310,12 @@ app.get('/teacher-dashboard', isTeacher, csrfProtection, async (req, res) => {
                 submissionsCount: submissions.length
             },
             pagination: { page, totalPages, totalTests, pageSize: PAGE_SIZE }
-        });
+        };
+
+        // Cache for 30 seconds so repeated navigations are instant
+        cache.set(cacheKey, viewData, 30);
+
+        res.render('teacher-dashboard', viewData);
     } catch (err) {
         logger.error('Teacher dashboard error', { error: err.message, stack: err.stack });
         res.status(500).send('Error loading teacher dashboard');

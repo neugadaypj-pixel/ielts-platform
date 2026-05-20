@@ -1190,11 +1190,14 @@ app.get('/teacher-dashboard', isTeacher, csrfProtection, async (req, res) => {
         }
 
         // Get tests created by teacher + assigned tests
-        // Load assigned test IDs first so pagination accounts for them
+        // Load assigned test IDs from the junction table
         let assignedTestIds = [];
         try {
-            const teacherUser = await User.findById(userId);
-            assignedTestIds = (teacherUser && teacherUser.assignedTests) || [];
+            const result = await execute(
+                `SELECT test_id AS "testId" FROM user_assigned_tests WHERE user_id = :userId`,
+                { userId }
+            );
+            assignedTestIds = result.rows.map(r => r.testId);
         } catch (assignErr) {
             logger.warn('Failed to load assigned tests for teacher', { error: assignErr.message, userId });
         }

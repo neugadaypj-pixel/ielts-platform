@@ -1808,24 +1808,39 @@ app.get('/download-test/:id', async (req, res) => {
                     if (publicBase && bucket && fileUrl.includes(bucket)) {
                         const filename = fileUrl.split(bucket + '/')[1]?.split(/[?#]/)[0];
                         if (filename) {
-                            const object = await s3.send(new GetObjectCommand({
-                                Bucket: bucket,
-                                Key: filename
-                            }));
-                            
-                            const chunks = [];
-                            for await (const chunk of object.Body) {
-                                chunks.push(chunk);
+                            // Primary: try S3 GetObjectCommand (fast, direct)
+                            try {
+                                const object = await s3.send(new GetObjectCommand({
+                                    Bucket: bucket,
+                                    Key: filename
+                                }));
+                                
+                                const chunks = [];
+                                for await (const chunk of object.Body) {
+                                    chunks.push(chunk);
+                                }
+                                const buffer = Buffer.concat(chunks);
+                                const contentType = object.ContentType || 'audio/mpeg';
+                                logger.info('[download-test] Converted B2 audio to base64 via S3', { filename, size: buffer.length });
+                                return `data:${contentType};base64,${buffer.toString('base64')}`;
+                            } catch (s3Err) {
+                                // Fallback: fetch via HTTP (works even when S3 API is unreachable)
+                                logger.info('[download-test] S3 fetch failed, trying HTTP fetch', { filename, error: s3Err.message });
+                                const response = await fetch(fileUrl);
+                                if (!response.ok) {
+                                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                                }
+                                const arrayBuffer = await response.arrayBuffer();
+                                const buffer = Buffer.from(arrayBuffer);
+                                const contentType = response.headers.get('content-type') || 'audio/mpeg';
+                                logger.info('[download-test] Converted B2 audio to base64 via HTTP', { filename, size: buffer.length });
+                                return `data:${contentType};base64,${buffer.toString('base64')}`;
                             }
-                            const buffer = Buffer.concat(chunks);
-                            const contentType = object.ContentType || 'audio/mpeg';
-                            logger.info('[download-test] Converted B2 audio to base64', { filename, size: buffer.length });
-                            return `data:${contentType};base64,${buffer.toString('base64')}`;
                         }
                     }
                     return fileUrl;
                 } catch (err) {
-                    logger.warn('[download-test] Unable to fetch B2 audio file:', fileUrl, err.message);
+                    logger.warn('[download-test] Unable to fetch audio file for base64 conversion:', fileUrl, err.message);
                     return fileUrl;
                 }
             }
@@ -1883,9 +1898,15 @@ app.get('/download-test/:id', async (req, res) => {
         }
 
         try {
-            const testForDownload = String(test.type || '').toLowerCase() === 'listening'
+            let testForDownload = String(test.type || '').toLowerCase() === 'listening'
                 ? await inlineListeningAudio(test)
                 : test;
+
+            // Force fresh HTML generation from readingPassage (which now has base64 data URIs)
+            // instead of using the cached renderedHtml (which has /audio-files/ proxy URLs).
+            if (testForDownload.renderedHtml !== undefined) {
+                delete testForDownload.renderedHtml;
+            }
 
             const html = generateHTMLFromTest(testForDownload, {
                 useAudioProxy: false

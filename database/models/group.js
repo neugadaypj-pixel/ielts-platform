@@ -106,6 +106,33 @@ const Group = {
                      FROM group_test_schedule WHERE group_id IN (${placeholders})`, idBinds)
         ]);
 
+        // Collect unique user IDs and test IDs to hydrate
+        const userIdSet = new Set();
+        studentsRes.rows.forEach(r => userIdSet.add(String(r.userId)));
+        const testIdSet = new Set();
+        testsRes.rows.forEach(r => testIdSet.add(String(r.testId)));
+
+        // Hydrate student usernames and test titles in bulk
+        const [userRows, testRows] = await Promise.all([
+            userIdSet.size > 0
+                ? execute(
+                    `SELECT id AS "_id", username AS "username" FROM users WHERE id IN (${Array.from(userIdSet).map((_, i) => `:uid${i}`).join(',')})`,
+                    Object.fromEntries(Array.from(userIdSet).map((id, i) => [`uid${i}`, id]))
+                  )
+                : { rows: [] },
+            testIdSet.size > 0
+                ? execute(
+                    `SELECT id AS "_id", title AS "title" FROM tests WHERE id IN (${Array.from(testIdSet).map((_, i) => `:tid${i}`).join(',')})`,
+                    Object.fromEntries(Array.from(testIdSet).map((id, i) => [`tid${i}`, id]))
+                  )
+                : { rows: [] }
+        ]);
+
+        const userMap = {};
+        userRows.rows.forEach(r => { userMap[String(r._id)] = { _id: r._id, username: r.username }; });
+        const testMap = {};
+        testRows.rows.forEach(r => { testMap[String(r._id)] = { _id: r._id, title: r.title }; });
+
         // Initialize arrays on each group
         groups.forEach(g => {
             g.students = [];
@@ -119,11 +146,11 @@ const Group = {
 
         studentsRes.rows.forEach(r => {
             const g = byId[String(r.groupId)];
-            if (g) g.students.push(r.userId);
+            if (g) g.students.push(userMap[String(r.userId)] || { _id: r.userId, username: 'Unknown' });
         });
         testsRes.rows.forEach(r => {
             const g = byId[String(r.groupId)];
-            if (g) g.assignedTests.push(r.testId);
+            if (g) g.assignedTests.push(testMap[String(r.testId)] || { _id: r.testId, title: 'Unknown' });
         });
         scheduleRes.rows.forEach(r => {
             const g = byId[String(r.groupId)];

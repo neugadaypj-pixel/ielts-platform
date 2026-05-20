@@ -17,7 +17,7 @@ const crypto = require('crypto');
 const cron = require('node-cron');
 
 // === ORACLE DB IMPORTS (replaces Mongoose) ===
-const { getPool } = require('./database/connection');
+const { getPool, execute } = require('./database/connection');
 const OracleSessionStore = require('./database/session-store');
 
 // === ORACLE MODELS (replaces Mongoose models) ===
@@ -652,6 +652,28 @@ app.get('/admin', isAdmin, csrfProtection, async (req, res) => {
         const teachers = users.filter(u => u.role === 'teacher');
         const students = users.filter(u => u.role === 'student');
 
+        // Bulk-load assignedTests for all teachers (from junction table)
+        if (teachers.length > 0) {
+            const tPlaceholders = teachers.map((_, i) => `:tid${i}`).join(',');
+            const tBinds = {};
+            teachers.forEach((t, i) => { tBinds[`tid${i}`] = t._id; });
+            const assignedRes = await execute(
+                `SELECT user_id AS "userId", test_id AS "testId" FROM user_assigned_tests WHERE user_id IN (${tPlaceholders})`,
+                tBinds
+            );
+            const assignedByTeacher = {};
+            assignedRes.rows.forEach(r => {
+                const uid = String(r.userId);
+                if (!assignedByTeacher[uid]) assignedByTeacher[uid] = [];
+                assignedByTeacher[uid].push(r.testId);
+            });
+            teachers.forEach(t => {
+                t.assignedTests = assignedByTeacher[String(t._id)] || [];
+            });
+        } else {
+            teachers.forEach(t => { t.assignedTests = []; });
+        }
+
         res.render('admin', {
             users,
             teachers,
@@ -1231,10 +1253,10 @@ app.get('/teacher-dashboard', isTeacher, csrfProtection, async (req, res) => {
             allStudents,
             csrfToken: req.csrfToken(),
             stats: {
-                totalTests,
-                totalStudents: allStudents.length,
-                totalGroups: groups.length,
-                totalSubmissions: submissions.length
+                testsCount: totalTests,
+                studentsCount: allStudents.length,
+                groupsCount: groups.length,
+                submissionsCount: submissions.length
             },
             pagination: { page, totalPages, totalTests, pageSize: PAGE_SIZE }
         });

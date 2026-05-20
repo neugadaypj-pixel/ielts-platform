@@ -1211,15 +1211,24 @@ app.get('/teacher-dashboard', isTeacher, csrfProtection, async (req, res) => {
             logger.warn('Failed to load assigned tests for teacher', { error: assignErr.message, userId });
         }
 
-        const createdCount = await Test.countDocuments({ createdBy: userId });
+        // Only admins create tests; skip wasteful createdBy queries for teachers
+        const isAdminUser = req.session.role === 'admin';
+        let createdCount = 0;
+        let createdTests = [];
+
+        if (isAdminUser) {
+            createdCount = await Test.countDocuments({ createdBy: userId });
+            createdTests = await Test.find({
+                createdBy: userId,
+                $sort: { createdAt: -1 },
+                $skip: skip,
+                $limit: PAGE_SIZE
+            });
+        }
+
         const totalTests = createdCount + assignedTestIds.length;
         const totalPages = Math.ceil(totalTests / PAGE_SIZE);
-        const createdTests = await Test.find({
-            createdBy: userId,
-            $sort: { createdAt: -1 },
-            $skip: skip,
-            $limit: PAGE_SIZE
-        });
+
         // Load assigned tests (from admin) and merge with created
         let tests = createdTests;
         if (assignedTestIds.length > 0) {
@@ -2538,11 +2547,8 @@ app.get('/feedback', csrfProtection, async (req, res) => {
 app.post('/feedback', csrfProtection, async (req, res) => {
     if (!req.session.userId) return res.status(401).json({ error: 'Not logged in' });
     try {
-        const [submissions, tests, students] = await Promise.all([
-            Submission.find({ teacherId: req.session.userId }),
-            Test.find({ createdBy: req.session.userId }),
-            User.find({ teacherId: req.session.userId, role: 'student' })
-        ]);
+        // Removed 3 unused parallel queries (submissions, tests, students) —
+        // they were never referenced after fetch, wasting ~3 DB round-trips per submission.
 
         const feedback = await Feedback.create({
             teacherId: req.session.userId,
@@ -2883,9 +2889,16 @@ app.get('/api/debug/oracle-data', isAdmin, async (req, res) => {
 app.get('/analytics', isTeacher, async (req, res) => {
     try {
         const teacherId = req.session.userId;
+        const isAdminUser = req.session.role === 'admin';
+
+        // Only admins create tests — skip wasteful Test.find for teachers
+        const testPromise = isAdminUser
+            ? Test.find({ createdBy: teacherId })
+            : Promise.resolve([]);
+
         const [submissions, tests, students] = await Promise.all([
             Submission.find({ teacherId }),
-            Test.find({ createdBy: teacherId }),
+            testPromise,
             User.find({ teacherId, role: 'student' })
         ]);
 

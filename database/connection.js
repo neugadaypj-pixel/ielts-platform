@@ -37,6 +37,29 @@ async function getPool() {
     // Without this, ORA-28759 "failure to open file" occurs.
     const configDir = process.env.TNS_ADMIN || path.join(__dirname, '..', 'wallet');
     
+    // Auto-patch sqlnet.ora WALLET_LOCATION to match actual configDir.
+    // The wallet sqlnet.ora may contain a hardcoded path from Render's environment
+    // (/opt/render/project/src/wallet), which breaks on OCI VMs. This fix rewrites
+    // the DIRECTORY value to the actual runtime wallet path so the config survives
+    // git pulls that restore the Render-hardcoded sqlnet.ora.
+    const sqlnetPath = path.join(configDir, 'sqlnet.ora');
+    if (fs.existsSync(sqlnetPath)) {
+        try {
+            let content = fs.readFileSync(sqlnetPath, 'utf8');
+            // Match any DIRECTORY value inside WALLET_LOCATION
+            const patched = content.replace(
+                /DIRECTORY\s*=\s*"([^"]*)"/,
+                `DIRECTORY="${configDir}"`
+            );
+            if (patched !== content) {
+                fs.writeFileSync(sqlnetPath, patched, 'utf8');
+                logger.info('sqlnet.ora wallet path auto-patched', { configDir });
+            }
+        } catch (e) {
+            logger.warn('sqlnet.ora auto-patch failed (non-fatal)', { error: e.message });
+        }
+    }
+    
     logger.info('Initializing Oracle Client', { libDir, configDir });
 
     try {

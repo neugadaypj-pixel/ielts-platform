@@ -15,7 +15,22 @@ async function getPool() {
     if (pool) return pool;
 
     // Determine Instant Client library directory
-    const libDir = '/opt/render/project/src/instantclient/instantclient_23_4';
+    // On Render: /opt/render/project/src/instantclient/instantclient_23_4
+    // On OCI VM: /opt/oracle/instantclient_23_4
+    // Also settable via ORACLE_CLIENT_DIR env var
+    const fs = require('fs');
+    const candidates = [
+        process.env.ORACLE_CLIENT_DIR,
+        '/opt/oracle/instantclient_23_4',
+        '/opt/render/project/src/instantclient/instantclient_23_4'
+    ];
+    let libDir = candidates.find(dir => {
+        if (!dir) return false;
+        try { return fs.existsSync(path.join(dir, 'libclntsh.so')); } catch { return false; }
+    });
+    if (!libDir) {
+        libDir = candidates[0]; // fallback: let it fail with a clear error
+    }
     
     // CRITICAL: configDir must point to the wallet directory so the Oracle Client
     // can find sqlnet.ora, tnsnames.ora, and the wallet files (cwallet.sso, ewallet.p12).

@@ -217,12 +217,12 @@ async function migrateUsers() {
                     try {
                         await execute(
                             `INSERT INTO user_assigned_tests (user_id, test_id)
-                             SELECT :uid, :tid FROM dual
+                             SELECT :p_uid, :tid FROM dual
                              WHERE NOT EXISTS (
                                  SELECT 1 FROM user_assigned_tests
-                                 WHERE user_id = :uid2 AND test_id = :tid2
+                                 WHERE user_id = :p_uid2 AND test_id = :tid2
                              )`,
-                            { uid: oracleId, tid: testOId, uid2: oracleId, tid2: testOId }
+                            { p_uid: oracleId, tid: testOId, p_uid2: oracleId, tid2: testOId }
                         );
                     } catch (err) {
                         if (!err.message.includes('unique constraint') && !err.message.includes('ORA-00001')) {
@@ -329,11 +329,11 @@ async function migrateGroups() {
                     try {
                         await execute(
                             `INSERT INTO group_students (group_id, user_id)
-                             SELECT :gid, :uid FROM dual
+                             SELECT :gid, :p_uid FROM dual
                              WHERE NOT EXISTS (
-                                 SELECT 1 FROM group_students WHERE group_id = :gid2 AND user_id = :uid2
+                                 SELECT 1 FROM group_students WHERE group_id = :gid2 AND user_id = :p_uid2
                              )`,
-                            { gid: oracleId, uid: studentOId, gid2: oracleId, uid2: studentOId }
+                            { gid: oracleId, p_uid: studentOId, gid2: oracleId, p_uid2: studentOId }
                         );
                     } catch (err) {
                         if (!err.message.includes('ORA-00001')) {
@@ -398,8 +398,8 @@ async function migrateGroups() {
                 const studentOId = getOId('users', studentMongoId);
                 if (studentOId) {
                     await execute(
-                        `UPDATE users SET group_id = :gid, updated_at = CURRENT_TIMESTAMP WHERE id = :uid AND group_id IS NULL`,
-                        { gid: oracleId, uid: studentOId }
+                        `UPDATE users SET group_id = :gid, updated_at = CURRENT_TIMESTAMP WHERE id = :p_uid AND group_id IS NULL`,
+                        { gid: oracleId, p_uid: studentOId }
                     );
                 }
             }
@@ -679,12 +679,12 @@ async function fixRemainingFKs() {
                     try {
                         await execute(
                             `INSERT INTO user_assigned_tests (user_id, test_id)
-                             SELECT :uid, :tid FROM dual
+                             SELECT :p_uid, :tid FROM dual
                              WHERE NOT EXISTS (
                                  SELECT 1 FROM user_assigned_tests
-                                 WHERE user_id = :uid2 AND test_id = :tid2
+                                 WHERE user_id = :p_uid2 AND test_id = :tid2
                              )`,
-                            { uid: oracleId, tid: testOId, uid2: oracleId, tid2: testOId }
+                            { p_uid: oracleId, tid: testOId, p_uid2: oracleId, tid2: testOId }
                         );
                     } catch (err) {
                         // Ignore dupes

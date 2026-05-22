@@ -1,6 +1,7 @@
 const oracledb = require('oracledb');
 const logger = require('../utils/logger');
 const path = require('path');
+const fs = require('fs');
 
 // Optimize for low-memory OCI free tier (1GB RAM)
 oracledb.poolMax = 4;
@@ -10,43 +11,32 @@ oracledb.poolTimeout = 60;
 oracledb.fetchAsString = [oracledb.CLOB];
 
 let pool;
+let useThin = false; // Track whether we fell back to Thin mode
 
-async function getPool() {
-    if (pool) return pool;
-
-    // Determine Instant Client library directory
-    // On Render: /opt/render/project/src/instantclient/instantclient_23_4
-    // On OCI VM: /opt/oracle/instantclient_23_4
-    // Also settable via ORACLE_CLIENT_DIR env var
-    const fs = require('fs');
+// Detect if native Oracle Client library is available
+function detectNativeClient() {
     const candidates = [
         process.env.ORACLE_CLIENT_DIR,
         '/opt/oracle/instantclient_23_4',
         '/opt/render/project/src/instantclient/instantclient_23_4'
     ];
-    let libDir = candidates.find(dir => {
+    return candidates.find(dir => {
         if (!dir) return false;
-        try { return fs.existsSync(path.join(dir, 'libclntsh.so')); } catch { return false; }
-    });
-    if (!libDir) {
-        libDir = candidates[0]; // fallback: let it fail with a clear error
-    }
-    
-    // CRITICAL: configDir must point to the wallet directory so the Oracle Client
-    // can find sqlnet.ora, tnsnames.ora, and the wallet files (cwallet.sso, ewallet.p12).
-    // Without this, ORA-28759 "failure to open file" occurs.
+        try { return fs.existsSync(path.join(dir, 'libclntsh.so')) || fs.existsSync(path.join(dir, 'libclntsh.dll')); } catch { return false; }
+    }) || null;
+}
+
+async function getPool() {
+    if (pool) return pool;
+
+    // Determine configDir (wallet path) regardless of mode
     const configDir = process.env.TNS_ADMIN || path.join(__dirname, '..', 'wallet');
     
-    // Auto-patch sqlnet.ora WALLET_LOCATION to match actual configDir.
-    // The wallet sqlnet.ora may contain a hardcoded path from Render's environment
-    // (/opt/render/project/src/wallet), which breaks on OCI VMs. This fix rewrites
-    // the DIRECTORY value to the actual runtime wallet path so the config survives
-    // git pulls that restore the Render-hardcoded sqlnet.ora.
+    // Auto-patch sqlnet.ora WALLET_LOCATION to match actual configDir
     const sqlnetPath = path.join(configDir, 'sqlnet.ora');
     if (fs.existsSync(sqlnetPath)) {
         try {
             let content = fs.readFileSync(sqlnetPath, 'utf8');
-            // Match any DIRECTORY value inside WALLET_LOCATION
             const patched = content.replace(
                 /DIRECTORY\s*=\s*"([^"]*)"/,
                 `DIRECTORY="${configDir}"`
@@ -59,23 +49,40 @@ async function getPool() {
             logger.warn('sqlnet.ora auto-patch failed (non-fatal)', { error: e.message });
         }
     }
-    
-    logger.info('Initializing Oracle Client', { libDir, configDir });
 
-    try {
-        oracledb.initOracleClient({ libDir, configDir });
-        logger.info('Oracle Client initialized successfully');
-    } catch (err) {
-        // If already initialized (e.g., by another module), that's fine
-        if (err.message && err.message.includes('already been initialized')) {
-            logger.info('Oracle Client already initialized, continuing');
+    // ---- Decide: Thin mode or Native mode ----
+    const forceThin = process.env.ORACLE_USE_THIN === 'true';
+    const nativeLibDir = detectNativeClient();
+
+    if (forceThin || !nativeLibDir) {
+        // Thin mode (pure JavaScript driver - works everywhere, no native client needed)
+        oracledb.defaultDriver = 'thin';
+        useThin = true;
+        
+        if (forceThin) {
+            logger.info('Oracle: Thin mode forced via ORACLE_USE_THIN=true');
         } else {
-            logger.error('Failed to initialize Oracle Client', { error: err.message });
-            throw err;
+            logger.info('Oracle: No native client found, falling back to Thin mode');
+        }
+    } else {
+        // Native mode (production on Render/OCI with Instant Client installed)
+        logger.info('Initializing Oracle Client (native)', { libDir: nativeLibDir, configDir });
+        
+        try {
+            oracledb.initOracleClient({ libDir: nativeLibDir, configDir });
+            logger.info('Oracle Client initialized successfully (native)');
+        } catch (err) {
+            if (err.message && err.message.includes('already been initialized')) {
+                logger.info('Oracle Client already initialized, continuing');
+            } else {
+                logger.error('Failed to initialize Oracle Client', { error: err.message });
+                throw err;
+            }
         }
     }
 
-    pool = await oracledb.createPool({
+    // Build pool config — Thin mode needs configDir in pool params
+    const poolConfig = {
         user: process.env.DB_USER || 'IELTS_APP',
         password: process.env.DB_PASSWORD || 'IeltsApp@2026#Secure',
         connectString: process.env.DB_CONNECT_STRING || 'testplatform_high',
@@ -84,9 +91,17 @@ async function getPool() {
         poolIncrement: 1,
         poolTimeout: 60,
         queueTimeout: 10000  // Fail fast (10s) instead of hanging 60s if pool exhausted
-    });
+    };
+    
+    // In Thin mode, pass configDir explicitly for wallet/mTLS
+    if (useThin) {
+        poolConfig.configDir = configDir;
+    }
 
-    logger.info('Oracle DB connection pool created (max 4 connections)');
+    pool = await oracledb.createPool(poolConfig);
+    
+    const modeLabel = useThin ? 'Thin mode (pure JS)' : 'Native mode';
+    logger.info(`Oracle DB connection pool created - ${modeLabel} (max 4 connections)`);
     return pool;
 }
 

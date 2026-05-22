@@ -56,22 +56,24 @@ const User = {
     },
 
     async create(data) {
-        const result = await execute(
+        await execute(
             `INSERT INTO users (username, password, role, teacher_id, group_id)
-             VALUES (:username, :password, :role, :teacherId, :groupId)
-             RETURNING id, TO_CHAR(created_at, 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS "createdAt" INTO :out_id, :out_created`,
+             VALUES (:username, :password, :role, :teacherId, :groupId)`,
             {
                 username: data.username,
                 password: data.password,
                 role: data.role || 'student',
                 teacherId: data.teacherId || null,
-                groupId: data.groupId || null,
-                out_id: { type: require('oracledb').NUMBER, dir: require('oracledb').BIND_OUT },
-                out_created: { type: require('oracledb').STRING, dir: require('oracledb').BIND_OUT, maxSize: 30 }
+                groupId: data.groupId || null
             }
         );
-        const newId = Array.isArray(result.outBinds.out_id) ? result.outBinds.out_id[0] : result.outBinds.out_id;
-        const createdAt = Array.isArray(result.outBinds.out_created) ? result.outBinds.out_created[0] : result.outBinds.out_created;
+        const idResult = await execute(`SELECT users_seq.CURRVAL AS id FROM dual`);
+        const newId = idResult.rows[0].ID;
+        const tsResult = await execute(
+            `SELECT TO_CHAR(created_at, 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS "createdAt" FROM users WHERE id = :id`,
+            { id: newId }
+        );
+        const createdAt = tsResult.rows[0].createdAt;
         return { _id: newId, username: data.username, password: data.password, role: data.role || 'student', teacherId: data.teacherId || null, groupId: data.groupId || null, createdAt, assignedTests: [] };
     },
 

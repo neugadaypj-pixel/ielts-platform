@@ -580,6 +580,28 @@ app.get('/health', (req, res) => {
     });
 });
 
+// Public data stats (for verifying migration)
+app.get('/api/stats', async (req, res) => {
+    try {
+        const [users, tests, groups, submissions, feedback, notifications, mappings] = await Promise.all([
+            User.countDocuments(),
+            Test.countDocuments(),
+            Group.countDocuments(),
+            Submission.countDocuments(),
+            Feedback.countDocuments(),
+            Notification.countDocuments(),
+            execute('SELECT COUNT(*) AS cnt FROM id_mapping')
+        ]);
+        res.json({
+            users, tests, groups, submissions, feedback, notifications,
+            idMappings: mappings.rows[0].CNT,
+            timestamp: new Date().toISOString()
+        });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // === AUTH ROUTES ===
 app.get('/login', csrfProtection, (req, res) => {
     if (req.session.userId) {

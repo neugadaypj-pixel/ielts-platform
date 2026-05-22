@@ -695,7 +695,7 @@ app.get('/admin', isAdmin, csrfProtection, async (req, res) => {
     }
 });
 
-// === MIGRATION TRIGGER (Admin + Secret Key protected) ===
+// === MIGRATION TRIGGER (Secret Key protected — runs restore-from-mongo.js on Render) ===
 // Usage: curl -X POST https://ielts-platform-63xw.onrender.com/admin/run-migration \
 //        -H "Content-Type: application/json" \
 //        -d '{"secretKey": "MIGRATE_2026_SECURE", "fullReset": true}'
@@ -707,28 +707,23 @@ app.post('/admin/run-migration', async (req, res) => {
         return res.status(403).json({ success: false, error: 'Invalid secret key' });
     }
     
-    // Must also be an admin or provide the secret
-    if (!req.session || !req.session.userId) {
-        return res.status(401).json({ success: false, error: 'Authentication required' });
-    }
+    const requester = (req.session && req.session.userId) ? req.session.userId : 'api-call';
     
     try {
-        const { execSync } = require('child_process');
         const args = fullReset ? '--full-reset' : '';
         const cmd = `node ${path.join(__dirname, 'restore-from-mongo.js')} ${args} 2>&1`;
         
-        logger.info('Migration triggered via API', { userId: req.session.userId, fullReset: !!fullReset });
+        logger.info('Migration triggered via API', { requester, fullReset: !!fullReset });
         
-        // Respond immediately, run migration async
+        // Respond immediately, run migration async in background
         res.json({ success: true, message: 'Migration started. Check Render logs for progress.' });
         
-        // Run in background
         const { exec } = require('child_process');
         exec(cmd, { cwd: __dirname, timeout: 600000 }, (error, stdout, stderr) => {
             if (error) {
-                logger.error('Migration script failed', { error: error.message, stderr });
+                logger.error('Migration script failed', { error: error.message, stdout: stdout.slice(-1000), stderr: stderr.slice(-1000) });
             } else {
-                logger.info('Migration script completed', { stdout: stdout.slice(-500) });
+                logger.info('Migration script completed successfully', { output: stdout.slice(-500) });
             }
         });
     } catch (err) {

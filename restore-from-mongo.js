@@ -18,6 +18,10 @@
  */
 
 require('dotenv').config();
+
+// Fallback MONGO_URI for Render environment where it may not be set
+const MONGO_URI = process.env.MONGO_URI || 'mongodb+srv://pulatovjamolbek77_db_user:Sbros0803@cluster0.xue5dod.mongodb.net/testPlatform?retryWrites=true&w=majority';
+
 const mongoose = require('mongoose');
 const { execute, getPool, closePool } = require('./database/connection');
 const oracledb = require('oracledb');
@@ -786,7 +790,7 @@ async function main() {
         
         // --- Connect to MongoDB ---
         console.log('\n🔌 Connecting to MongoDB...');
-        await mongoose.connect(process.env.MONGO_URI, {
+        await mongoose.connect(MONGO_URI, {
             serverSelectionTimeoutMS: 30000
         });
         console.log('✅ Connected to MongoDB');

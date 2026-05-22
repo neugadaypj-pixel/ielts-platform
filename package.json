@@ -14,6 +14,7 @@
     "dev": "nodemon server-oracle.js",
     "dev:mongo": "nodemon server.js",
     "migrate": "node migrate-to-oracle.js",
+    "restore-from-mongo": "node restore-from-mongo.js",
     "clear-oracle": "node clear-oracle.js",
     "check-oracle": "node check-oracle-data.js",
     "clear-sessions": "node clear-sessions.js",

@@ -489,12 +489,12 @@ async function migrateSubmissions() {
                 wordCount2: mSub.wordCount2 || null,
                 timeRemainingText: mSub.timeRemainingText || '',
                 details: detailsStr,
-                firstAt: firstSubmittedAt instanceof Date 
-                    ? firstSubmittedAt.toISOString().replace('Z', '') 
-                    : String(firstSubmittedAt).replace('Z', ''),
-                lastAt: lastSubmittedAt instanceof Date 
-                    ? lastSubmittedAt.toISOString().replace('Z', '') 
-                    : String(lastSubmittedAt).replace('Z', '')
+                firstAt: (firstSubmittedAt instanceof Date
+                    ? firstSubmittedAt.toISOString()
+                    : String(firstSubmittedAt)).replace(/\.\d+Z$/, 'Z').replace('Z', ''),
+                lastAt: (lastSubmittedAt instanceof Date
+                    ? lastSubmittedAt.toISOString()
+                    : String(lastSubmittedAt)).replace(/\.\d+Z$/, 'Z').replace('Z', '')
             }
         );
         

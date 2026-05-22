@@ -1228,6 +1228,44 @@ app.post('/edit-test/:id', isTeacher, csrfProtection, async (req, res) => {
     }
 });
 
+// Alias for builder compatibility — builderAuthoring.js uses /update-test/:id
+app.post('/update-test/:id', isTeacher, csrfProtection, async (req, res) => {
+    try {
+        if (!isDatabaseReady()) return sendDatabaseUnavailable(res);
+
+        const canEdit = await canEditTest(req, req.params.id);
+        if (!canEdit) return res.status(403).json({ success: false, message: 'Not authorized' });
+
+        const update = {};
+        if (req.body.title) update.title = req.body.title;
+        if (req.body.type) update.type = req.body.type;
+        if (req.body.content) {
+            if (typeof req.body.content === 'string') {
+                try {
+                    update.questions = JSON.parse(req.body.content).questions || [];
+                    update.readingPassage = JSON.parse(req.body.content).readingPassage || '';
+                } catch {
+                    update.builderJson = req.body.content;
+                }
+            } else {
+                update.questions = req.body.content.questions || [];
+                update.readingPassage = req.body.content.readingPassage || '';
+            }
+        }
+        if (req.body.builderJson) update.builderJson = req.body.builderJson;
+        if (req.body.customTitle !== undefined) update.customTitle = req.body.customTitle;
+        if (req.body.folder !== undefined) update.folder = req.body.folder;
+
+        await Test.findByIdAndUpdate(req.params.id, update);
+
+        logger.info('Test updated via builder', { userId: req.session.userId, testId: req.params.id });
+        res.json({ success: true, redirect: '/teacher-dashboard' });
+    } catch (err) {
+        logger.error('Test update error (builder)', { error: err.message });
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
 // === TEACHER DASHBOARD ===
 app.get('/teacher-dashboard', isTeacher, csrfProtection, async (req, res) => {
     try {

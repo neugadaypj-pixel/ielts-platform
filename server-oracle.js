@@ -96,23 +96,56 @@ logger.debug('B2 Configuration', {
     bucket: b2Config.bucket
 });
 
+// Validate B2 credentials at startup — missing/invalid keys cause
+// "Resolved credential object is not valid" in AWS SDK v3
+const b2KeyId = process.env.B2_APPLICATION_KEY_ID;
+const b2Key = process.env.B2_APPLICATION_KEY;
+
+if (!b2KeyId || !b2Key) {
+    logger.error('B2 credentials missing — B2_APPLICATION_KEY_ID and B2_APPLICATION_KEY must be set', {
+        hasKeyId: !!b2KeyId,
+        hasKey: !!b2Key
+    });
+    console.error('FATAL: Backblaze B2 credentials are missing. Set B2_APPLICATION_KEY_ID and B2_APPLICATION_KEY environment variables.');
+    console.error('Audio uploads and test creation WILL FAIL until credentials are configured.');
+}
+
+// Trim whitespace from credentials (Render UI sometimes adds trailing spaces)
+const accessKeyId = (b2KeyId || '').trim();
+const secretAccessKey = (b2Key || '').trim();
+
+logger.debug('B2 credential status', {
+    keyIdLength: accessKeyId.length,
+    keyLength: secretAccessKey.length,
+    keyIdPrefix: accessKeyId ? accessKeyId.substring(0, 6) + '...' : '(empty)'
+});
+
 const s3 = new S3Client({
     endpoint: b2Config.endpoint,
     region: b2Config.region,
     credentials: {
-        accessKeyId: process.env.B2_APPLICATION_KEY_ID,
-        secretAccessKey: process.env.B2_APPLICATION_KEY
+        accessKeyId,
+        secretAccessKey
     },
     forcePathStyle: true
 });
 
 async function uploadToB2(buffer, filename, mimetype) {
+    // Pre-flight check: refuse to attempt upload with missing credentials
+    if (!accessKeyId || !secretAccessKey) {
+        throw new Error(
+            'B2 credentials are not configured. ' +
+            'Set B2_APPLICATION_KEY_ID and B2_APPLICATION_KEY environment variables on Render.'
+        );
+    }
+
     await s3.send(new PutObjectCommand({
         Bucket: b2Config.bucket,
         Key: filename,
         Body: buffer,
         ContentType: mimetype
     }));
+
     return `${b2Config.endpoint}/${b2Config.bucket}/${filename}`;
 }
 

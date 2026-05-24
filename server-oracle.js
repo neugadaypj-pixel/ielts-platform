@@ -436,12 +436,23 @@ async function saveValidatedTest({ title, type, content, builderJson, req }) {
         }
     }
 
+    // Store content in readingPassage:
+    // - reading tests: the HTML passage is in content.readingPassage
+    // - listening/writing tests: store the entire content object as JSON so
+    //   generateHTMLFromTest() can parse it back on download/preview/edit
+    let readingPassageValue = '';
+    if (content && content.readingPassage) {
+        readingPassageValue = content.readingPassage;
+    } else if (content && (type === 'listening' || type === 'writing')) {
+        readingPassageValue = typeof content === 'string' ? content : JSON.stringify(content);
+    }
+
     const newTest = await Test.create({
         title,
         type,
         teacherName: req.session.username || 'Teacher',
         createdBy: req.session.userId,
-        readingPassage: content && content.readingPassage ? content.readingPassage : '',
+        readingPassage: readingPassageValue,
         builderJson: builderJson || '',
         customTitle: content && content.customTitle ? content.customTitle : '',
         folder: content && content.folder ? content.folder : '',
@@ -1065,10 +1076,36 @@ app.post('/create-test/listening', isTeacher, testCreationLimiter, upload.fields
         const answerKey = req.body.answerKey ? JSON.parse(req.body.answerKey) : {};
         const usePause = req.body.usePause === 'true';
 
+        // Process audio files: upload to Backblaze B2 and embed URLs in content
+        const audioParts = [];
+        const fullAudio = req.files && req.files.audioFile && req.files.audioFile[0]
+            ? await (async () => {
+                const file = req.files.audioFile[0];
+                const filename = `listening/${Date.now()}_${file.originalname}`;
+                const url = await uploadToB2(file.buffer, filename, file.mimetype);
+                return url;
+            })()
+            : null;
+
+        // Part-specific audio files (part1-part4)
+        for (let i = 1; i <= 4; i++) {
+            const fieldName = `part${i}`;
+            if (req.files && req.files[fieldName] && req.files[fieldName][0]) {
+                const file = req.files[fieldName][0];
+                const filename = `listening/${Date.now()}_${file.originalname}`;
+                const url = await uploadToB2(file.buffer, filename, file.mimetype);
+                audioParts[i - 1] = url;
+            } else {
+                audioParts[i - 1] = null;
+            }
+        }
+
+        const content = { parts, answerKey, includePause: usePause, fullAudio, audioParts };
+
         const newTest = await saveValidatedTest({
             title,
             type: 'listening',
-            content: { parts, answerKey, includePause: usePause },
+            content,
             builderJson,
             req
         });

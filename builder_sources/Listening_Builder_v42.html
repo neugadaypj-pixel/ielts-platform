@@ -2171,28 +2171,56 @@
         if (!ctxMenu.contains(e.target)) ctxMenu.style.display = 'none'; 
     });
 
-    function performHighlight(colorCode) { 
-        if (savedRange) { 
+    function performHighlight(colorCode) {
+        if (savedRange) {
             const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(savedRange);
-            document.body.contentEditable = "true";
-            document.execCommand("BackColor", false, colorCode); 
-            document.body.contentEditable = "false";
-            sel.removeAllRanges(); savedRange = null; 
-            saveState(); 
-        } 
-        ctxMenu.style.display = 'none'; 
+            if (sel.rangeCount && !sel.isCollapsed) {
+                const range = sel.getRangeAt(0);
+                const span = document.createElement('span');
+                span.dataset.platformHighlight = '1';
+                span.style.backgroundColor = colorCode;
+                span.style.borderRadius = '4px';
+                span.style.padding = '1px 0';
+                try {
+                    range.surroundContents(span);
+                } catch (e) {
+                    const fragment = range.extractContents();
+                    span.appendChild(fragment);
+                    range.insertNode(span);
+                }
+            }
+            sel.removeAllRanges(); savedRange = null;
+            saveState();
+        }
+        ctxMenu.style.display = 'none';
     }
 
-    function clearHighlight() { 
-        if (savedRange) { 
-            const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(savedRange); 
-            document.body.contentEditable = "true";
-            document.execCommand("BackColor", false, "transparent"); 
-            document.body.contentEditable = "false";
-            sel.removeAllRanges(); savedRange = null; 
-            saveState(); 
-        } 
-        ctxMenu.style.display = 'none'; 
+    function clearHighlight() {
+        if (savedRange) {
+            const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(savedRange);
+            if (sel.rangeCount && !sel.isCollapsed) {
+                const range = sel.getRangeAt(0);
+                const container = range.commonAncestorContainer.nodeType === 1
+                    ? range.commonAncestorContainer
+                    : range.commonAncestorContainer.parentNode;
+                const highlightSpan = container && container.closest
+                    ? container.closest('span[data-platform-highlight="1"]')
+                    : null;
+                if (highlightSpan) {
+                    const parent = highlightSpan.parentNode;
+                    if (parent) {
+                        while (highlightSpan.firstChild) {
+                            parent.insertBefore(highlightSpan.firstChild, highlightSpan);
+                        }
+                        parent.removeChild(highlightSpan);
+                        parent.normalize();
+                    }
+                }
+            }
+            sel.removeAllRanges(); savedRange = null;
+            saveState();
+        }
+        ctxMenu.style.display = 'none';
     }
 
     /* --- MAP / FLOW LOGIC --- */

@@ -69,7 +69,13 @@ function commonInjectionStyles() {
 function buildReadingInjection(testData = null) {
     const isEditMode = testData && testData._id;
     const testId = isEditMode ? testData._id : null;
-    const preloadedData = isEditMode ? JSON.stringify(testData) : 'null';
+    // Sanitize: strip readingPassage (may contain large CLOB blobs) before JSON.stringify
+    // to prevent OOM. The builder uses builderJson, not readingPassage directly.
+    const safeData = isEditMode ? (() => {
+        const { readingPassage, ...rest } = testData;
+        return rest;
+    })() : null;
+    const preloadedData = isEditMode ? JSON.stringify(safeData) : 'null';
     const builderJson = isEditMode && testData.builderJson ? JSON.stringify(testData.builderJson) : 'null';
 
     return `
@@ -211,7 +217,13 @@ ${commonInjectionStyles()}
 function buildListeningInjection(testData = null) {
     const isEditMode = testData && testData._id;
     const testId = isEditMode ? testData._id : null;
-    const preloadedData = isEditMode ? JSON.stringify(testData) : 'null';
+    // Sanitize: strip readingPassage (may contain large base64 audio blobs) before
+    // JSON.stringify to prevent OOM. The builder uses builderJson, not readingPassage.
+    const safeData = isEditMode ? (() => {
+        const { readingPassage, ...rest } = testData;
+        return rest;
+    })() : null;
+    const preloadedData = isEditMode ? JSON.stringify(safeData) : 'null';
     const builderJson = isEditMode && testData.builderJson ? JSON.stringify(testData.builderJson) : 'null';
 
     return `
@@ -438,7 +450,12 @@ ${commonInjectionStyles()}
 function buildWritingInjection(testData = null) {
     const isEditMode = testData && testData._id;
     const testId = isEditMode ? testData._id : null;
-    const preloadedData = isEditMode ? JSON.stringify(testData) : 'null';
+    // Sanitize: strip readingPassage before JSON.stringify to prevent OOM.
+    const safeData = isEditMode ? (() => {
+        const { readingPassage, ...rest } = testData;
+        return rest;
+    })() : null;
+    const preloadedData = isEditMode ? JSON.stringify(safeData) : 'null';
     const builderJson = isEditMode && testData.builderJson ? JSON.stringify(testData.builderJson) : 'null';
 
     return `

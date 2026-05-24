@@ -62,11 +62,33 @@ const cache = new NodeCache({
 });
 
 // B2 / S3 Storage
+// Derive region from endpoint to prevent credential mismatch errors.
+// B2 S3-compatible API requires the region to match the endpoint region.
+function deriveRegionFromEndpoint(endpoint) {
+    const match = String(endpoint || '').match(/s3\.(.+?)\.backblazeb2\.com/);
+    return match ? match[1] : 'us-east-005';
+}
+
 const b2Config = {
     endpoint: process.env.B2_ENDPOINT || 'https://s3.us-east-005.backblazeb2.com',
-    region: process.env.B2_REGION || 'us-east-005',
+    region: process.env.B2_REGION || deriveRegionFromEndpoint(process.env.B2_ENDPOINT) || 'us-east-005',
     bucket: process.env.B2_BUCKET || 'test-platform-uploads'
 };
+
+// Ensure region always matches the endpoint to avoid "Resolved credential object is not valid"
+if (!process.env.B2_REGION) {
+    b2Config.region = deriveRegionFromEndpoint(b2Config.endpoint);
+}
+// Also auto-correct if B2_REGION is explicitly set but endpoint mismatches
+const endpointRegion = deriveRegionFromEndpoint(b2Config.endpoint);
+if (process.env.B2_REGION && endpointRegion && process.env.B2_REGION !== endpointRegion) {
+    logger.warn('B2 endpoint/region mismatch — overriding region to match endpoint', {
+        configuredRegion: b2Config.region,
+        endpointRegion,
+        endpoint: b2Config.endpoint
+    });
+    b2Config.region = endpointRegion;
+}
 
 logger.debug('B2 Configuration', {
     endpoint: b2Config.endpoint,

@@ -86,11 +86,11 @@ async function getPool() {
         user: process.env.DB_USER || 'IELTS_APP',
         password: process.env.DB_PASSWORD || 'IeltsApp@2026#Secure',
         connectString: process.env.DB_CONNECT_STRING || 'testplatform_high',
-        poolMax: 4,
+        poolMax: 10,         // Admin dashboard fires 7+ parallel queries
         poolMin: 1,
         poolIncrement: 1,
         poolTimeout: 60,
-        queueTimeout: 10000  // Fail fast (10s) instead of hanging 60s if pool exhausted
+        queueTimeout: 30000  // 30s grace period before rejecting queued requests
     };
     
     // In Thin mode, pass configDir explicitly for wallet/mTLS

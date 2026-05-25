@@ -2156,15 +2156,33 @@
     const questionsPanel = document.getElementById('questionsPanel');
     let savedRange = null;
 
-    questionsPanel.addEventListener('contextmenu', function(e) {
-        e.preventDefault();
+    function showHighlightMenu(e) {
         const sel = window.getSelection();
         if (sel.rangeCount > 0 && !sel.isCollapsed) {
             savedRange = sel.getRangeAt(0);
-            ctxMenu.style.display = 'block'; 
-            ctxMenu.style.left = e.clientX + 'px'; 
-            ctxMenu.style.top = e.clientY + 'px';
+            ctxMenu.style.display = 'block';
+            ctxMenu.style.left = e.clientX + 'px';
+            ctxMenu.style.top = (e.clientY + 10) + 'px';
         }
+    }
+
+    // Show highlight menu on text selection (mouseup), not just right-click
+    questionsPanel.addEventListener('mouseup', function(e) {
+        // Small delay to let the selection settle
+        setTimeout(() => showHighlightMenu(e), 10);
+    });
+
+    // Also support touch selection
+    questionsPanel.addEventListener('touchend', function(e) {
+        setTimeout(() => {
+            const touch = e.changedTouches ? e.changedTouches[0] : e;
+            showHighlightMenu(touch);
+        }, 10);
+    });
+
+    questionsPanel.addEventListener('contextmenu', function(e) {
+        e.preventDefault();
+        showHighlightMenu(e);
     });
 
     document.addEventListener('click', function(e) { 

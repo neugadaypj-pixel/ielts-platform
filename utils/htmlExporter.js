@@ -1629,10 +1629,22 @@ function injectReadingHighlightFix(html) {
 
     panels.forEach((panel) => {
         ['mouseup', 'keyup', 'touchend'].forEach((eventName) => {
-            panel.addEventListener(eventName, () => setTimeout(() => captureSelection(panel), 0), true);
+            panel.addEventListener(eventName, (rawEvent) => {
+                setTimeout(() => {
+                    const captured = captureSelection(panel);
+                    if (captured && (eventName === 'mouseup' || eventName === 'touchend')) {
+                        // Show context menu immediately on text selection (no right-click needed)
+                        const e = rawEvent.changedTouches ? rawEvent.changedTouches[0] : rawEvent;
+                        ctxMenu.style.display = 'block';
+                        ctxMenu.style.left = e.clientX + 'px';
+                        ctxMenu.style.top = (e.clientY + 10) + 'px';
+                    }
+                }, 0);
+            }, true);
         });
 
         panel.addEventListener('scroll', closeMenu, { passive: true });
+        // Keep contextmenu as fallback, but prevent browser's native context menu
         panel.addEventListener('contextmenu', (event) => {
             const hasSelection = captureSelection(panel) || (stickyRange && stickyOwner === panel);
             if (!hasSelection) return;
@@ -1844,10 +1856,22 @@ function injectListeningHighlightFix(html) {
     }
 
     ['mouseup', 'keyup', 'touchend'].forEach((eventName) => {
-        questionsPanel.addEventListener(eventName, () => setTimeout(captureSelection, 0), true);
+        questionsPanel.addEventListener(eventName, (rawEvent) => {
+            setTimeout(() => {
+                const captured = captureSelection();
+                if (captured && (eventName === 'mouseup' || eventName === 'touchend')) {
+                    // Show context menu immediately on text selection (no right-click needed)
+                    const e = rawEvent.changedTouches ? rawEvent.changedTouches[0] : rawEvent;
+                    ctxMenu.style.display = 'block';
+                    ctxMenu.style.left = e.clientX + 'px';
+                    ctxMenu.style.top = (e.clientY + 10) + 'px';
+                }
+            }, 0);
+        }, true);
     });
 
     questionsPanel.addEventListener('scroll', closeMenu, { passive: true });
+    // Keep contextmenu as fallback, but prevent browser's native context menu
     questionsPanel.addEventListener('contextmenu', (event) => {
         const hasSelection = captureSelection() || stickyRange;
         if (!hasSelection) return;
@@ -2866,26 +2890,39 @@ function generateListeningHtml(testDoc, parsedContent, studentName, options = {}
     console.log('[Listening Generation] Audio Parts JSON:', audioPartsJson);
     console.log('[Listening Generation] Full Audio JSON:', fullAudioJson);
 
-    // Force replace audio variables if they contain actual URLs
-    if (content.audioParts && content.audioParts.some(url => url)) {
-        // Replace the audio data list line with our URLs - handle multiline with greedy match
-        const before = generatedHtml.match(/const rawAudioDataList\s*=\s*[\[\s\S]*?\];/);
-        console.log('[Listening Generation] Before replacement:', before ? before[0].substring(0, 100) : 'NO MATCH');
+    // Force replace audio variables if they contain actual URLs.
+    // Use simple literal replacement — the raw values from the builder may vary
+    // in format (URLs vs nulls vs base64), so target the assignment statements directly.
+    if (content.audioParts && Array.isArray(content.audioParts) && content.audioParts.some(url => url)) {
+        // The builder template emits: const rawAudioDataList = [...];
+        // Replace the entire assignment with our known-good audioParts.
+        // Use a simpler regex that matches just the assignment start through the semicolon.
+        const rawAudioRe = /const\s+rawAudioDataList\s*=\s*\[[^\]]*\];/;
+        const beforeMatch = generatedHtml.match(rawAudioRe);
+        console.log('[Listening Generation] Before audioParts replacement:', beforeMatch ? beforeMatch[0].substring(0, 120) : 'NO MATCH');
 
         generatedHtml = generatedHtml.replace(
-            /const rawAudioDataList\s*=\s*[\[\s\S]*?\];/,
+            rawAudioRe,
             `const rawAudioDataList = ${audioPartsJson};`
         );
 
-        const after = generatedHtml.match(/const rawAudioDataList\s*=\s*[\[\s\S]*?\];/);
-        console.log('[Listening Generation] After replacement:', after ? after[0].substring(0, 100) : 'NO MATCH');
+        const afterMatch = generatedHtml.match(rawAudioRe);
+        console.log('[Listening Generation] After audioParts replacement:', afterMatch ? afterMatch[0].substring(0, 120) : 'NO MATCH');
     }
-    if (content.fullAudio) {
-        // Replace the full audio line with our URL - handle multiline
+    if (content.fullAudio && typeof content.fullAudio === 'string') {
+        // The builder template emits: const rawFullAudioData = <value>;
+        // Replace the entire assignment with our known-good fullAudio.
+        const rawFullRe = /const\s+rawFullAudioData\s*=\s*[^;]+;/;
+        const beforeFull = generatedHtml.match(rawFullRe);
+        console.log('[Listening Generation] Before fullAudio replacement:', beforeFull ? beforeFull[0].substring(0, 120) : 'NO MATCH');
+
         generatedHtml = generatedHtml.replace(
-            /const rawFullAudioData\s*=\s*[\s\S]*?;/,
+            rawFullRe,
             `const rawFullAudioData = ${fullAudioJson};`
         );
+
+        const afterFull = generatedHtml.match(rawFullRe);
+        console.log('[Listening Generation] After fullAudio replacement:', afterFull ? afterFull[0].substring(0, 120) : 'NO MATCH');
     }
 
     generatedHtml = injectListeningUrlSupport(generatedHtml);

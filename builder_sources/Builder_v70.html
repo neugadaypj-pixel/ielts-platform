@@ -2382,19 +2382,46 @@ function insertTable(targetId, isContentEditable) {
     const questionsPanel = document.getElementById('questionsPanel');
     let savedRange = null; let activeHighlightPanel = null; 
 
-    function handleContextMenu(e) {
+    function handleHighlightMenu(e) {
         e.preventDefault();
         const sel = window.getSelection();
         if (sel.rangeCount > 0 && !sel.isCollapsed) {
             savedRange = sel.getRangeAt(0);
-            activeHighlightPanel = this; 
-            ctxMenu.style.display = 'block'; 
-            ctxMenu.style.left = e.clientX + 'px'; 
-            ctxMenu.style.top = e.clientY + 'px';
+            activeHighlightPanel = this;
+            ctxMenu.style.display = 'block';
+            ctxMenu.style.left = e.clientX + 'px';
+            ctxMenu.style.top = (e.clientY + 10) + 'px';
         }
     }
-    passagePanel.addEventListener('contextmenu', handleContextMenu);
-    questionsPanel.addEventListener('contextmenu', handleContextMenu);
+    // Show highlight menu on text selection (mouseup), not just right-click
+    passagePanel.addEventListener('mouseup', function(e) {
+        var panel = passagePanel;
+        setTimeout(function() {
+            const sel = window.getSelection();
+            if (sel.rangeCount > 0 && !sel.isCollapsed) {
+                savedRange = sel.getRangeAt(0);
+                activeHighlightPanel = panel;
+                ctxMenu.style.display = 'block';
+                ctxMenu.style.left = e.clientX + 'px';
+                ctxMenu.style.top = (e.clientY + 10) + 'px';
+            }
+        }, 10);
+    });
+    questionsPanel.addEventListener('mouseup', function(e) {
+        var panel = questionsPanel;
+        setTimeout(function() {
+            const sel = window.getSelection();
+            if (sel.rangeCount > 0 && !sel.isCollapsed) {
+                savedRange = sel.getRangeAt(0);
+                activeHighlightPanel = panel;
+                ctxMenu.style.display = 'block';
+                ctxMenu.style.left = e.clientX + 'px';
+                ctxMenu.style.top = (e.clientY + 10) + 'px';
+            }
+        }, 10);
+    });
+    passagePanel.addEventListener('contextmenu', handleHighlightMenu);
+    questionsPanel.addEventListener('contextmenu', handleHighlightMenu);
     document.addEventListener('click', function(e) { if (!ctxMenu.contains(e.target)) ctxMenu.style.display = 'none'; });
     
     function performHighlight(colorCode) { 

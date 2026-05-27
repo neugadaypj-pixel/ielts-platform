@@ -98,15 +98,15 @@ logger.debug('B2 Configuration', {
 
 // Validate B2 credentials at startup — missing/invalid keys cause
 // "Resolved credential object is not valid" in AWS SDK v3
-const b2KeyId = process.env.B2_APPLICATION_KEY_ID;
-const b2Key = process.env.B2_APPLICATION_KEY;
+const b2KeyId = process.env.B2_KEY_ID;
+const b2Key = process.env.B2_APP_KEY;
 
 if (!b2KeyId || !b2Key) {
-    logger.error('B2 credentials missing — B2_APPLICATION_KEY_ID and B2_APPLICATION_KEY must be set', {
+    logger.error('B2 credentials missing — B2_KEY_ID and B2_APP_KEY must be set', {
         hasKeyId: !!b2KeyId,
         hasKey: !!b2Key
     });
-    console.error('FATAL: Backblaze B2 credentials are missing. Set B2_APPLICATION_KEY_ID and B2_APPLICATION_KEY environment variables.');
+    console.error('FATAL: Backblaze B2 credentials are missing. Set B2_KEY_ID and B2_APP_KEY environment variables.');
     console.error('Audio uploads and test creation WILL FAIL until credentials are configured.');
 }
 
@@ -135,7 +135,7 @@ async function uploadToB2(buffer, filename, mimetype) {
     if (!accessKeyId || !secretAccessKey) {
         throw new Error(
             'B2 credentials are not configured. ' +
-            'Set B2_APPLICATION_KEY_ID and B2_APPLICATION_KEY environment variables on Render.'
+            'Set B2_KEY_ID and B2_APP_KEY environment variables on Render.'
         );
     }
 

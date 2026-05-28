@@ -1985,6 +1985,17 @@ app.get('/student-dashboard', async (req, res) => {
             logger.warn('Student dashboard requested with stale session user', { userId: req.session.userId });
             return req.session.destroy(() => res.redirect('/login'));
         }
+        logger.info('[DIAG] Step1 findByIdWithGroupAndTests', {
+            userId: req.session.userId,
+            role: student.role,
+            hasGroupId: !!student.groupId,
+            groupIdObj: student.groupId ? JSON.stringify({
+                _id: student.groupId._id,
+                name: student.groupId.name,
+                assignedTestsCount: (student.groupId.assignedTests || []).length,
+                testScheduleCount: (student.groupId.testSchedule || []).length
+            }) : 'NONE'
+        });
 
         // Get submissions
         const submissions = await Submission.find({ studentId: req.session.userId });
@@ -1997,15 +2008,25 @@ app.get('/student-dashboard', async (req, res) => {
         // (OracleDB doesn't auto-maintain referential integrity like Mongoose populate)
         if (student.role === 'student') {
             if (!student.groupId || !student.groupId._id) {
+                logger.info('[DIAG] Step2a No groupId from findByIdWithGroupAndTests — checking group_students', { userId: req.session.userId });
                 const groupRow = await execute(
                     `SELECT group_id AS "groupId" FROM group_students WHERE user_id = :uid FETCH FIRST 1 ROWS ONLY`,
                     { uid: req.session.userId }
                 );
+                logger.info('[DIAG] Step2a group_students result', {
+                    userId: req.session.userId,
+                    found: groupRow.rows.length > 0,
+                    groupId: groupRow.rows.length > 0 ? groupRow.rows[0].groupId : 'NONE'
+                });
                 if (groupRow.rows.length > 0) {
                     student.groupId = { _id: groupRow.rows[0].groupId, name: null, assignedTests: [], testSchedule: [] };
                 }
             }
             if (student.groupId && student.groupId._id && (!student.groupId.assignedTests || student.groupId.assignedTests.length === 0)) {
+                logger.info('[DIAG] Step2b assignedTests empty — querying group_assigned_tests', {
+                    userId: req.session.userId,
+                    groupId: student.groupId._id
+                });
                 const testsResult = await execute(
                     `SELECT t.id AS "_id", t.title, t.type, t.teacher_name AS "teacherName", t.created_by AS "createdBy",
                             t.reading_passage AS "readingPassage", t.builder_json AS "builderJson", t.custom_title AS "customTitle",
@@ -2013,11 +2034,34 @@ app.get('/student-dashboard', async (req, res) => {
                      FROM tests t JOIN group_assigned_tests gat ON t.id = gat.test_id WHERE gat.group_id = :gid ORDER BY t.type, t.title`,
                     { gid: student.groupId._id }
                 );
+                logger.info('[DIAG] Step2b group_assigned_tests result', {
+                    userId: req.session.userId,
+                    testCount: testsResult.rows.length,
+                    testTitles: testsResult.rows.map(r => r.title)
+                });
                 student.groupId.assignedTests = testsResult.rows;
+
+                // Also load schedule
+                const scheduleResult = await execute(
+                    `SELECT test_id AS "testId", TO_CHAR(available_from, 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS "availableFrom"
+                     FROM group_test_schedule WHERE group_id = :gid`, { gid: student.groupId._id }
+                );
+                student.groupId.testSchedule = scheduleResult.rows;
+                logger.info('[DIAG] Step2c testSchedule result', {
+                    userId: req.session.userId,
+                    scheduleCount: scheduleResult.rows.length,
+                    schedules: scheduleResult.rows
+                });
             }
         }
 
         let allTests = student.groupId ? (student.groupId.assignedTests || []).filter(Boolean) : [];
+        logger.info('[DIAG] Step3 allTests before schedule filtering', {
+            userId: req.session.userId,
+            count: allTests.length,
+            titles: allTests.map(t => typeof t === 'object' ? t.title : String(t))
+        });
+
         const now = new Date();
         const scheduledTests = [];
 
@@ -2027,6 +2071,12 @@ app.get('/student-dashboard', async (req, res) => {
                 if (!schedule || !schedule.testId || !schedule.availableFrom) return;
                 const availableDate = new Date(schedule.availableFrom);
                 if (Number.isNaN(availableDate.getTime())) return;
+                logger.info('[DIAG] Step4 schedule entry', {
+                    testId: schedule.testId,
+                    availableFrom: schedule.availableFrom,
+                    now: now.toISOString(),
+                    isFuture: availableDate > now
+                });
                 if (availableDate > now) {
                     scheduledTests.push({
                         _id: schedule.testId,
@@ -2042,11 +2092,19 @@ app.get('/student-dashboard', async (req, res) => {
             allTests = allTests.filter(test => !scheduledTestIds.has(String(test._id)));
         }
 
+        logger.info('[DIAG] Step5 after schedule filtering', {
+            allTestsCount: allTests.length,
+            allTestsTitles: allTests.map(t => typeof t === 'object' ? t.title : String(t)),
+            scheduledTestsCount: scheduledTests.length
+        });
+
         // Apply search filter
         if (search) {
+            const beforeSearch = allTests.length;
             allTests = allTests.filter(test =>
                 String(test.title || '').toLowerCase().includes(search.toLowerCase())
             );
+            logger.info('[DIAG] Step6 search filter', { search, before: beforeSearch, after: allTests.length });
         }
 
         // Combine and paginate
@@ -2059,6 +2117,16 @@ app.get('/student-dashboard', async (req, res) => {
         const total = combinedTests.length;
         const totalPages = Math.ceil(total / PAGE_SIZE);
         const tests = combinedTests.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
+        logger.info('[DIAG] Step7 final render data', {
+            userId: req.session.userId,
+            availableCount: availableTests.length,
+            scheduledCount: scheduledTests.length,
+            combinedCount: combinedTests.length,
+            paginatedCount: tests.length,
+            total,
+            testsTitles: tests.map(t => t.title)
+        });
 
         const groupName = student.groupId ? student.groupId.name : "No Group Assigned";
         res.render('student-dashboard', {

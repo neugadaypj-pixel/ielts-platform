@@ -182,9 +182,9 @@ const User = {
         if (user.groupId) {
             const groupId = user.groupId;
             const testsResult = await execute(
-                `SELECT t.id AS "_id", t.title, t.type, t.teacher_name AS "teacherName", t.created_by AS "createdBy",
+                `SELECT t.id AS "_id", t.title AS "title", t.type AS "type", t.teacher_name AS "teacherName", t.created_by AS "createdBy",
                         t.reading_passage AS "readingPassage", t.builder_json AS "builderJson", t.custom_title AS "customTitle",
-                        t.folder, t.questions, TO_CHAR(t.created_at, 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS "createdAt"
+                        t.folder AS "folder", t.questions AS "questions", TO_CHAR(t.created_at, 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS "createdAt"
                  FROM tests t JOIN group_assigned_tests gat ON t.id = gat.test_id WHERE gat.group_id = :gid ORDER BY t.type, t.title`,
                 { gid: groupId }
             );

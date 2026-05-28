@@ -1015,7 +1015,7 @@ function injectExamGuardWarnOnly(html, testDoc) {
     const snippet = `
 <script>
 (function() {
-    // Warn-only guard. Does not lock or submit.
+    // Fullscreen-locked guard. Students MUST remain in fullscreen to take the test.
     const storageKey = 'platform_exam_guard_' + '${safeTestId}';
     const state = window.__platformExamGuardState || {
         violations: 0,
@@ -1023,6 +1023,19 @@ function injectExamGuardWarnOnly(html, testDoc) {
         lastAt: 0
     };
     window.__platformExamGuardState = state;
+    var __platformLockBodyScroll = function() {
+        var s = document.body ? document.body.style : null;
+        if (!s) return;
+        s.__origOverflow = s.overflow || '';
+        s.overflow = 'hidden';
+        s.height = '100vh';
+    };
+    var __platformUnlockBodyScroll = function() {
+        var s = document.body ? document.body.style : null;
+        if (!s) return;
+        if (s.__origOverflow !== undefined) s.overflow = s.__origOverflow; else s.overflow = '';
+        s.height = '';
+    };
 
     function saveState() {
         try { localStorage.setItem(storageKey, JSON.stringify(state)); } catch (e) {}
@@ -1030,9 +1043,9 @@ function injectExamGuardWarnOnly(html, testDoc) {
 
     function loadState() {
         try {
-            const raw = localStorage.getItem(storageKey);
+            var raw = localStorage.getItem(storageKey);
             if (!raw) return;
-            const parsed = JSON.parse(raw);
+            var parsed = JSON.parse(raw);
             if (parsed && typeof parsed === 'object') {
                 if (Number.isFinite(Number(parsed.violations))) state.violations = Number(parsed.violations);
                 if (typeof parsed.lastReason === 'string') state.lastReason = parsed.lastReason;
@@ -1043,7 +1056,7 @@ function injectExamGuardWarnOnly(html, testDoc) {
 
     function showBanner(message) {
         try {
-            let el = document.getElementById('__platformExamGuardBanner');
+            var el = document.getElementById('__platformExamGuardBanner');
             if (!el) {
                 el = document.createElement('div');
                 el.id = '__platformExamGuardBanner';
@@ -1066,110 +1079,201 @@ function injectExamGuardWarnOnly(html, testDoc) {
             el.textContent = message;
             el.style.display = 'block';
             clearTimeout(el.__hideTimer);
-            el.__hideTimer = setTimeout(() => { try { el.style.display = 'none'; } catch (e) {} }, 4200);
+            el.__hideTimer = setTimeout(function() { try { el.style.display = 'none'; } catch (e) {} }, 4200);
         } catch (e) {}
     }
 
     function recordViolation(reason) {
         try {
-            const now = Date.now();
-            // Prevent spammy double counts (multiple events on same action).
+            var now = Date.now();
             if (now - (state.lastAt || 0) < 1200 && reason === state.lastReason) return;
             state.violations = (Number(state.violations) || 0) + 1;
             state.lastReason = String(reason || 'Policy violation');
             state.lastAt = now;
             saveState();
-            showBanner(state.lastReason + ' (violations: ' + state.violations + ')');
+            showBanner('\\u26A0\\uFE0F ' + state.lastReason + ' (violations: ' + state.violations + ')');
         } catch (e) {}
     }
 
     function requestFullscreen() {
         try {
-            const root = document.documentElement;
+            var root = document.documentElement;
             if (!root) return;
             if (document.fullscreenElement) return;
-            const fn = root.requestFullscreen || root.webkitRequestFullscreen || root.msRequestFullscreen;
+            var fn = root.requestFullscreen || root.webkitRequestFullscreen || root.msRequestFullscreen;
             if (fn) fn.call(root);
         } catch (e) {}
     }
 
-    function ensureFullscreenPrompt() {
+    var __platformEnsureFullscreenPrompt = function() {
         try {
             if (document.getElementById('__platformFullscreenPrompt')) return;
-            const overlay = document.createElement('div');
+            var overlay = document.createElement('div');
             overlay.id = '__platformFullscreenPrompt';
             overlay.style.position = 'fixed';
             overlay.style.inset = '0';
             overlay.style.zIndex = '2147483646';
-            overlay.style.background = 'rgba(0,0,0,0.70)';
+            overlay.style.background = 'rgba(0,0,0,0.75)';
+            overlay.style.backdropFilter = 'blur(6px)';
             overlay.style.display = 'flex';
             overlay.style.alignItems = 'center';
             overlay.style.justifyContent = 'center';
             overlay.style.padding = '24px';
-            overlay.innerHTML = '<div style="max-width:560px;width:100%;background:rgba(255,255,255,0.96);border-radius:22px;padding:26px 24px;box-shadow:0 18px 60px rgba(0,0,0,0.35);text-align:center;font-family:system-ui,sans-serif;">'
-                + '<div style="font-size:18px;font-weight:900;color:#111827;margin-bottom:10px;">Start in Full Screen</div>'
-                + '<div style="color:#4b5563;font-weight:600;line-height:1.4;">Please keep the test in full screen. Leaving the tab or exiting full screen will be recorded.</div>'
-                + '<button id="__platformFullscreenBtn" style="margin-top:18px;padding:12px 18px;border:none;border-radius:999px;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;font-weight:900;font-size:14px;cursor:pointer;">Enter Full Screen</button>'
-                + '<div style="margin-top:12px;color:#9ca3af;font-size:12px;">If full screen is blocked by your browser, click anywhere and try again.</div>'
+            overlay.style.pointerEvents = 'auto';
+            overlay.style.cursor = 'default';
+            overlay.style.userSelect = 'none';
+            overlay.setAttribute('aria-hidden', 'false');
+            overlay.setAttribute('role', 'dialog');
+            overlay.setAttribute('aria-modal', 'true');
+            var msg = 'You must remain in full screen mode to continue the test.\\n\\nExiting full screen is recorded as a violation.';
+            overlay.innerHTML = '<div style="max-width:560px;width:100%;background:rgba(255,255,255,0.97);border-radius:22px;padding:30px 28px;box-shadow:0 20px 60px rgba(0,0,0,0.40);text-align:center;font-family:system-ui,sans-serif;pointer-events:auto;">'
+                + '<div style="font-size:48px;margin-bottom:12px;">\\uD83D\\uDD12</div>'
+                + '<div style="font-size:20px;font-weight:900;color:#111827;margin-bottom:8px;">Full Screen Required</div>'
+                + '<div style="color:#4b5563;font-weight:600;line-height:1.5;white-space:pre-line;">' + msg + '</div>'
+                + '<div style="margin-top:6px;color:#dc2626;font-weight:800;font-size:13px;">Violations: ' + (state.violations || 0) + '</div>'
+                + '<button id="__platformFullscreenBtn" style="margin-top:20px;padding:14px 28px;border:none;border-radius:999px;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;font-weight:900;font-size:15px;cursor:pointer;box-shadow:0 6px 20px rgba(102,126,234,0.35);transition:transform 0.15s;" onmouseover="this.style.transform=\\'scale(1.04)\\'" onmouseout="this.style.transform=\\'scale(1)\\'">Return to Full Screen</button>'
+                + '<div style="margin-top:14px;color:#9ca3af;font-size:12px;">Press the button or click anywhere on this screen to re-enter full screen.</div>'
                 + '</div>';
             document.body.appendChild(overlay);
-            overlay.addEventListener('click', (event) => {
-                if (event.target && event.target.id === '__platformFullscreenBtn') return;
+            __platformLockBodyScroll();
+            // Clicking anywhere on the overlay triggers fullscreen
+            overlay.addEventListener('click', function() {
                 requestFullscreen();
             });
-            const btn = document.getElementById('__platformFullscreenBtn');
+            overlay.addEventListener('touchstart', function(e) {
+                e.preventDefault();
+                requestFullscreen();
+            }, { passive: false });
+            var btn = document.getElementById('__platformFullscreenBtn');
             if (btn) {
-                btn.addEventListener('click', () => {
+                btn.addEventListener('click', function(e) {
+                    e.stopPropagation();
                     requestFullscreen();
-                    setTimeout(() => {
+                    setTimeout(function() {
                         if (document.fullscreenElement) {
-                            try { overlay.remove(); } catch (e) {}
+                            __platformDismissFullscreenPrompt();
                         }
-                    }, 250);
+                    }, 300);
                 });
             }
+            // Prevent Esc from doing anything useful
+            overlay.addEventListener('keydown', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+            });
         } catch (e) {}
-    }
+    };
+
+    var __platformDismissFullscreenPrompt = function() {
+        try {
+            var overlay = document.getElementById('__platformFullscreenPrompt');
+            if (overlay) { overlay.remove(); }
+            __platformUnlockBodyScroll();
+        } catch (e) {}
+    };
 
     // Load stored state before events fire.
     loadState();
 
     // Fullscreen prompt (requires user gesture).
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', ensureFullscreenPrompt);
+        document.addEventListener('DOMContentLoaded', __platformEnsureFullscreenPrompt);
     } else {
-        ensureFullscreenPrompt();
+        __platformEnsureFullscreenPrompt();
     }
 
-    document.addEventListener('fullscreenchange', () => {
+    // Lock: when student exits fullscreen, block everything and force re-entry.
+    document.addEventListener('fullscreenchange', function() {
         try {
-            if (!document.fullscreenElement) {
+            if (document.fullscreenElement) {
+                // Back in fullscreen — dismiss the overlay
+                __platformDismissFullscreenPrompt();
+            } else {
+                // Exited fullscreen — record and lock
                 recordViolation('Exited full screen');
-                // Keep showing prompt until they re-enter.
-                ensureFullscreenPrompt();
+                __platformEnsureFullscreenPrompt();
+                // Aggressive re-entry attempt (browsers require user gesture, but we try)
+                setTimeout(function() { requestFullscreen(); }, 100);
             }
         } catch (e) {}
     });
 
-    document.addEventListener('visibilitychange', () => {
+    // Prevent Esc key from exiting fullscreen (intercept at capture phase)
+    document.addEventListener('keydown', function(e) {
+        try {
+            if (e.key === 'Escape' && document.fullscreenElement) {
+                e.preventDefault();
+                e.stopPropagation();
+                e.stopImmediatePropagation();
+                return false;
+            }
+        } catch (e) {}
+    }, true);
+
+    // Prevent F11 from toggling fullscreen
+    document.addEventListener('keydown', function(e) {
+        try {
+            if (e.key === 'F11') {
+                e.preventDefault();
+                e.stopPropagation();
+                return false;
+            }
+        } catch (e) {}
+    }, true);
+
+    // Also intercept Escape on window level (backup)
+    window.addEventListener('keydown', function(e) {
+        try {
+            if (e.key === 'Escape') {
+                var hasLock = !!document.getElementById('__platformFullscreenPrompt');
+                if (hasLock || document.fullscreenElement) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    return false;
+                }
+            }
+        } catch (e) {}
+    }, true);
+
+    document.addEventListener('visibilitychange', function() {
         try {
             if (document.hidden) recordViolation('Switched tab / minimized');
         } catch (e) {}
     });
 
-    window.addEventListener('blur', () => {
-        // blur can be noisy; keep it as a backup signal.
+    window.addEventListener('blur', function() {
         try { recordViolation('Left the test window'); } catch (e) {}
+    });
+
+    // When focus returns, check if we're still in fullscreen — if not, lock.
+    window.addEventListener('focus', function() {
+        try {
+            setTimeout(function() {
+                if (!document.fullscreenElement && !document.getElementById('__platformFullscreenPrompt')) {
+                    __platformEnsureFullscreenPrompt();
+                }
+            }, 400);
+        } catch (e) {}
     });
 
     // Resist back navigation and record it.
     try {
         history.pushState({ __platformGuard: true }, '', location.href);
-        window.addEventListener('popstate', () => {
+        window.addEventListener('popstate', function() {
             recordViolation('Attempted to navigate back');
             try { history.pushState({ __platformGuard: true }, '', location.href); } catch (e) {}
+            if (!document.fullscreenElement) __platformEnsureFullscreenPrompt();
         });
     } catch (e) {}
+
+    // Context menu prevention to reduce right-click inspect-element exits
+    document.addEventListener('contextmenu', function(e) {
+        try {
+            if (document.fullscreenElement) {
+                // Allow right-click in fullscreen for legitimate reasons
+            }
+        } catch (e) {}
+    });
 })();
 </script>`;
 

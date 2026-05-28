@@ -2149,7 +2149,7 @@ app.get('/view-test/:id', async (req, res) => {
         if (!isDatabaseReady()) return sendDatabaseUnavailable(res);
 
         const isStaffPreview = req.session.userRole === 'teacher' || req.session.userRole === 'admin';
-        const cacheKey = `test_html_${req.params.id}_${req.session.userId}_${isStaffPreview ? 'preview' : 'student'}`;
+        const cacheKey = `test_html_v2_${req.params.id}_${req.session.userId}_${isStaffPreview ? 'preview' : 'student'}`;
         let html = cache.get(cacheKey);
 
         if (html) {

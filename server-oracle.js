@@ -1387,6 +1387,25 @@ app.get('/teacher-dashboard', isTeacher, csrfProtection, async (req, res) => {
             return req.session.destroy(() => res.redirect('/login'));
         }
 
+        // Populate groups.students and groups.assignedTests with full objects (not just IDs)
+        // The Group.find() returns raw ID arrays (OracleDB does not auto-populate like Mongoose)
+        const allStudentIds = [...new Set(groups.flatMap(g => (g.students || []).filter(Boolean).map(s => String(s))))];
+        const allAssignedTestIds = [...new Set(groups.flatMap(g => (g.assignedTests || []).filter(Boolean).map(t => String(t))))];
+
+        const [populatedStudents, populatedTests] = await Promise.all([
+            allStudentIds.length > 0 ? User.find({ _id: { $in: allStudentIds } }) : [],
+            allAssignedTestIds.length > 0 ? Test.find({ _id: { $in: allAssignedTestIds } }) : []
+        ]);
+
+        const studentMap = new Map(populatedStudents.map(s => [String(s._id), s]));
+        const testMap = new Map(populatedTests.map(t => [String(t._id), t]));
+
+        // Replace raw IDs with populated objects for template rendering
+        groups.forEach(group => {
+            group.students = (group.students || []).map(id => studentMap.get(String(id)) || id).filter(Boolean);
+            group.assignedTests = (group.assignedTests || []).map(id => testMap.get(String(id)) || id).filter(Boolean);
+        });
+
         // Get tests created by teacher + assigned tests
         // Load assigned test IDs from the junction table
         let assignedTestIds = [];
@@ -1973,6 +1992,30 @@ app.get('/student-dashboard', async (req, res) => {
         const submissionsByTestId = new Map(
             submissions.map((submission) => [String(submission.testId), submission])
         );
+
+        // Fallback: ensure group tests are loaded even if users.group_id wasn't synced
+        // (OracleDB doesn't auto-maintain referential integrity like Mongoose populate)
+        if (student.role === 'student') {
+            if (!student.groupId || !student.groupId._id) {
+                const groupRow = await execute(
+                    `SELECT group_id AS "groupId" FROM group_students WHERE user_id = :uid FETCH FIRST 1 ROWS ONLY`,
+                    { uid: req.session.userId }
+                );
+                if (groupRow.rows.length > 0) {
+                    student.groupId = { _id: groupRow.rows[0].groupId, name: null, assignedTests: [], testSchedule: [] };
+                }
+            }
+            if (student.groupId && student.groupId._id && (!student.groupId.assignedTests || student.groupId.assignedTests.length === 0)) {
+                const testsResult = await execute(
+                    `SELECT t.id AS "_id", t.title, t.type, t.teacher_name AS "teacherName", t.created_by AS "createdBy",
+                            t.reading_passage AS "readingPassage", t.builder_json AS "builderJson", t.custom_title AS "customTitle",
+                            t.folder, t.questions, TO_CHAR(t.created_at, 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS "createdAt"
+                     FROM tests t JOIN group_assigned_tests gat ON t.id = gat.test_id WHERE gat.group_id = :gid ORDER BY t.type, t.title`,
+                    { gid: student.groupId._id }
+                );
+                student.groupId.assignedTests = testsResult.rows;
+            }
+        }
 
         let allTests = student.groupId ? (student.groupId.assignedTests || []).filter(Boolean) : [];
         const now = new Date();
@@ -3151,7 +3194,17 @@ app.get('/settings', async (req, res) => {
     if (!req.session.userId) return res.redirect('/login');
     try {
         const user = await User.findById(req.session.userId);
-        res.render('settings', { user });
+        let stats = null;
+        if (user.role === 'student') {
+            const submissions = await Submission.find({ studentId: req.session.userId });
+            const completedCount = submissions.filter(s => s.status === 'completed').length;
+            stats = {
+                totalTests: submissions.length,
+                completedTests: completedCount,
+                inProgressTests: submissions.length - completedCount
+            };
+        }
+        res.render('settings', { user, stats });
     } catch (err) {
         res.status(500).send('Error loading settings');
     }

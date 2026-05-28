@@ -1150,9 +1150,13 @@
 
         function removeTestFromGroup(groupId, testId, testTitle) {
             showConfirm(`Remove test "${testTitle}" from this group?`, () => {
+                const csrfToken = '<%= csrfToken %>';
                 fetch(`/teacher/remove-test-from-group/${groupId}/${testId}`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-csrf-token': csrfToken
+                    },
                     body: JSON.stringify({ redirect: '/teacher-dashboard' })
                 })
                     .then((response) => response.json())

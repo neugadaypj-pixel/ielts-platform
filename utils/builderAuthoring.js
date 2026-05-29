@@ -599,7 +599,12 @@ function getAuthoringPageHtml(type, testData = null, csrfToken = null) {
         throw new Error(`Unsupported builder type: ${type}`);
     }
 
-    return replaceLastLiteral(source, '</body>', `${injection}\n</body>`);
+    const bulkAnswerKeyScript =
+        normalizedType === 'reading' || normalizedType === 'listening'
+            ? '\n<script src="/bulk-answer-key.js"></script>'
+            : '';
+
+    return replaceLastLiteral(source, '</body>', `${injection}${bulkAnswerKeyScript}\n</body>`);
 }
 
 module.exports = {

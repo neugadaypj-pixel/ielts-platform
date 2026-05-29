@@ -211,7 +211,9 @@ async function connectDatabase() {
 const upload = multer({
     storage: multer.memoryStorage(),
     limits: {
-        fileSize: 50 * 1024 * 1024 // 50 MB
+        fileSize: CONSTANTS.FILE_UPLOAD.MAX_FILE_SIZE,
+        fieldSize: CONSTANTS.FILE_UPLOAD.MAX_FIELD_SIZE,
+        files: CONSTANTS.FILE_UPLOAD.MAX_FILES
     },
     fileFilter(req, file, cb) {
         const allowed = ['audio/mpeg', 'audio/mp3', 'audio/wav', 'audio/ogg',
@@ -591,8 +593,8 @@ async function handleDelete(req, res, options) {
 // ====================================================
 // EXPRESS MIDDLEWARE
 // ====================================================
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+app.use(express.json({ limit: CONSTANTS.FILE_UPLOAD.MAX_BODY_SIZE }));
+app.use(express.urlencoded({ extended: true, limit: CONSTANTS.FILE_UPLOAD.MAX_BODY_SIZE }));
 app.use(express.static(path.join(__dirname, 'public')));
 
 // View engine
@@ -3351,7 +3353,7 @@ app.use((req, res) => {
 });
 
 // Import error handlers
-const { csrfErrorHandler, errorHandler } = require('./middleware/errorHandler');
+const { csrfErrorHandler, multerErrorHandler, errorHandler } = require('./middleware/errorHandler');
 
 // CSRF error handler
 app.use(csrfErrorHandler);
@@ -3361,14 +3363,11 @@ if (process.env.SENTRY_DSN) {
     app.use(Sentry.Handlers.errorHandler());
 }
 
-// Global error handler
-app.use((err, req, res, next) => {
-    logger.error('Unhandled error', { error: err.message, stack: err.stack });
-    res.status(err.status || 500).render('error', {
-        message: process.env.NODE_ENV === 'production' ? 'Internal Server Error' : err.message,
-        error: process.env.NODE_ENV === 'production' ? {} : err
-    });
-});
+// Multer / payload errors → JSON for builder fetch requests
+app.use(multerErrorHandler);
+
+// Global error handler (JSON when Accept: application/json)
+app.use(errorHandler);
 
 // === START SERVER ===
 async function startServer() {

@@ -22,13 +22,16 @@ module.exports = {
         UNAUTHORIZED: 401,
         FORBIDDEN: 403,
         NOT_FOUND: 404,
+        PAYLOAD_TOO_LARGE: 413,
         INTERNAL_ERROR: 500
     },
 
     // File upload
     FILE_UPLOAD: {
-        MAX_FILE_SIZE: 100 * 1024 * 1024, // 100MB
+        MAX_FILE_SIZE: 100 * 1024 * 1024, // 100MB per audio file
+        MAX_FIELD_SIZE: 25 * 1024 * 1024, // 25MB for builderJson / parts text fields
         MAX_FILES: 10,
+        MAX_BODY_SIZE: '100mb', // express.json / urlencoded
         ALLOWED_AUDIO_TYPES: [
             'audio/mpeg', 'audio/mp3', 'audio/wav', 'audio/ogg',
             'audio/aac', 'audio/x-aac', 'audio/mp4', 'audio/x-m4a',

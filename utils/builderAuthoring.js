@@ -183,16 +183,24 @@ ${commonInjectionStyles()}
             const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || getCookie('_csrf');
             const response = await fetch(endpoint, {
                 method: 'POST',
-                headers: { 
+                headers: {
                     'Content-Type': 'application/json',
+                    'Accept': 'application/json',
                     'x-csrf-token': csrfToken
                 },
                 body: JSON.stringify({ title, content, type: 'reading', builderJson })
             });
 
-            const data = await response.json();
+            let data;
+            const contentType = response.headers.get('content-type');
+            if (contentType && contentType.includes('application/json')) {
+                data = await response.json();
+            } else {
+                throw new Error('Server error (HTTP ' + response.status + '). The test may be too large.');
+            }
+
             if (!response.ok || !data.success) {
-                throw new Error(data.error || data.message || 'Unable to save reading test');
+                throw new Error(data.message || data.error?.message || data.error || 'Unable to save reading test');
             }
 
             status.textContent = isEditMode ? 'Updated successfully. Redirecting...' : 'Saved successfully. Redirecting...';
@@ -424,7 +432,10 @@ ${commonInjectionStyles()}
             }
 
             if (!response.ok || !data.success) {
-                throw new Error(data.error || data.message || 'Unable to save listening test');
+                const errMsg = data.message
+                    || (data.error && typeof data.error === 'object' ? data.error.message : data.error)
+                    || 'Unable to save listening test';
+                throw new Error(errMsg);
             }
 
             updateStatus(isEditMode ? '✅ Test updated successfully!' : '✅ Test saved successfully!');

@@ -56,10 +56,9 @@ function asyncHandler(fn) {
 
 // Standardized error response
 function sendErrorResponse(res, error, req) {
-    const statusCode = error.statusCode || CONSTANTS.STATUS.INTERNAL_ERROR;
+    const statusCode = error.statusCode || error.status || CONSTANTS.STATUS.INTERNAL_ERROR;
     const message = error.message || 'Internal server error';
-    
-    // Log error with context
+
     logger.error('Error response sent', {
         error: message,
         statusCode,
@@ -69,14 +68,17 @@ function sendErrorResponse(res, error, req) {
         stack: error.stack
     });
 
-    // Check if client wants JSON
     const wantsJson = req.xhr
         || String(req.headers.accept || '').includes('application/json')
-        || String(req.headers['content-type'] || '').includes('application/json');
+        || String(req.headers['content-type'] || '').includes('application/json')
+        || req.headers['x-csrf-token'];
 
     if (wantsJson) {
         return res.status(statusCode).json({
             success: false,
+            message: process.env.NODE_ENV === 'production' && statusCode === 500
+                ? 'Internal server error'
+                : message,
             error: {
                 message: process.env.NODE_ENV === 'production' && statusCode === 500
                     ? 'Internal server error'
@@ -87,11 +89,10 @@ function sendErrorResponse(res, error, req) {
         });
     }
 
-    // HTML response
     res.status(statusCode).send(`
         <h1>Error ${statusCode}</h1>
-        <p>${process.env.NODE_ENV === 'production' && statusCode === 500 
-            ? 'Internal server error' 
+        <p>${process.env.NODE_ENV === 'production' && statusCode === 500
+            ? 'Internal server error'
             : message}</p>
         <a href="javascript:history.back()">Go Back</a>
     `);
@@ -108,17 +109,17 @@ function validateObjectId(id, fieldName = 'ID') {
 // Validate required fields
 function validateRequired(fields, data) {
     const missing = [];
-    
+
     for (const field of fields) {
         if (!data[field] || (typeof data[field] === 'string' && !data[field].trim())) {
             missing.push(field);
         }
     }
-    
+
     if (missing.length > 0) {
         throw new ValidationError(`Missing required fields: ${missing.join(', ')}`);
     }
-    
+
     return true;
 }
 
@@ -128,16 +129,16 @@ function handleMongooseError(error) {
         const messages = Object.values(error.errors).map(err => err.message);
         return new ValidationError(messages.join(', '));
     }
-    
+
     if (error.name === 'CastError') {
         return new ValidationError(`Invalid ${error.path}: ${error.value}`);
     }
-    
+
     if (error.code === 11000) {
         const field = Object.keys(error.keyPattern)[0];
         return new ValidationError(`${field} already exists`);
     }
-    
+
     return new DatabaseError(error.message);
 }
 
@@ -149,25 +150,22 @@ async function tryCatch(fn, errorMessage = 'Operation failed') {
         if (error instanceof AppError) {
             throw error;
         }
-        
+
         if (error.name === 'ValidationError' || error.name === 'CastError' || error.code === 11000) {
             throw handleMongooseError(error);
         }
-        
+
         throw new DatabaseError(errorMessage + ': ' + error.message);
     }
 }
 
 module.exports = {
-    // Error classes
     AppError,
     ValidationError,
     AuthenticationError,
     AuthorizationError,
     NotFoundError,
     DatabaseError,
-    
-    // Utilities
     asyncHandler,
     sendErrorResponse,
     validateObjectId,

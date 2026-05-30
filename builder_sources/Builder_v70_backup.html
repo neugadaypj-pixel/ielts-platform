@@ -339,18 +339,9 @@ function insertTable(targetId, isContentEditable) {
                                 </div>
                             </div>
                             <div id="drag_fields_${i}" class="hidden-field">
-                                <label style="color:#8e44ad;">1. Define Headings (i, ii, iii...)</label>
-                                <div class="sub-group-box">
-                                    <div id="drag_headings_list_${i}"></div>
-                                    <button class="btn-small btn-add" onclick="addDragHeading(${i})">+ Add Heading</button>
-                                    <button class="btn-small btn-rem" onclick="remDragHeading(${i})">- Remove</button>
-                                </div>
-                                <label style="color:#e67e22; margin-top:15px;">2. Examples (Pre-Matched, Shown Crossed Out)</label>
-                                <div class="sub-group-box">
-                                    <div id="drag_examples_list_${i}"></div>
-                                    <button class="btn-small btn-add" onclick="addDragExample(${i})">+ Add Example</button>
-                                    <button class="btn-small btn-rem" onclick="remDragExample(${i})">- Remove</button>
-                                </div>
+                                <label>Option Value (Visible Label)</label><input type="text" id="drag_val_${i}" placeholder="e.g. iv">
+                                <label>Option Text</label><input type="text" id="drag_text_${i}" placeholder="e.g. The history...">
+                                <label style="color:#27ae60">Correct for Q# (Optional)</label><input type="number" id="drag_link_id_${i}">
                             </div>
                             
                             <div id="diagram_fields_${i}" class="hidden-field">
@@ -418,15 +409,14 @@ function insertTable(targetId, isContentEditable) {
         }
         wrapper.innerHTML = html;
         setTimeout(() => {
-            [1,2,3].forEach(i => {
-                resetMcqOptions(i);
+            [1,2,3].forEach(i => { 
+                resetMcqOptions(i); 
                 addMatchOption(i, 'A'); addMatchOption(i, 'B'); addMatchOption(i, 'C');
                 addMatchQuestion(i);
                 addDiagramQuestion(i);
                 addFlowOption(i, 'A'); addFlowOption(i, 'B'); addFlowOption(i, 'C');
-                addDragHeading(i); addDragHeading(i); addDragHeading(i);
                 document.getElementById(`gen_type_${i}`).value = 'tf';
-                toggleGeneratorFields(i);
+                toggleGeneratorFields(i); 
             });
             initMagicPaste();
         }, 100);
@@ -622,40 +612,6 @@ function insertTable(targetId, isContentEditable) {
         } else { 
             field.value += text; 
         }
-    }
-
-    function addDragHeading(part, labelOverride=null) {
-        const container = document.getElementById(`drag_headings_list_${part}`);
-        const count = container.children.length;
-        const label = labelOverride || toRoman(count + 1);
-        const div = document.createElement('div');
-        div.className = 'match-row';
-        div.innerHTML = `<span class="mcq-badge">${label}</span><input type="text" class="drag-head-text-${part}" placeholder="Heading text...">`;
-        container.appendChild(div);
-    }
-    function remDragHeading(part) {
-        const container = document.getElementById(`drag_headings_list_${part}`);
-        if(container.children.length > 1) container.removeChild(container.lastElementChild);
-    }
-    function addDragExample(part) {
-        const container = document.getElementById(`drag_examples_list_${part}`);
-        const div = document.createElement('div');
-        div.className = 'match-row';
-        div.innerHTML = `<input type="text" class="drag-ex-text-${part}" placeholder="Paragraph letter/desc (e.g. Paragraph A)..." style="flex:1">
-                         <input type="text" class="drag-ex-ans-${part}" placeholder="Heading (e.g. iv)" style="flex:1; text-align:center;">`;
-        container.appendChild(div);
-    }
-    function remDragExample(part) {
-        const container = document.getElementById(`drag_examples_list_${part}`);
-        if(container.children.length > 0) container.removeChild(container.lastElementChild);
-    }
-    function toRoman(num) {
-        const vals = { m:1000, cm:900, d:500, cd:400, c:100, xc:90, l:50, xl:40, x:10, ix:9, v:5, iv:4, i:1 };
-        let str = '';
-        for (const [r, v] of Object.entries(vals)) {
-            while (num >= v) { str += r; num -= v; }
-        }
-        return str;
     }
 
     function addMatchOption(part, labelOverride=null) {
@@ -986,60 +942,20 @@ function insertTable(targetId, isContentEditable) {
             document.getElementById(`gen_q_num_${partNum}`).value = currentQ;
             
         } else if (type === 'drag') {
-            const headingInputs = document.querySelectorAll(`.drag-head-text-${partNum}`);
-            const headings = [];
-            headingInputs.forEach((inp, i) => {
-                const val = inp.value.trim();
-                if (val) {
-                    const roman = toRoman(i + 1);
-                    headings.push({ roman, text: val });
-                }
-            });
-            if (headings.length === 0) { alert("Please add at least one heading."); return; }
-
-            // Collect examples (pre-matched, shown crossed out)
-            const exTexts = document.querySelectorAll(`.drag-ex-text-${partNum}`);
-            const exAnss = document.querySelectorAll(`.drag-ex-ans-${partNum}`);
-            const examples = [];
-            for (let i = 0; i < exAnss.length; i++) {
-                const ans = exAnss[i].value.trim();
-                if (ans) {
-                    const desc = exTexts[i].value.trim() || ('Paragraph ' + ans.toUpperCase());
-                    examples.push({ desc, ans: ans.toLowerCase() });
-                }
-            }
-
-            // Build example section (struck out items)
-            let examplesHtml = '';
-            if (examples.length > 0) {
-                examplesHtml = `<div style="margin-bottom: 15px; border-left: 4px solid #27ae60; padding-left: 15px; background: #f9fdf9; border-radius: 0 12px 12px 0; padding: 12px 15px;"><p style="margin:0 0 8px 0; font-weight: 700; color: #27ae60;">📋 Example Answers</p>`;
-                examples.forEach((ex, idx) => {
-                    const exId = "dex_" + Date.now() + "_" + idx;
-                    examplesHtml += `<div class="drag-wrapper" style="opacity:0.7; pointer-events:none; background:#f0f8f0 !important;">
-                        <div class="draggable-item" id="${exId}" style="text-decoration:line-through; opacity:0.6;" data-val="${ex.ans}">
-                            <span class="drag-handle">::</span>
-                            <span class="drag-val-visible">${ex.ans}</span>
-                            <span class="drag-text">${ex.desc} — <i>${ex.ans}</i></span>
-                        </div>
-                    </div>`;
-                });
-                examplesHtml += `</div>`;
-            }
-
-            // Build draggable heading items (pool)
-            let poolHtml = '<div class="pool-container" style="justify-content:flex-start; flex-wrap:wrap;">';
-            headings.forEach((h, idx) => {
-                const uId = "drag_pool_" + Date.now() + "_" + idx;
-                poolHtml += `<div class="chip-item" id="${uId}" draggable="true" ondragstart="drag(event)" data-val="${h.roman}"><b>${h.roman}</b> — ${h.text}</div>`;
-            });
-            poolHtml += '</div>';
-
-            html = `<div class="matching-group-block">${examplesHtml}${poolHtml}</div>`;
-
-            // Clear inputs
-            headingInputs.forEach(inp => inp.value = "");
-            exTexts.forEach(inp => inp.value = "");
-            exAnss.forEach(inp => inp.value = "");
+            const val = document.getElementById(`drag_val_${partNum}`).value.trim();
+            const text = document.getElementById(`drag_text_${partNum}`).value.trim();
+            const linkId = document.getElementById(`drag_link_id_${partNum}`).value.trim();
+            const uniqueDragId = "ditem_" + Date.now() + "_" + Math.floor(Math.random()*1000);
+            html = `<div class="drag-wrapper">
+    <div class="draggable-item" id="${uniqueDragId}" draggable="true" ondragstart="drag(event)" data-val="${val}">
+        <span class="drag-handle">::</span>
+        <span class="drag-val-visible">${val}</span>
+        <span class="drag-text">${text}</span>
+    </div>
+    <button class="manual-strike-btn" onclick="toggleStrike(this)" title="Cross out">✕</button>
+</div>`;
+            if(linkId) updateAnswerKey(linkId, val);
+            document.getElementById(`drag_val_${partNum}`).value = ""; document.getElementById(`drag_text_${partNum}`).value = ""; document.getElementById(`drag_link_id_${partNum}`).value = "";
             
         } else if (type === 'gap') {
             let content = document.getElementById(`gap_editor_${partNum}`).innerHTML;

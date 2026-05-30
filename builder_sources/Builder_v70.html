@@ -641,8 +641,17 @@ function insertTable(targetId, isContentEditable) {
     }
     
     function insertDropZone(areaId) {
-        const qNum = prompt("Enter Question Number:", "");
-        if (qNum) {
+        const qNum = prompt("Enter Question Number (or type 'example'):", "");
+        if (!qNum) return;
+        const isExample = qNum.toLowerCase() === 'example';
+        if (isExample) {
+            const exampleAns = prompt("Example Answer (e.g. iv):", "");
+            if (exampleAns === null) return;
+            const exampleLabel = prompt("Example Label (e.g. Paragraph A):", "");
+            if (exampleLabel === null) return;
+            const tag = `<span class="drop-zone" data-qid="example" style="text-decoration:line-through; opacity:0.6; cursor:default; pointer-events:none;">${exampleLabel} — <b>${exampleAns}</b><input type="hidden" value="${exampleAns}"></span>`;
+            insertTag(areaId, tag, "");
+        } else {
             const tag = `<span class="drop-zone" data-qid="${qNum}">[ ${qNum} ]<input type="hidden" id="q${qNum}" value=""></span><span class="q-flag">⚑</span>`;
             insertTag(areaId, tag, "");
         }
@@ -945,16 +954,17 @@ function insertTable(targetId, isContentEditable) {
             const val = document.getElementById(`drag_val_${partNum}`).value.trim();
             const text = document.getElementById(`drag_text_${partNum}`).value.trim();
             const linkId = document.getElementById(`drag_link_id_${partNum}`).value.trim();
+            const isExample = linkId.toLowerCase() === 'example';
             const uniqueDragId = "ditem_" + Date.now() + "_" + Math.floor(Math.random()*1000);
-            html = `<div class="drag-wrapper">
-    <div class="draggable-item" id="${uniqueDragId}" draggable="true" ondragstart="drag(event)" data-val="${val}">
+            html = `<div class="drag-wrapper"${isExample ? ' style="opacity:0.6; pointer-events:none;"' : ''}>
+    <div class="draggable-item${isExample ? ' manual-struck' : ''}" id="${uniqueDragId}" draggable="${!isExample}" ondragstart="drag(event)" data-val="${val}"${isExample ? ' style="text-decoration:line-through;"' : ''}>
         <span class="drag-handle">::</span>
         <span class="drag-val-visible">${val}</span>
         <span class="drag-text">${text}</span>
     </div>
-    <button class="manual-strike-btn" onclick="toggleStrike(this)" title="Cross out">✕</button>
+    ${isExample ? '' : '<button class="manual-strike-btn" onclick="toggleStrike(this)" title="Cross out">✕</button>'}
 </div>`;
-            if(linkId) updateAnswerKey(linkId, val);
+            if(!isExample && linkId) updateAnswerKey(linkId, val);
             document.getElementById(`drag_val_${partNum}`).value = ""; document.getElementById(`drag_text_${partNum}`).value = ""; document.getElementById(`drag_link_id_${partNum}`).value = "";
             
         } else if (type === 'gap') {

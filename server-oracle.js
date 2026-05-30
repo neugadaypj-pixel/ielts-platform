@@ -494,13 +494,15 @@ async function saveValidatedTest({ title, type, content, builderJson, req }) {
     }
 
     // Store content in readingPassage:
-    // - reading tests: the HTML passage is in content.readingPassage
-    // - listening/writing tests: store the entire content object as JSON so
-    //   generateHTMLFromTest() can parse it back on download/preview/edit
+    // - reading tests: store the full content object as JSON so
+    //   generateHTMLFromTest() can parse it back on preview/download/edit
+    // - listening tests: if content.readingPassage exists (backward compat), use it;
+    //   otherwise store the full content object as JSON
+    // - writing tests: same as listening
     let readingPassageValue = '';
     if (content && content.readingPassage) {
         readingPassageValue = content.readingPassage;
-    } else if (content && (type === 'listening' || type === 'writing')) {
+    } else if (content) {
         readingPassageValue = typeof content === 'string' ? content : JSON.stringify(content);
     }
 

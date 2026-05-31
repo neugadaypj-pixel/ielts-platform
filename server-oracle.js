@@ -247,9 +247,22 @@ app.use(cookieParser());
 
 // === RATE LIMITERS ===
 const loginLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000,
+    windowMs: 60 * 1000, // 1 minute (was 15 min — too strict for shared-IP environments)
     max: 10,
-    message: { error: 'Too many login attempts. Please try again later.' }
+    message: { error: 'Too many login attempts. Please try again later.' },
+    standardHeaders: true,  // expose X-RateLimit-Remaining / X-RateLimit-Reset
+    legacyHeaders: false,
+    keyGenerator: (req) => {
+        // Combine IP + username so each user gets their own bucket,
+        // avoiding shared-IP lockouts (e.g. school/office NAT)
+        const ip = req.ip || req.connection?.remoteAddress || 'unknown';
+        const user = req.body?.username || 'anonymous';
+        return `${ip}::${user}`;
+    },
+    skip: (req) => {
+        // Don't count requests from already-logged-in users
+        return !!(req.session && req.session.userId);
+    }
 });
 
 const strictLimiter = rateLimit({

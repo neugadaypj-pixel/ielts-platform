@@ -1296,6 +1296,90 @@ function injectListeningDropdownZIndexFix(html) {
     return replaceLastLiteral(html, '</body>', `${snippet}\n</body>`);
 }
 
+function injectPlatformScripts(html) {
+    // Bundle dark-mode, time-warning, and loading-spinner inline so
+    // downloaded standalone HTML files have these features without
+    // depending on external script sources.
+    const snippet = `
+<script>
+(function() {
+    var DARK_MODE_KEY = 'platform_dark_mode_' + (typeof SESSION_KEY !== 'undefined' ? SESSION_KEY : (typeof SESSION_ID !== 'undefined' ? SESSION_ID : location.pathname));
+    function applyDarkMode() {
+        if (localStorage.getItem(DARK_MODE_KEY) === '1') {
+            document.documentElement.classList.add('dark-mode');
+            if (document.body) document.body.classList.add('dark-mode');
+        }
+    }
+    applyDarkMode();
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', applyDarkMode);
+    }
+    window.toggleDarkMode = function() {
+        var isDark = document.body.classList.toggle('dark-mode');
+        document.documentElement.classList.toggle('dark-mode', isDark);
+        localStorage.setItem(DARK_MODE_KEY, isDark ? '1' : '0');
+        return isDark;
+    };
+    window.isDarkMode = function() { return localStorage.getItem(DARK_MODE_KEY) === '1'; };
+})();
+(function() {
+    var LIMITS = { reading: 60, listening: 40, writing: 60 };
+    window.showTimeLimitWarning = function(testType) {
+        var limit = LIMITS[testType]; if (!limit) return;
+        var overlay = document.createElement('div');
+        overlay.style.cssText = 'position:fixed;inset:0;z-index:10000;background:rgba(15,23,42,0.6);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;';
+        overlay.innerHTML = '<div style="background:white;border-radius:24px;padding:32px;max-width:500px;width:90%;box-shadow:0 24px 48px rgba(15,23,42,0.18);text-align:center;">'
+            + '<div style="font-size:3rem;margin-bottom:16px;">\\u23F1\\uFE0F</div>'
+            + '<h2 style="font-size:1.5rem;font-weight:900;margin-bottom:12px;color:#1f2937;">Time Limit: ' + limit + ' Minutes</h2>'
+            + '<p style="color:#64748b;line-height:1.6;margin-bottom:24px;">This is an official IELTS ' + testType + ' test with a ' + limit + '-minute time limit.</p>'
+            + '<button onclick="this.closest(\\'div\\').parentElement.remove()" style="padding:14px 32px;border-radius:999px;border:none;background:linear-gradient(135deg,#667eea,#764ba2);color:white;font-weight:800;cursor:pointer;font-size:1rem;">Start Test</button>'
+            + '</div>';
+        document.body.appendChild(overlay);
+    };
+})();
+(function() {
+    var style = document.createElement('style');
+    style.textContent = '.btn-loading{position:relative;pointer-events:none;opacity:0.7;}.btn-loading::after{content:"";position:absolute;width:16px;height:16px;top:50%;left:50%;margin-left:-8px;margin-top:-8px;border:2px solid #fff;border-radius:50%;border-top-color:transparent;animation:platform-spinner 0.6s linear infinite;}@keyframes platform-spinner{to{transform:rotate(360deg);}}';
+    document.head.appendChild(style);
+    window.addLoadingSpinner = function(btn) { if (btn) { btn.classList.add('btn-loading'); btn.disabled = true; } };
+    window.removeLoadingSpinner = function(btn) { if (btn) { btn.classList.remove('btn-loading'); btn.disabled = false; } };
+    document.addEventListener('submit', function(e) { var btn = e.target.querySelector('button[type="submit"]'); if (btn) addLoadingSpinner(btn); });
+})();
+(function() {
+    if (typeof window === 'undefined') return;
+    var AUTOSAVE_KEY = 'writing_test_autosave_';
+    var AUTOSAVE_INTERVAL = 30000;
+    window.WritingAutoSave = {
+        init: function(testId) {
+            var key = AUTOSAVE_KEY + testId;
+            var task1 = document.getElementById('task1');
+            var task2 = document.getElementById('task2');
+            if (!task1 || !task2) return;
+            var saved = localStorage.getItem(key);
+            if (saved) {
+                try {
+                    var data = JSON.parse(saved);
+                    if (confirm('Found saved work from ' + new Date(data.timestamp).toLocaleString() + '. Restore it?')) {
+                        task1.value = data.task1 || '';
+                        task2.value = data.task2 || '';
+                    }
+                } catch (e) {}
+            }
+            setInterval(function() {
+                var data = { task1: task1.value, task2: task2.value, timestamp: Date.now() };
+                localStorage.setItem(key, JSON.stringify(data));
+            }, AUTOSAVE_INTERVAL);
+            var form = task1.closest('form');
+            if (form) {
+                form.addEventListener('submit', function() { localStorage.removeItem(key); });
+            }
+        }
+    };
+})();
+</script>`;
+    return replaceLastLiteral(html, '</body>', snippet + '\\n</body>');
+}
+
 function injectListeningDropdownDirectionFix(html) {
     const snippet = `
 <script>
@@ -2801,6 +2885,7 @@ function injectPersistentStateForDownload(html, testDoc) {
 (function() {
     const STABLE_KEY = '${stableId}';
     const AUTOSAVE_KEY = STABLE_KEY + '_autosave_v2';
+    const TIMER_KEY = STABLE_KEY + '_timer';
 
     function patchSessionKey(varName) {
         try {
@@ -2822,6 +2907,16 @@ function injectPersistentStateForDownload(html, testDoc) {
     function getFieldKey(el, index) {
         const base = el.id || el.name || el.getAttribute('data-qid') || el.getAttribute('data-question-id') || 'field';
         return base + '__' + index;
+    }
+
+    function parseTimerSeconds(displayText) {
+        if (!displayText || typeof displayText !== 'string') return null;
+        const match = displayText.trim().match(/^(\\d{1,3}):(\\d{2})$/);
+        if (!match) return null;
+        const mins = Number(match[1]);
+        const secs = Number(match[2]);
+        if (!Number.isFinite(mins) || !Number.isFinite(secs)) return null;
+        return mins * 60 + secs;
     }
 
     function collectState() {
@@ -2855,6 +2950,30 @@ function injectPersistentStateForDownload(html, testDoc) {
             }
         });
 
+        // Save timer value so it survives page refreshes
+        const timerEl = document.getElementById('timerDisplay');
+        if (timerEl) {
+            const displayText = timerEl.innerText || timerEl.textContent || '';
+            const seconds = parseTimerSeconds(displayText);
+            if (seconds !== null) {
+                try {
+                    localStorage.setItem(TIMER_KEY, JSON.stringify({
+                        seconds: seconds,
+                        savedAt: Date.now()
+                    }));
+                } catch (e) {}
+            }
+            // Also save the JS time variable if accessible
+            if (typeof time !== 'undefined' && typeof time === 'number' && Number.isFinite(time)) {
+                try {
+                    localStorage.setItem(TIMER_KEY + '_js', JSON.stringify({
+                        time: time,
+                        savedAt: Date.now()
+                    }));
+                } catch (e) {}
+            }
+        }
+
         return state;
     }
 
@@ -2864,8 +2983,57 @@ function injectPersistentStateForDownload(html, testDoc) {
         } catch (e) {}
     }
 
+    function restoreTimer() {
+        try {
+            // Prefer the JS time variable backup (more precise)
+            const rawJs = localStorage.getItem(TIMER_KEY + '_js');
+            const rawDisplay = localStorage.getItem(TIMER_KEY);
+
+            let restoredSeconds = null;
+
+            if (rawJs) {
+                const parsed = JSON.parse(rawJs);
+                if (parsed && typeof parsed.time === 'number' && Number.isFinite(parsed.time) && parsed.time > 0) {
+                    const elapsed = Math.floor((Date.now() - (parsed.savedAt || 0)) / 1000);
+                    restoredSeconds = Math.max(0, parsed.time - elapsed);
+                }
+            }
+
+            // Fallback to display-based timer
+            if (restoredSeconds === null && rawDisplay) {
+                const parsed = JSON.parse(rawDisplay);
+                if (parsed && typeof parsed.seconds === 'number' && parsed.seconds > 0) {
+                    const elapsed = Math.floor((Date.now() - (parsed.savedAt || 0)) / 1000);
+                    restoredSeconds = Math.max(0, parsed.seconds - elapsed);
+                }
+            }
+
+            if (restoredSeconds !== null && restoredSeconds > 0) {
+                // Override the global time variable if it exists
+                try { time = restoredSeconds; } catch (e) {}
+                try { window.time = restoredSeconds; } catch (e) {}
+
+                // Update the timer display
+                const mins = Math.floor(restoredSeconds / 60);
+                const secs = restoredSeconds % 60;
+                const displayText = (mins < 10 ? '0' : '') + mins + ':' + (secs < 10 ? '0' : '') + secs;
+
+                const timerEl = document.getElementById('timerDisplay');
+                if (timerEl) {
+                    timerEl.innerText = displayText;
+                    timerEl.textContent = displayText;
+                }
+
+                // Store for late-binding (after builder's DOMContentLoaded)
+                window.__platformRestoredTimer = restoredSeconds;
+            }
+        } catch (e) {}
+    }
+
     function restoreDownloadState() {
         try {
+            restoreTimer();
+
             const raw = localStorage.getItem(AUTOSAVE_KEY);
             if (!raw) return;
             const state = JSON.parse(raw);
@@ -2909,6 +3077,21 @@ function injectPersistentStateForDownload(html, testDoc) {
     } else {
         restoreDownloadState();
     }
+
+    // After builder fully initializes, re-apply the timer override
+    window.addEventListener('load', function() {
+        setTimeout(function() {
+            if (window.__platformRestoredTimer && window.__platformRestoredTimer > 0) {
+                try { time = window.__platformRestoredTimer; } catch (e) {}
+                try { window.time = window.__platformRestoredTimer; } catch (e) {}
+                const m = Math.floor(window.__platformRestoredTimer / 60);
+                const s = window.__platformRestoredTimer % 60;
+                const txt = (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s;
+                const timerEl = document.getElementById('timerDisplay');
+                if (timerEl) { timerEl.innerText = txt; timerEl.textContent = txt; }
+            }
+        }, 500);
+    });
 
     document.addEventListener('input', saveDownloadState, true);
     document.addEventListener('change', saveDownloadState, true);
@@ -3160,6 +3343,16 @@ function generateHTMLFromTest(testDoc, options = {}) {
             html = injectStudentName(html, plainTest, studentName);
             html = injectHeartbeat(html, plainTest);
             html = injectListeningDropdownZIndexFix(html);
+            html = injectListeningDropdownDirectionFix(html);
+            html = injectPlatformScripts(html);
+        }
+
+        // Inject platform scripts for reading and writing stored HTML too
+        if (normalizedType === 'reading') {
+            html = injectPlatformScripts(html);
+        }
+        if (normalizedType === 'writing') {
+            html = injectPlatformScripts(html);
         }
 
         return html;
@@ -3204,10 +3397,17 @@ if (normalizedType === 'listening') {
     rawHtml = injectQuitButton(rawHtml);
     rawHtml = injectStudentName(rawHtml, plainTest, studentName);
     rawHtml = injectHeartbeat(rawHtml, plainTest);
-    rawHtml = injectListeningDropdownZIndexFix(rawHtml);
-}
+        rawHtml = injectListeningDropdownZIndexFix(rawHtml);
+        rawHtml = injectListeningDropdownDirectionFix(rawHtml);
+        rawHtml = injectPlatformScripts(rawHtml);
+    }
 
-// Writing tests: ensure submission hook + heartbeat exist even for raw HTML.
+    // Reading tests: add platform scripts for raw HTML.
+    if (normalizedType === 'reading') {
+        rawHtml = injectPlatformScripts(rawHtml);
+    }
+
+    // Writing tests: ensure submission hook + heartbeat exist even for raw HTML.
 if (normalizedType === 'writing') {
     if (!rawHtml.includes('platform_submission_sync_')) {
         rawHtml = injectWritingSubmissionHook(rawHtml, plainTest);
@@ -3219,6 +3419,7 @@ if (normalizedType === 'writing') {
     rawHtml = injectStudentName(rawHtml, plainTest, studentName);
     rawHtml = injectHeartbeat(rawHtml, plainTest);
     rawHtml = sanitizeWritingRuntimeHtml(rawHtml);
+    rawHtml = injectPlatformScripts(rawHtml);
 }
 
 return rawHtml;
@@ -3227,15 +3428,15 @@ return rawHtml;
 const normalizedType = String(plainTest.type || 'reading').toLowerCase();
 
     if (normalizedType === 'reading') {
-        return injectNameVar(generateReadingHtml(plainTest, parsedContent, studentName, options));
+        return injectPlatformScripts(injectNameVar(generateReadingHtml(plainTest, parsedContent, studentName, options)));
     }
 
     if (normalizedType === 'listening') {
-        return injectNameVar(generateListeningHtml(plainTest, parsedContent, studentName, options));
+        return injectPlatformScripts(injectNameVar(generateListeningHtml(plainTest, parsedContent, studentName, options)));
     }
 
     if (normalizedType === 'writing') {
-        return injectNameVar(generateWritingHtml(plainTest, parsedContent, options));
+        return injectPlatformScripts(injectNameVar(generateWritingHtml(plainTest, parsedContent, options)));
     }
 
     throw new Error(`Unsupported test type: ${plainTest.type}`);
@@ -3250,5 +3451,6 @@ module.exports = {
     getHTMLTemplate,
     parseStoredContent,
     stringifyContent,
-    injectPersistentStateForDownload
+    injectPersistentStateForDownload,
+    injectPlatformScripts
 };

@@ -1623,11 +1623,11 @@ app.post('/teacher/add-student-to-group', isTeacher, csrfProtection, async (req,
 // Create group
 app.post('/teacher/create-group', isTeacher, csrfProtection, async (req, res) => {
     try {
-        const { name } = req.body;
-        if (!name) return res.status(400).json({ success: false, message: 'Group name required' });
+        const { groupName } = req.body;
+        if (!groupName || !groupName.trim()) return res.status(400).json({ success: false, message: 'Group name required' });
 
         const newGroup = await Group.create({
-            name,
+            name: groupName.trim(),
             teacherId: req.session.userId
         });
 

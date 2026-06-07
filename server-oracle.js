@@ -2027,8 +2027,8 @@ app.get('/student-dashboard', async (req, res) => {
             if (!student.groupId || !student.groupId._id) {
                 logger.info('[DIAG] Step2a No groupId from findByIdWithGroupAndTests — checking group_students', { userId: req.session.userId });
                 const groupRow = await execute(
-                    `SELECT group_id AS "groupId" FROM group_students WHERE user_id = :uid FETCH FIRST 1 ROWS ONLY`,
-                    { uid: req.session.userId }
+                    `SELECT group_id AS "groupId" FROM group_students WHERE user_id = :p_uid FETCH FIRST 1 ROWS ONLY`,
+                    { p_uid: req.session.userId }
                 );
                 logger.info('[DIAG] Step2a group_students result', {
                     userId: req.session.userId,

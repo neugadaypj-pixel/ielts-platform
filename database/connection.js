@@ -4,7 +4,7 @@ const path = require('path');
 const fs = require('fs');
 
 // Optimize for low-memory OCI free tier (1GB RAM)
-oracledb.poolMax = 4;
+oracledb.poolMax = 10;
 oracledb.poolMin = 1;
 oracledb.poolIncrement = 1;
 oracledb.poolTimeout = 60;
@@ -101,7 +101,7 @@ async function getPool() {
     pool = await oracledb.createPool(poolConfig);
     
     const modeLabel = useThin ? 'Thin mode (pure JS)' : 'Native mode';
-    logger.info(`Oracle DB connection pool created - ${modeLabel} (max 4 connections)`);
+    logger.info(`Oracle DB connection pool created - ${modeLabel} (max 10 connections)`);
     return pool;
 }
 

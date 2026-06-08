@@ -68,6 +68,15 @@ class OracleSessionStore extends EventEmitter {
         }
     }
 
+    regenerate(req, fn) {
+        const self = this;
+        this.destroy(req.sessionID, (err) => {
+            if (err) return fn(err);
+            self.generate(req);
+            fn(null);
+        });
+    }
+
     async destroy(sid, cb) {
         try {
             await execute(`DELETE FROM sessions WHERE sid = :sid`, { sid });

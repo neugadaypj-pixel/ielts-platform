@@ -5,7 +5,7 @@ const path = require('path');
 const fs = require('fs');
 const bcrypt = require('bcryptjs');
 const session = require('express-session');
-const rateLimit = require('express-rate-limit');
+const { rateLimit, ipKeyGenerator } = require('express-rate-limit');
 const helmet = require('helmet');
 const cookieParser = require('cookie-parser');
 const { doubleCsrf } = require('csrf-csrf');
@@ -265,7 +265,8 @@ const loginLimiter = rateLimit({
     keyGenerator: (req) => {
         // Composite key: IP + username so each user gets their own bucket,
         // preventing one failing student from locking out others on the same IP.
-        const ip = req.ip || req.connection?.remoteAddress || 'unknown';
+        // Uses ipKeyGenerator helper for proper IPv4/IPv6 normalization (required by express-rate-limit v8+).
+        const ip = ipKeyGenerator(req);
         const user = req.body?.username || 'unknown';
         return `${ip}-${user}`;
     },
@@ -309,7 +310,7 @@ const testCreationLimiter = rateLimit({
 
 const csrfSecret = process.env.CSRF_SECRET || crypto.randomBytes(32).toString('hex');
 
-const { generateToken, doubleCsrfProtection } = doubleCsrf({
+const { generateCsrfToken, doubleCsrfProtection } = doubleCsrf({
     getSecret: () => csrfSecret,
     cookieName: '_csrf',
     cookieOptions: {
@@ -323,7 +324,7 @@ const { generateToken, doubleCsrfProtection } = doubleCsrf({
 });
 
 // Generate CSRF token for all EJS views (replaces csurf's implicit cookie set)
-app.use(generateToken);
+app.use(generateCsrfToken);
 
 // === AUTH MIDDLEWARE ===
 // Imported from middleware/auth.js (single source of truth).

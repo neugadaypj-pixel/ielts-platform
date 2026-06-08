@@ -305,13 +305,14 @@ const testCreationLimiter = rateLimit({
 
 // === CSRF PROTECTION ===
 // Double-submit cookie pattern via csrf-csrf (replaces deprecated csurf).
-// generateToken — global middleware that provides req.csrfToken() for EJS views.
+// generateCsrfToken wrapper — sets _csrf cookie & res.locals.csrfToken for EJS views.
 // doubleCsrfProtection — per-route middleware that validates the token.
 
 const csrfSecret = process.env.CSRF_SECRET || crypto.randomBytes(32).toString('hex');
 
 const { generateCsrfToken, doubleCsrfProtection } = doubleCsrf({
     getSecret: () => csrfSecret,
+    getSessionIdentifier: (req) => req.sessionID || req.ip || 'anonymous',
     cookieName: '_csrf',
     cookieOptions: {
         httpOnly: true,
@@ -323,8 +324,21 @@ const { generateCsrfToken, doubleCsrfProtection } = doubleCsrf({
     getTokenFromRequest: (req) => req.body._csrf || req.headers['x-csrf-token'] || req.headers['csrf-token']
 });
 
-// Generate CSRF token for all EJS views (replaces csurf's implicit cookie set)
-app.use(generateCsrfToken);
+// Generate CSRF token for all EJS views (replaces csurf's implicit cookie set).
+// csrf-csrf v4's generateCsrfToken is a utility that returns the token, NOT
+// an Express middleware — it doesn't call next(). We wrap it so:
+//  1. next() is called to avoid hanging requests
+//  2. res.locals.csrfToken is set so EJS views can use <%= csrfToken %>
+app.use((req, res, next) => {
+    try {
+        const token = generateCsrfToken(req, res);
+        res.locals.csrfToken = token;
+    } catch (err) {
+        // If session isn't ready (e.g., health check), skip cleanly
+        res.locals.csrfToken = '';
+    }
+    next();
+});
 
 // === AUTH MIDDLEWARE ===
 // Imported from middleware/auth.js (single source of truth).

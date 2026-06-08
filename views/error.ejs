@@ -1,25 +1,106 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><%= error.status || 500 %> - <%= message %></title>
+    <%- include('../partials/design-system') %>
     <style>
-        body { font-family: system-ui, sans-serif; background: #f8fafc; color: #0f172a; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; padding: 24px; }
-        .card { background: #fff; border-radius: 20px; padding: 28px; max-width: 520px; box-shadow: 0 18px 50px rgba(15,23,42,0.12); text-align: center; }
-        h1 { margin: 0 0 12px; font-size: 24px; color: #dc2626; }
-        p { color: #475569; line-height: 1.5; margin: 0; }
-        a { color: #2563eb; text-decoration: none; }
-        a:hover { text-decoration: underline; }
+        /* ============================================================
+           ERROR PAGE — gradient background + centered glass card
+           ============================================================ */
+        body {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: var(--space-lg);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .error-card {
+            background: var(--surface-glass);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            border-radius: var(--radius-xl);
+            padding: var(--space-2xl);
+            max-width: 520px;
+            width: 100%;
+            text-align: center;
+            box-shadow: var(--shadow-xl);
+            animation: slideUp 0.5s cubic-bezier(0.21, 1.02, 0.73, 1) forwards;
+        }
+
+        .error-icon {
+            font-size: 4rem;
+            margin-bottom: var(--space-md);
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-8px); } }
+
+        .error-code {
+            font-size: 5rem;
+            font-weight: 900;
+            line-height: 1;
+            background: linear-gradient(135deg, var(--primary-400), var(--accent-500));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: var(--space-sm);
+            letter-spacing: -0.04em;
+        }
+
+        .error-message {
+            font-size: 1.05rem;
+            color: var(--text-secondary);
+            line-height: 1.6;
+            margin-bottom: var(--space-xl);
+        }
+
+        .error-actions {
+            display: flex;
+            gap: var(--space-sm);
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        /* Dark mode */
+        body.dark-mode { background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); }
+        body.dark-mode .error-code {
+            background: linear-gradient(135deg, var(--primary-300), var(--accent-400));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        @media (max-width: 480px) {
+            .error-card { padding: var(--space-xl); }
+            .error-code { font-size: 3.5rem; }
+            .error-icon { font-size: 3rem; }
+        }
     </style>
 </head>
 <body>
-    <div class="card">
-        <h1><%= error.status || 500 %></h1>
-        <p><%= message %></p>
-        <% if (error.status === 404) { %>
-        <p style="margin-top:12px"><a href="/">Go back home</a></p>
-        <% } %>
+    <div class="error-card">
+        <div class="error-icon">
+            <% var statusCode = error.status || 500; %>
+            <% if (statusCode === 404) { %>🔍
+            <% } else if (statusCode === 403) { %>🔒
+            <% } else if (statusCode === 401) { %>🔑
+            <% } else if (statusCode >= 500) { %>⚠️
+            <% } else { %>❌<% } %>
+        </div>
+        <div class="error-code"><%= statusCode %></div>
+        <p class="error-message"><%= message %></p>
+        <div class="error-actions">
+            <a href="/" class="btn btn-primary">← Back to Home</a>
+            <% if (error.status === 404 || error.status === 401) { %>
+            <a href="/login" class="btn btn-ghost">Sign In</a>
+            <% } %>
+        </div>
     </div>
+    <%- include('../partials/notifications') %>
 </body>
 </html>

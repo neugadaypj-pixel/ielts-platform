@@ -4,190 +4,88 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Performance Analysis</title>
+    <%- include('../partials/design-system') %>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        /* ============================================================
+           AI FEEDBACK — analysis display page
+           ============================================================ */
+        body { padding: var(--space-lg); }
 
-        body {
-            font-family: "Segoe UI", "Trebuchet MS", sans-serif;
-            min-height: 100vh;
-            color: #1f2937;
-            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-            padding: 24px;
-        }
-
-        .container {
-            max-width: 900px;
-            margin: 0 auto;
-        }
-
-        .header {
-            padding: 30px;
-            border-radius: 24px;
-            background: rgba(255,255,255,0.95);
-            backdrop-filter: blur(18px);
-            box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
-            margin-bottom: 24px;
-        }
-
-        .header h1 {
-            font-size: 2rem;
-            font-weight: 900;
-            margin-bottom: 12px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            -webkit-background-clip: text;
-            background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        .header p {
-            color: #64748b;
-            line-height: 1.6;
-        }
-
-        .back-btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 10px 18px;
-            background: white;
-            color: #334155;
-            text-decoration: none;
-            border-radius: 12px;
-            font-weight: 700;
-            border: 2px solid #e2e8f0;
-            margin-bottom: 20px;
-            transition: all 0.3s ease;
-        }
-
-        .back-btn:hover {
-            background: #f8fafc;
-            border-color: #667eea;
-        }
+        .ai-feedback-container { max-width: 900px; margin: 0 auto; }
 
         .analysis-card {
-            padding: 32px;
-            border-radius: 24px;
-            background: rgba(255,255,255,0.95);
+            background: var(--surface-glass);
             backdrop-filter: blur(18px);
-            box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
-            margin-bottom: 24px;
+            -webkit-backdrop-filter: blur(18px);
+            border-radius: var(--radius-lg);
+            padding: var(--space-xl);
+            box-shadow: var(--shadow-card);
+            border: 1px solid rgba(255,255,255,0.12);
+            margin-bottom: var(--space-lg);
         }
 
         .analysis-content {
             line-height: 1.9;
-            color: #475569;
+            color: var(--text-secondary);
             white-space: pre-wrap;
             font-size: 1rem;
         }
 
         .test-info {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 16px;
-            margin-bottom: 24px;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: var(--space-md);
+            margin-bottom: var(--space-lg);
         }
 
         .info-box {
-            padding: 16px;
-            background: #f8fafc;
-            border-radius: 12px;
-            border-left: 4px solid #667eea;
+            padding: var(--space-md);
+            background: var(--gray-50);
+            border-radius: var(--radius-md);
+            border-left: 4px solid var(--primary-500);
         }
-
         .info-box strong {
             display: block;
-            font-size: 1.5rem;
-            color: #667eea;
+            font-size: 1.4rem;
+            color: var(--primary-600);
             margin-bottom: 4px;
+            font-weight: 800;
         }
-
-        .info-box span {
-            color: #64748b;
-            font-size: 0.9rem;
-        }
+        .info-box span { color: var(--text-muted); font-size: 0.85rem; }
 
         .no-analysis {
-            padding: 40px;
+            padding: var(--space-2xl);
             text-align: center;
-            color: #64748b;
-            background: #f8fafc;
-            border-radius: 16px;
-            border: 2px dashed #cbd5e1;
+            color: var(--text-muted);
+            background: var(--surface-glass);
+            border-radius: var(--radius-lg);
+            border: 2px dashed var(--border);
+        }
+        .no-analysis h2 { font-size: 1.3rem; margin-bottom: var(--space-sm); color: var(--text-secondary); }
+
+        .analysis-meta {
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            margin-top: var(--space-md);
         }
 
-        .no-analysis h2 {
-            font-size: 1.5rem;
-            margin-bottom: 12px;
-            color: #475569;
-        }
+        body.dark-mode .info-box { background: var(--gray-800); }
+        body.dark-mode .info-box strong { color: var(--primary-300); }
 
-        /* Dark Mode */
-        body.dark-mode {
-            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-            color: #e2e8f0;
-        }
-
-        body.dark-mode .header,
-        body.dark-mode .analysis-card {
-            background: rgba(30, 41, 59, 0.95);
-            box-shadow: 0 18px 40px rgba(0, 0, 0, 0.3);
-        }
-
-        body.dark-mode .header h1 {
-            background: linear-gradient(135deg, #a5f4fc 0%, #a5b4fc 100%);
-            -webkit-background-clip: text;
-            background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        body.dark-mode .header p,
-        body.dark-mode .analysis-content {
-            color: #cbd5e1;
-        }
-
-        body.dark-mode .info-box {
-            background: rgba(15, 23, 42, 0.9);
-            border-color: #667eea;
-        }
-
-        body.dark-mode .info-box strong {
-            color: #a5b4fc;
-        }
-
-        body.dark-mode .info-box span {
-            color: #94a3b8;
-        }
-
-        body.dark-mode .back-btn {
-            background: rgba(51, 65, 85, 0.9);
-            color: #e2e8f0;
-            border-color: #475569;
-        }
-
-        body.dark-mode .back-btn:hover {
-            background: rgba(71, 85, 105, 0.9);
-            border-color: #667eea;
-        }
-
-        body.dark-mode .no-analysis {
-            background: rgba(15, 23, 42, 0.9);
-            border-color: #334155;
-            color: #94a3b8;
-        }
-
-        body.dark-mode .no-analysis h2 {
-            color: #cbd5e1;
+        @media (max-width: 600px) {
+            .test-info { grid-template-columns: 1fr 1fr; }
         }
     </style>
 </head>
 <body>
     <script src="/dark-mode.js"></script>
-    <div class="container">
-        <a href="/student-dashboard" class="back-btn">← Back to Dashboard</a>
+    <div class="ai-feedback-container">
+        <a href="/student-dashboard" class="btn btn-ghost btn-sm" style="margin-bottom:var(--space-lg);">← Back to Dashboard</a>
 
-        <div class="header">
-            <h1>🤖 AI Performance Analysis</h1>
-            <p>Personalized insights powered by Google Gemini Flash 1.5</p>
+        <div class="analysis-card">
+            <h1 class="page-title" style="background:linear-gradient(135deg, var(--primary-500), var(--primary-600));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">🤖 AI Performance Analysis</h1>
+            <p class="page-subtitle">Personalized insights powered by Google Gemini Flash 1.5</p>
         </div>
 
         <% if (submission && submission.details?.aiAnalysis) { %>
@@ -217,7 +115,7 @@
             </div>
 
             <% if (submission.details.aiAnalyzedAt) { %>
-                <p style="text-align:center;color:#64748b;font-size:0.9rem;">
+                <p class="analysis-meta">
                     Analysis generated on <%= new Date(submission.details.aiAnalyzedAt).toLocaleString() %>
                 </p>
             <% } %>
@@ -229,5 +127,6 @@
             </div>
         <% } %>
     </div>
+    <%- include('../partials/notifications') %>
 </body>
 </html>

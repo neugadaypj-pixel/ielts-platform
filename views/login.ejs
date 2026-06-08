@@ -4,223 +4,174 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login | Test Platform</title>
+    <%- include('../partials/design-system') %>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        
-        body { 
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", sans-serif;
+        /* ============================================================
+           LOGIN PAGE — UNIQUE LAYOUT (gradient + glassmorphism)
+           ============================================================ */
+        /* Override body styling from design-system for login-specific layout */
+        body {
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
+            min-height: 100vh;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             overflow: hidden;
+            padding: var(--space-md);
         }
-        
+
         @keyframes slideUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes float { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-10px); } }
-        
+
         .login-container {
             width: 100%;
             max-width: 450px;
-            padding: 20px;
             animation: slideUp 0.6s ease-out;
         }
-        
+
         .login-card {
-            background: rgba(255, 255, 255, 0.95);
+            background: var(--surface-glass);
             backdrop-filter: blur(20px);
-            padding: 48px;
-            border-radius: 24px;
-            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.2);
+            -webkit-backdrop-filter: blur(20px);
+            padding: var(--space-2xl);
+            border-radius: var(--radius-xl);
+            box-shadow: var(--shadow-xl);
             text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.18);
         }
-        
+
         .logo {
             font-size: 2.5rem;
-            margin-bottom: 16px;
+            margin-bottom: var(--space-md);
             animation: float 3s ease-in-out infinite;
         }
-        
-        h1 {
+
+        .login-title {
             font-size: 2rem;
             font-weight: 800;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
-            margin-bottom: 8px;
+            margin-bottom: var(--space-sm);
             letter-spacing: -0.02em;
         }
-        
-        .subtitle {
-            color: #9ca3af;
+
+        .login-subtitle {
+            color: var(--text-muted);
             font-size: 0.95rem;
-            margin-bottom: 36px;
+            margin-bottom: var(--space-xl);
             font-weight: 500;
         }
-        
-        .form-group {
-            margin-bottom: 16px;
-        }
-        
-        label {
+
+        .login-form .form-group { margin-bottom: var(--space-md); }
+
+        .login-form .form-group label {
             display: block;
             font-weight: 700;
-            color: #374151;
-            margin-bottom: 8px;
-            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-bottom: 6px;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
         }
-        
-        input {
-            width: 100%;
+
+        .login-form .form-input {
             padding: 14px 16px;
-            border: 2px solid #e5e7eb;
-            border-radius: 12px;
             font-size: 1rem;
-            transition: all 0.3s ease;
-            font-family: inherit;
-            background: white;
+            border-radius: var(--radius-md);
         }
-        
-        input:focus {
-            outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
-        }
-        
-        input::placeholder {
-            color: #d1d5db;
-        }
-        
-        button {
+
+        .btn-signin {
             width: 100%;
             padding: 14px 24px;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
+            color: #fff;
             border: none;
-            border-radius: 12px;
+            border-radius: var(--radius-md);
             font-size: 1rem;
             font-weight: 700;
             cursor: pointer;
-            transition: all 0.3s ease;
-            margin-top: 8px;
+            transition: all var(--transition-base);
+            margin-top: var(--space-sm);
             box-shadow: 0 10px 24px rgba(102, 126, 234, 0.3);
+            font-family: var(--font-sans);
         }
-        
-        button:hover {
+
+        .btn-signin:hover {
             transform: translateY(-2px);
             box-shadow: 0 15px 32px rgba(102, 126, 234, 0.4);
         }
-        
-        button:active {
-            transform: translateY(0);
-        }
-        
+
+        .btn-signin:active { transform: scale(0.97); }
+
         .back-link {
-            display: block;
-            margin-top: 24px;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            margin-top: var(--space-lg);
             color: rgba(255, 255, 255, 0.8);
             text-decoration: none;
             font-weight: 600;
             font-size: 0.95rem;
-            transition: all 0.3s ease;
+            transition: all var(--transition-base);
         }
-        
+
         .back-link:hover {
-            color: white;
+            color: #fff;
+            text-decoration: none;
             transform: translateX(-4px);
         }
-        
+
         .divider {
-            margin: 24px 0;
+            margin: var(--space-lg) 0;
             text-align: center;
-            color: #d1d5db;
+            color: var(--text-muted);
             font-size: 0.9rem;
         }
-        
+
         .features {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 12px;
-            margin-top: 24px;
-            padding-top: 24px;
+            gap: var(--space-sm);
+            margin-top: var(--space-lg);
+            padding-top: var(--space-lg);
             border-top: 1px solid rgba(0, 0, 0, 0.05);
         }
-        
+
         .feature {
             font-size: 0.85rem;
-            color: #6b7280;
+            color: var(--text-muted);
             font-weight: 500;
         }
 
-        /* Dark Mode Styles for Login */
+        /* Dark mode overrides for login */
         body.dark-mode {
             background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
         }
 
         body.dark-mode .login-card {
-            background: rgba(30, 41, 59, 0.98);
-            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.4);
+            background: var(--surface-glass);
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.5);
         }
 
-        body.dark-mode h1 {
-            background: linear-gradient(135deg, #a5f4fc 0%, #a5b4fc 100%);
+        body.dark-mode .login-title {
+            background: linear-gradient(135deg, #a5b4fc 0%, #c4b5fd 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
         }
 
-        body.dark-mode .subtitle {
-            color: #cbd5e1;
-        }
+        body.dark-mode .features { border-color: rgba(255, 255, 255, 0.08); }
 
-        body.dark-mode label {
-            color: #cbd5e1;
-        }
+        body.dark-mode .back-link { color: rgba(255, 255, 255, 0.7); }
+        body.dark-mode .back-link:hover { color: #a5b4fc; }
 
-        body.dark-mode input {
-            background: rgba(15, 23, 42, 0.95) !important;
-            border-color: #475569 !important;
-            color: #e2e8f0 !important;
-        }
-
-        body.dark-mode input::placeholder {
-            color: #64748b !important;
-        }
-
-        body.dark-mode input:focus {
-            border-color: #667eea !important;
-            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.2) !important;
-        }
-
-        body.dark-mode button {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            box-shadow: 0 10px 24px rgba(102, 126, 234, 0.4);
-        }
-
-        body.dark-mode button:hover {
-            box-shadow: 0 15px 32px rgba(102, 126, 234, 0.5);
-        }
-
-        body.dark-mode .back-link {
-            color: rgba(255, 255, 255, 0.7);
-        }
-
-        body.dark-mode .back-link:hover {
-            color: #a5f4fc;
-        }
-
-        body.dark-mode .divider {
-            color: #475569;
-        }
-
-        body.dark-mode .features {
-            border-color: rgba(255, 255, 255, 0.1);
-        }
-
-        body.dark-mode .feature {
-            color: #94a3b8;
+        /* Responsive */
+        @media (max-width: 480px) {
+            .login-card { padding: var(--space-xl) var(--space-lg); }
+            .login-title { font-size: 1.6rem; }
+            .features { grid-template-columns: 1fr; }
         }
     </style>
 </head>
@@ -228,26 +179,27 @@
     <div class="login-container">
         <div class="login-card">
             <div class="logo">📚</div>
-            <h1>IELTS TestPro</h1>
-            <p class="subtitle">Professional Writing Assessment Platform</p>
-            
-            <form action="/login" method="POST">
+            <h1 class="login-title">IELTS TestPro</h1>
+            <p class="login-subtitle">Professional Writing Assessment Platform</p>
+
+            <form action="/login" method="POST" class="login-form">
                 <input type="hidden" name="_csrf" value="<%= csrfToken %>">
                 <div class="form-group">
                     <label for="username">Username</label>
-                    <input type="text" id="username" name="username" placeholder="Enter your username" required autofocus autocomplete="username">
+                    <input type="text" id="username" name="username" class="form-input" placeholder="Enter your username" required autofocus autocomplete="username">
                 </div>
-                
+
                 <div class="form-group">
                     <label for="password">Password</label>
-                    <input type="password" id="password" name="password" placeholder="Enter your password" required autocomplete="current-password">
+                    <input type="password" id="password" name="password" class="form-input" placeholder="Enter your password" required autocomplete="current-password">
                 </div>
-                
-                <button type="submit">Sign In</button>
+
+                <button type="submit" class="btn-signin">Sign In</button>
             </form>
-            
+
             <a href="/" class="back-link">← Back to Home</a>
         </div>
     </div>
+    <%- include('../partials/notifications') %>
 </body>
 </html>

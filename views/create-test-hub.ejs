@@ -4,129 +4,96 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Create Test Hub</title>
+    <%- include('../partials/design-system') %>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-
+        /* ============================================================
+           CREATE TEST HUB — three-column builder cards + gradient bg
+           ============================================================ */
         body {
-            font-family: "Segoe UI", "Trebuchet MS", sans-serif;
-            min-height: 100vh;
-            color: #1f2937;
             background:
-                radial-gradient(circle at top left, rgba(255,255,255,0.3), transparent 30%),
-                linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            padding: 28px 20px;
+                radial-gradient(circle at top left, rgba(255,255,255,0.15), transparent 30%),
+                linear-gradient(135deg, var(--primary-500) 0%, var(--primary-700) 100%);
+            color: #fff;
+            padding: var(--space-lg) var(--space-md);
         }
 
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-        }
+        .hub-container { max-width: 1200px; margin: 0 auto; }
 
-        .back-link {
+        .hub-back-link {
             display: inline-flex;
             align-items: center;
-            gap: 8px;
-            color: white;
+            gap: var(--space-sm);
+            color: rgba(255,255,255,0.85);
             text-decoration: none;
-            font-weight: 800;
-            margin-bottom: 22px;
+            font-weight: 700;
+            margin-bottom: var(--space-lg);
+            transition: color var(--transition-fast);
         }
+        .hub-back-link:hover { color: #fff; text-decoration: none; }
 
-        .hero {
-            text-align: center;
-            color: white;
-            margin-bottom: 34px;
-        }
-
-        .hero h1 {
-            font-size: 3rem;
-            font-weight: 900;
-            letter-spacing: -0.05em;
-            margin-bottom: 12px;
-        }
-
-        .hero p {
-            max-width: 720px;
-            margin: 0 auto;
-            line-height: 1.7;
-            opacity: 0.92;
-        }
+        .hero { text-align: center; margin-bottom: var(--space-xl); }
+        .hero h1 { font-size: 2.5rem; font-weight: 900; letter-spacing: -0.04em; margin-bottom: var(--space-sm); }
+        .hero p { max-width: 720px; margin: 0 auto; line-height: 1.7; opacity: 0.9; }
 
         .builder-note {
-            margin-top: 18px;
+            margin-top: var(--space-md);
             display: inline-flex;
             align-items: center;
             gap: 10px;
-            padding: 10px 16px;
-            border-radius: 999px;
-            background: rgba(255,255,255,0.14);
-            border: 1px solid rgba(255,255,255,0.18);
+            padding: 10px 18px;
+            border-radius: var(--radius-full);
+            background: rgba(255,255,255,0.12);
+            border: 1px solid rgba(255,255,255,0.16);
             font-weight: 700;
+            font-size: 0.9rem;
         }
 
         .grid {
             display: grid;
             grid-template-columns: repeat(3, minmax(0, 1fr));
-            gap: 22px;
+            gap: var(--space-lg);
         }
 
-        .card {
+        .builder-card {
             display: flex;
             flex-direction: column;
-            gap: 18px;
-            padding: 28px;
-            border-radius: 28px;
-            background: rgba(255,255,255,0.94);
+            gap: var(--space-md);
+            padding: var(--space-xl);
+            border-radius: var(--radius-xl);
+            background: var(--surface-glass);
             backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
             text-decoration: none;
-            color: inherit;
-            box-shadow: 0 24px 44px rgba(15, 23, 42, 0.12);
-            border: 1px solid rgba(255,255,255,0.28);
-            transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+            color: var(--text-primary);
+            box-shadow: var(--shadow-lg);
+            border: 1px solid rgba(255,255,255,0.2);
+            transition: transform var(--transition-base), box-shadow var(--transition-base);
+        }
+        .builder-card:hover {
+            transform: translateY(-8px);
+            box-shadow: var(--shadow-xl);
+            text-decoration: none;
+            color: var(--text-primary);
         }
 
-        .card:hover {
-            transform: translateY(-10px);
-            box-shadow: 0 30px 54px rgba(15, 23, 42, 0.16);
-        }
+        .reading { border-top: 6px solid var(--info); }
+        .listening { border-top: 6px solid var(--success); }
+        .writing { border-top: 6px solid #f97316; }
 
-        .reading { border-top: 8px solid #3b82f6; }
-        .listening { border-top: 8px solid #10b981; }
-        .writing { border-top: 8px solid #f97316; }
-
-        .icon {
-            font-size: 3.5rem;
-            line-height: 1;
-        }
-
-        .card h2 {
-            font-size: 1.5rem;
-            font-weight: 900;
-            letter-spacing: -0.03em;
-        }
-
-        .card p {
-            color: #64748b;
-            line-height: 1.7;
-        }
+        .builder-card .icon { font-size: 3rem; line-height: 1; }
+        .builder-card h2 { font-size: 1.4rem; font-weight: 900; letter-spacing: -0.02em; }
+        .builder-card p { color: var(--text-secondary); line-height: 1.6; font-size: 0.9rem; }
 
         .feature-list {
             display: grid;
-            gap: 10px;
-            padding: 18px;
-            border-radius: 20px;
-            background: #f8fafc;
-            border: 1px solid #e2e8f0;
-            color: #475569;
-            font-size: 0.9rem;
+            gap: var(--space-sm);
+            padding: var(--space-md);
+            border-radius: var(--radius-md);
+            background: var(--gray-50);
+            border: 1px solid var(--border);
+            font-size: 0.85rem;
         }
-
-        .feature-list div {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-weight: 700;
-        }
+        .feature-list div { display: flex; align-items: center; gap: var(--space-sm); font-weight: 700; color: var(--text-secondary); }
 
         .cta {
             margin-top: auto;
@@ -134,85 +101,43 @@
             align-items: center;
             justify-content: center;
             padding: 14px 18px;
-            border-radius: 999px;
-            font-weight: 900;
-            color: white;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            box-shadow: 0 12px 26px rgba(102, 126, 234, 0.28);
+            border-radius: var(--radius-full);
+            font-weight: 800;
+            font-size: 0.9rem;
+            color: #fff;
+            background: linear-gradient(135deg, var(--primary-500), var(--primary-600));
+            box-shadow: 0 8px 20px rgba(99, 102, 241, 0.3);
+            transition: box-shadow var(--transition-base);
         }
+        .builder-card:hover .cta { box-shadow: 0 12px 28px rgba(99, 102, 241, 0.4); }
 
         .footer-note {
-            margin-top: 24px;
-            padding: 18px 20px;
-            border-radius: 22px;
-            background: rgba(255,255,255,0.12);
-            border: 1px solid rgba(255,255,255,0.18);
-            color: white;
+            margin-top: var(--space-lg);
+            padding: var(--space-md) var(--space-lg);
+            border-radius: var(--radius-lg);
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.14);
+            color: rgba(255,255,255,0.85);
             line-height: 1.7;
+            font-size: 0.9rem;
         }
+
+        body.dark-mode {
+            background: radial-gradient(circle at top left, rgba(0,0,0,0.3), transparent 30%),
+                        linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+        }
+        body.dark-mode .builder-card { background: var(--surface-glass); }
+        body.dark-mode .feature-list { background: var(--gray-800); border-color: var(--border); }
 
         @media (max-width: 1080px) {
             .grid { grid-template-columns: 1fr; }
-            .hero h1 { font-size: 2.3rem; }
-        }
-
-        /* Dark Mode Styles */
-        body.dark-mode {
-            background:
-                radial-gradient(circle at top left, rgba(0,0,0,0.3), transparent 30%),
-                linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-            color: #e2e8f0;
-        }
-
-        body.dark-mode .back-link {
-            color: #a5f4fc;
-        }
-
-        body.dark-mode .back-link:hover {
-            color: #67e8f9;
-        }
-
-        body.dark-mode .hero h1 {
-            color: #f1f5f9;
-        }
-
-        body.dark-mode .hero p {
-            color: #cbd5e1;
-        }
-
-        body.dark-mode .builder-note {
-            background: rgba(102, 126, 234, 0.15);
-            border-color: rgba(102, 126, 234, 0.3);
-            color: #cbd5e1;
-        }
-
-        body.dark-mode .card {
-            background: rgba(30, 41, 59, 0.95);
-            box-shadow: 0 12px 28px rgba(0, 0, 0, 0.3);
-        }
-
-        body.dark-mode .card h3 {
-            color: #f1f5f9;
-        }
-
-        body.dark-mode .card p {
-            color: #cbd5e1;
-        }
-
-        body.dark-mode .desc {
-            color: #94a3b8;
-        }
-
-        body.dark-mode .footer-note {
-            background: rgba(255, 255, 255, 0.08);
-            border-color: rgba(255, 255, 255, 0.12);
-            color: #cbd5e1;
+            .hero h1 { font-size: 2rem; }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <a href="/admin" class="back-link">← Back to Admin Dashboard</a>
+    <div class="hub-container">
+        <a href="/admin" class="hub-back-link">← Back to Admin Dashboard</a>
 
         <section class="hero">
             <h1>Builder-Based Test Creation</h1>
@@ -221,7 +146,7 @@
         </section>
 
         <section class="grid">
-            <a href="/create-test-reading" class="card reading">
+            <a href="/create-test-reading" class="builder-card reading">
                 <div class="icon">📖</div>
                 <div>
                     <h2>Reading Builder</h2>
@@ -235,7 +160,7 @@
                 <div class="cta">Open Reading Builder</div>
             </a>
 
-            <a href="/create-test-listening" class="card listening">
+            <a href="/create-test-listening" class="builder-card listening">
                 <div class="icon">🎧</div>
                 <div>
                     <h2>Listening Builder</h2>
@@ -249,7 +174,7 @@
                 <div class="cta">Open Listening Builder</div>
             </a>
 
-            <a href="/create-test-writing" class="card writing">
+            <a href="/create-test-writing" class="builder-card writing">
                 <div class="icon">✍️</div>
                 <div>
                     <h2>Writing Builder</h2>
@@ -268,5 +193,6 @@
             Saved tests render through the same shared exporter for student view, teacher preview, and HTML download, so the visual output stays consistent from authoring to delivery.
         </div>
     </div>
+    <%- include('../partials/notifications') %>
 </body>
 </html>

@@ -4,243 +4,177 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Add Student</title>
+    <%- include('../partials/design-system') %>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        
+        /* ============================================================
+           ADD STUDENT PAGE — centered form layout
+           ============================================================ */
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: #1f2937;
-            min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 20px;
+            min-height: 100vh;
+            padding: var(--space-lg);
+            background: linear-gradient(135deg, var(--primary-500) 0%, var(--primary-700) 100%);
         }
-        
+
         @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-        
-        .container {
+
+        .add-student-container {
             max-width: 500px;
             width: 100%;
             animation: slideUp 0.6s ease-out;
         }
-        
-        .form-card {
-            background: rgba(255, 255, 255, 0.95);
+
+        .add-student-card {
+            background: var(--surface-glass);
             backdrop-filter: blur(20px);
-            padding: 48px;
-            border-radius: 24px;
-            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15);
+            -webkit-backdrop-filter: blur(20px);
+            padding: var(--space-2xl);
+            border-radius: var(--radius-xl);
+            box-shadow: var(--shadow-xl);
+            border: 1px solid rgba(255, 255, 255, 0.18);
         }
-        
-        .header {
+
+        .add-student-header {
             text-align: center;
-            margin-bottom: 40px;
+            margin-bottom: var(--space-xl);
         }
-        
-        .header-icon {
-            font-size: 3rem;
-            margin-bottom: 16px;
-        }
-        
-        .header h1 {
+
+        .add-student-header .header-icon { font-size: 3rem; margin-bottom: var(--space-md); }
+
+        .add-student-header h1 {
             font-size: 2rem;
             font-weight: 900;
-            color: #1f2937;
-            margin-bottom: 8px;
+            color: var(--text-primary);
+            margin-bottom: var(--space-sm);
         }
-        
-        .header p {
-            color: #6b7280;
-            font-size: 0.95rem;
-        }
-        
-        .form-group {
-            margin-bottom: 24px;
-        }
-        
-        .form-group:last-of-type { margin-bottom: 32px; }
-        
-        label {
-            display: block;
-            font-weight: 700;
-            color: #374151;
-            margin-bottom: 8px;
-            font-size: 0.95rem;
-        }
-        
-        input {
-            width: 100%;
-            padding: 14px 16px;
-            border: 2px solid #e5e7eb;
-            border-radius: 12px;
-            font-size: 0.95rem;
-            font-family: inherit;
-            transition: all 0.3s ease;
-        }
-        
-        input:focus {
-            outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-        }
-        
+
+        .add-student-header p { color: var(--text-muted); font-size: 0.95rem; }
+
+        .form-group { margin-bottom: var(--space-lg); }
+        .form-group:last-of-type { margin-bottom: var(--space-xl); }
+
         .hint {
             font-size: 0.85rem;
-            color: #9ca3af;
+            color: var(--text-muted);
             margin-top: 6px;
         }
 
-        .password-row {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .password-row input {
-            flex: 1;
-        }
+        .password-row { display: flex; align-items: center; gap: 10px; }
+        .password-row .form-input { flex: 1; }
 
         .toggle-password {
             padding: 12px 14px;
-            border-radius: 12px;
-            border: 2px solid #e5e7eb;
-            background: #fff;
-            color: #374151;
+            border-radius: var(--radius-md);
+            border: 2px solid var(--border);
+            background: var(--surface);
+            color: var(--text-secondary);
             font-weight: 700;
             font-size: 0.9rem;
             cursor: pointer;
-            transition: all 0.2s ease;
+            transition: all var(--transition-fast);
             flex: 0 0 auto;
+            font-family: var(--font-sans);
+        }
+        .toggle-password:hover {
+            border-color: var(--primary-400);
+            box-shadow: var(--shadow-glow);
         }
 
-        .toggle-password:hover {
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.08);
-        }
-        
-        .button-group {
-            display: flex;
-            gap: 16px;
-        }
-        
-        button {
+        .button-group { display: flex; gap: var(--space-md); }
+
+        .btn-cancel {
             flex: 1;
             padding: 16px;
             border: none;
-            border-radius: 12px;
+            border-radius: var(--radius-md);
             font-weight: 700;
             font-size: 0.95rem;
             cursor: pointer;
-            transition: all 0.3s ease;
+            background: var(--gray-100);
+            color: var(--text-secondary);
+            transition: all var(--transition-base);
+            font-family: var(--font-sans);
+            text-align: center;
         }
-        
-        button:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-        }
-        
-        .btn-submit {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            box-shadow: 0 6px 16px rgba(102, 126, 234, 0.3);
-        }
-        
-        .btn-submit:hover:not(:disabled) {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 24px rgba(102, 126, 234, 0.4);
-        }
-        
-        .btn-cancel {
-            background: #f3f4f6;
-            color: #374151;
-        }
-        
-        .btn-cancel:hover:not(:disabled) { background: #e5e7eb; }
-        
+        .btn-cancel:hover { background: var(--gray-200); }
+
         .back-link {
             text-align: center;
-            margin-top: 20px;
+            margin-top: var(--space-lg);
         }
-        
         .back-link a {
-            color: white;
+            color: rgba(255, 255, 255, 0.85);
             text-decoration: none;
             font-weight: 600;
             font-size: 0.9rem;
-            transition: all 0.3s ease;
+            transition: all var(--transition-fast);
         }
-        
-        .back-link a:hover { opacity: 0.8; }
-        
+        .back-link a:hover { color: #fff; }
+
         .alert {
             padding: 16px 18px;
-            border-radius: 12px;
-            margin-bottom: 20px;
+            border-radius: var(--radius-md);
+            margin-bottom: var(--space-lg);
             display: none;
             animation: slideUp 0.3s ease-out;
+            font-weight: 600;
+            font-size: 0.9rem;
         }
-        
-        .alert.show {
-            display: block;
-        }
-        
-        .alert.success {
-            background: #d1fae5;
-            color: #065f46;
-            border: 1px solid #6ee7b7;
-        }
-        
-        .alert.error {
-            background: #fee2e2;
-            color: #7f1d1d;
-            border: 1px solid #fca5a5;
-        }
-        
+        .alert.show { display: block; }
+        .alert.success { background: var(--success-bg); color: #065f46; border: 1px solid var(--success); }
+        .alert.error { background: var(--error-bg); color: #991b1b; border: 1px solid var(--error); }
+
+        body.dark-mode { background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); }
+        body.dark-mode .btn-cancel { background: var(--gray-800); color: var(--text-secondary); }
+        body.dark-mode .btn-cancel:hover { background: var(--gray-700); }
+        body.dark-mode .back-link a { color: var(--text-muted); }
+        body.dark-mode .back-link a:hover { color: var(--primary-300); }
+
         @media (max-width: 600px) {
-            .form-card { padding: 32px 24px; }
-            .header h1 { font-size: 1.5rem; }
+            .add-student-card { padding: var(--space-xl) var(--space-lg); }
+            .add-student-header h1 { font-size: 1.5rem; }
             .button-group { flex-direction: column; }
         }
     </style>
     <script>
         async function handleSubmit(e) {
             e.preventDefault();
-            
+
             const username = document.getElementById('username').value.trim();
             const password = document.getElementById('password').value;
             const submitBtn = e.target.querySelector('.btn-submit');
             const alertDiv = document.getElementById('alert');
-            
+
             // Clear previous alert
             alertDiv.textContent = '';
             alertDiv.className = 'alert';
-            
+
             // Validation
             if (!username) {
                 showAlert('Please enter a username', 'error');
                 return;
             }
-            
+
             if (username.length < 3) {
                 showAlert('Username must be at least 3 characters', 'error');
                 return;
             }
-            
+
             if (!password) {
                 showAlert('Please enter a password', 'error');
                 return;
             }
-            
+
             if (password.length < 6) {
                 showAlert('Password must be at least 6 characters', 'error');
                 return;
             }
-            
+
             submitBtn.disabled = true;
             submitBtn.textContent = 'Creating...';
-            
+
             try {
                 const csrfToken = '<%= csrfToken %>';
                 const response = await fetch('/teacher/add-student', {
@@ -251,9 +185,9 @@
                     },
                     body: JSON.stringify({ username, password })
                 });
-                
+
                 const data = await response.json();
-                
+
                 if (data.success) {
                     showAlert(data.message, 'success');
                     setTimeout(() => {
@@ -270,11 +204,11 @@
                 submitBtn.textContent = 'Create Student →';
             }
         }
-        
+
         function showAlert(message, type) {
             const alertDiv = document.getElementById('alert');
             alertDiv.textContent = message;
-            alertDiv.className = `alert ${type} show`;
+            alertDiv.className = 'alert ' + type + ' show';
         }
 
         function togglePasswordVisibility() {
@@ -288,42 +222,43 @@
     </script>
 </head>
 <body>
-    <div class="container">
-        <div class="form-card">
-            <div class="header">
+    <div class="add-student-container">
+        <div class="add-student-card">
+            <div class="add-student-header">
                 <div class="header-icon">👤</div>
                 <h1>Add New Student</h1>
                 <p>Register a student to your platform</p>
             </div>
-            
+
             <div id="alert" class="alert"></div>
-            
+
             <form onsubmit="handleSubmit(event)">
                 <div class="form-group">
                     <label for="username">Student Username *</label>
-                    <input type="text" id="username" name="username" required placeholder="john_doe" autocomplete="off">
+                    <input type="text" id="username" name="username" class="form-input" required placeholder="john_doe" autocomplete="off">
                     <div class="hint">Unique username for the student (minimum 3 characters)</div>
                 </div>
-                
+
                 <div class="form-group">
                     <label for="password">Password *</label>
                     <div class="password-row">
-                        <input type="password" id="password" name="password" required placeholder="••••••••" autocomplete="new-password">
+                        <input type="password" id="password" name="password" class="form-input" required placeholder="••••••••" autocomplete="new-password">
                         <button type="button" id="togglePasswordBtn" class="toggle-password" onclick="togglePasswordVisibility()">Show</button>
                     </div>
                     <div class="hint">Minimum 6 characters</div>
                 </div>
-                
+
                 <div class="button-group">
                     <button type="button" class="btn-cancel" onclick="window.history.back()">Cancel</button>
-                    <button type="submit" class="btn-submit">Create Student →</button>
+                    <button type="submit" class="btn btn-primary btn-submit" style="flex:1;padding:16px;font-size:0.95rem;">Create Student →</button>
                 </div>
             </form>
         </div>
-        
+
         <div class="back-link">
             <a href="/teacher-dashboard">← Back to Dashboard</a>
         </div>
     </div>
+    <%- include('../partials/notifications') %>
 </body>
 </html>

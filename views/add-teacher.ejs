@@ -4,185 +4,128 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Add Teacher</title>
+    <%- include('../partials/design-system') %>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        
+        /* ============================================================
+           ADD TEACHER PAGE — centered form layout
+           ============================================================ */
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: #1f2937;
-            min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 20px;
+            min-height: 100vh;
+            padding: var(--space-lg);
+            background: linear-gradient(135deg, var(--primary-500) 0%, var(--primary-700) 100%);
         }
-        
+
         @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-        
-        .container {
+
+        .add-teacher-container {
             max-width: 600px;
             width: 100%;
             animation: slideUp 0.6s ease-out;
         }
-        
-        .form-card {
-            background: rgba(255, 255, 255, 0.95);
+
+        .add-teacher-card {
+            background: var(--surface-glass);
             backdrop-filter: blur(20px);
-            padding: 48px;
-            border-radius: 24px;
-            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15);
+            -webkit-backdrop-filter: blur(20px);
+            padding: var(--space-2xl);
+            border-radius: var(--radius-xl);
+            box-shadow: var(--shadow-xl);
+            border: 1px solid rgba(255, 255, 255, 0.18);
         }
-        
-        .header {
+
+        .add-teacher-header {
             text-align: center;
-            margin-bottom: 40px;
+            margin-bottom: var(--space-xl);
         }
-        
-        .header-icon {
-            font-size: 3rem;
-            margin-bottom: 16px;
-        }
-        
-        .header h1 {
-            font-size: 2rem;
-            font-weight: 900;
-            color: #1f2937;
-            margin-bottom: 8px;
-        }
-        
-        .header p {
-            color: #6b7280;
-            font-size: 0.95rem;
-        }
-        
-        .form-group {
-            margin-bottom: 24px;
-        }
-        
-        .form-group:last-of-type { margin-bottom: 32px; }
-        
-        label {
-            display: block;
-            font-weight: 700;
-            color: #374151;
-            margin-bottom: 8px;
-            font-size: 0.95rem;
-        }
-        
-        input {
-            width: 100%;
-            padding: 14px 16px;
-            border: 2px solid #e5e7eb;
-            border-radius: 12px;
-            font-size: 0.95rem;
-            font-family: inherit;
-            transition: all 0.3s ease;
-        }
-        
-        input:focus {
-            outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-        }
-        
-        .hint {
-            font-size: 0.85rem;
-            color: #9ca3af;
-            margin-top: 6px;
-        }
-        
-        .button-group {
-            display: flex;
-            gap: 16px;
-        }
-        
-        button, .btn-cancel {
+        .add-teacher-header .header-icon { font-size: 3rem; margin-bottom: var(--space-md); }
+        .add-teacher-header h1 { font-size: 2rem; font-weight: 900; color: var(--text-primary); margin-bottom: var(--space-sm); }
+        .add-teacher-header p { color: var(--text-muted); font-size: 0.95rem; }
+
+        .form-group { margin-bottom: var(--space-lg); }
+        .form-group:last-of-type { margin-bottom: var(--space-xl); }
+
+        .button-group { display: flex; gap: var(--space-md); }
+
+        .btn-cancel {
             flex: 1;
             padding: 16px;
             border: none;
-            border-radius: 12px;
+            border-radius: var(--radius-md);
             font-weight: 700;
             font-size: 0.95rem;
             cursor: pointer;
-            transition: all 0.3s ease;
+            background: var(--gray-100);
+            color: var(--text-secondary);
             text-decoration: none;
             display: flex;
             align-items: center;
             justify-content: center;
+            transition: all var(--transition-base);
+            font-family: var(--font-sans);
         }
-        
-        .btn-submit {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            box-shadow: 0 6px 16px rgba(102, 126, 234, 0.3);
-        }
-        
-        .btn-submit:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 24px rgba(102, 126, 234, 0.4);
-        }
-        
-        .btn-cancel {
-            background: #f3f4f6;
-            color: #374151;
-        }
-        
-        .btn-cancel:hover { background: #e5e7eb; }
-        
+        .btn-cancel:hover { background: var(--gray-200); }
+
         .back-link {
             text-align: center;
-            margin-top: 20px;
+            margin-top: var(--space-lg);
         }
-        
         .back-link a {
-            color: white;
+            color: rgba(255, 255, 255, 0.85);
             text-decoration: none;
             font-weight: 600;
             font-size: 0.9rem;
-            transition: all 0.3s ease;
+            transition: all var(--transition-fast);
         }
-        
-        .back-link a:hover { opacity: 0.8; }
-        
+        .back-link a:hover { color: #fff; }
+
+        body.dark-mode { background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); }
+        body.dark-mode .btn-cancel { background: var(--gray-800); color: var(--text-secondary); }
+        body.dark-mode .btn-cancel:hover { background: var(--gray-700); }
+        body.dark-mode .back-link a { color: var(--text-muted); }
+        body.dark-mode .back-link a:hover { color: var(--primary-300); }
+
         @media (max-width: 600px) {
-            .form-card { padding: 32px 24px; }
-            .header h1 { font-size: 1.5rem; }
+            .add-teacher-card { padding: var(--space-xl) var(--space-lg); }
+            .add-teacher-header h1 { font-size: 1.5rem; }
             .button-group { flex-direction: column; }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="form-card">
-            <div class="header">
+    <div class="add-teacher-container">
+        <div class="add-teacher-card">
+            <div class="add-teacher-header">
                 <div class="header-icon">👨‍🏫</div>
                 <h1>Add New Teacher</h1>
                 <p>Register a teacher to your platform</p>
             </div>
-            
+
             <form method="POST" action="/admin/add-teacher">
                 <input type="hidden" name="_csrf" value="<%= csrfToken %>">
                 <div class="form-group">
                     <label for="username">Username *</label>
-                    <input type="text" id="username" name="username" required placeholder="e.g. teacher_john" autocomplete="username">
+                    <input type="text" id="username" name="username" class="form-input" required placeholder="e.g. teacher_john" autocomplete="username">
                 </div>
-                
+
                 <div class="form-group">
                     <label for="password">Password *</label>
-                    <input type="password" id="password" name="password" required placeholder="••••••••" autocomplete="new-password">
+                    <input type="password" id="password" name="password" class="form-input" required placeholder="••••••••" autocomplete="new-password">
                 </div>
-                
+
                 <div class="button-group">
                     <a href="/admin" class="btn-cancel">Cancel</a>
-                    <button type="submit" class="btn-submit">Add Teacher →</button>
+                    <button type="submit" class="btn btn-primary" style="flex:1;padding:16px;font-size:0.95rem;">Add Teacher →</button>
                 </div>
             </form>
         </div>
-        
+
         <div class="back-link">
             <a href="/admin">← Back to Admin</a>
         </div>
     </div>
+    <%- include('../partials/notifications') %>
 </body>
 </html>

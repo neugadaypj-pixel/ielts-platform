@@ -19,22 +19,10 @@ function csrfErrorHandler(err, req, res, next) {
     );
 
     if (isCsrfErr) {
-        const cookieToken = req.cookies?._csrf ? req.cookies._csrf.substring(0, 30) + '...' : '(none)';
-        const bodyToken = req.body?._csrf ? req.body._csrf.substring(0, 30) + '...' : '(none)';
-        const headerToken = req.headers?.['x-csrf-token'] || req.headers?.['csrf-token'] || '(none)';
         logger.warn('CSRF token validation failed', {
             userId: req.session?.userId,
             path: req.path,
-            ip: req.ip,
-            method: req.method,
-            cookieToken,
-            bodyToken,
-            headerToken: typeof headerToken === 'string' ? headerToken.substring(0, 30) + '...' : '(none)',
-            cookieExists: '_csrf' in (req.cookies || {}),
-            bodyHasCsrf: '_csrf' in (req.body || {}),
-            allCookieKeys: Object.keys(req.cookies || {}).join(','),
-            allBodyKeys: Object.keys(req.body || {}).join(',').substring(0, 200),
-            cookieMatchesBody: req.cookies?._csrf === req.body?._csrf
+            ip: req.ip
         });
 
         const wantsJson = req.xhr

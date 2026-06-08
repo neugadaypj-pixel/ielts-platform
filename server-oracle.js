@@ -331,21 +331,7 @@ const { generateCsrfToken, doubleCsrfProtection } = doubleCsrf({
 //  2. res.locals.csrfToken is set so EJS views can use <%= csrfToken %>
 app.use((req, res, next) => {
     try {
-        const cookieBefore = req.cookies?._csrf ? req.cookies._csrf.substring(0, 20) + '...' : '(none)';
         const token = generateCsrfToken(req, res);
-        const cookieAfter = req.cookies?._csrf ? req.cookies._csrf.substring(0, 20) + '...' : '(none)';
-        if (req.method === 'POST') {
-            const bodyToken = req.body?._csrf ? req.body._csrf.substring(0, 20) + '...' : '(none)';
-            logger.debug('[CSRF-DIAG] global middleware', {
-                method: req.method,
-                path: req.path,
-                cookieBefore,
-                cookieAfter,
-                bodyToken,
-                tokenChanged: token !== (req.cookies?._csrf || ''),
-                ip: req.ip
-            });
-        }
         res.locals.csrfToken = token;
     } catch (err) {
         // If session isn't ready (e.g., health check), skip cleanly

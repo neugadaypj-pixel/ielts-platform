@@ -1,4 +1,4 @@
-require('dotenv').config();
+r,require('dotenv').config();
 const { getPool } = require('./database/connection');
 
 async function clearSessions() {

@@ -3544,7 +3544,7 @@ async function startServer() {
     cleanupExpiredSessions();
     setInterval(cleanupExpiredSessions, 3600000);
 
-    // 5. Cache diagnostics every 30 minutes — auto-flush if hit rate degrades
+    // 5. Cache diagnostics every 30 minutes (observation only, no automatic action)
     setInterval(() => {
         const stats = cache.getStats();
         logger.info('NodeCache stats', {
@@ -3554,14 +3554,6 @@ async function startServer() {
             ksize: stats.ksize,
             vsize: stats.vsize
         });
-        const total = stats.hits + stats.misses;
-        if (total > 100 && stats.hits / total < 0.5 && stats.keys > 100) {
-            logger.warn('Low cache hit rate — flushing cache', {
-                hitRate: Math.round(stats.hits / total * 100) + '%',
-                keys: stats.keys
-            });
-            cache.flushAll();
-        }
     }, 1800000);
 
     // Schedule automated daily backups at 2 AM

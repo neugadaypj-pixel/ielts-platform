@@ -1,28 +1,31 @@
 require('dotenv').config();
-const mongoose = require('mongoose');
+const { getPool } = require('./database/connection');
 
 async function clearSessions() {
+    let conn;
     try {
-        console.log('🔄 Connecting to MongoDB...');
-        await mongoose.connect(process.env.MONGO_URI);
-        console.log('✅ Connected to MongoDB');
-
-        const db = mongoose.connection.db;
-        const sessionsCollection = db.collection('sessions');
+        console.log('🔄 Connecting to Oracle...');
+        const pool = await getPool();
+        conn = await pool.getConnection();
+        console.log('✅ Connected to Oracle');
 
         console.log('🗑️  Clearing all sessions...');
-        const result = await sessionsCollection.deleteMany({});
-        console.log(`✅ Deleted ${result.deletedCount} sessions`);
+        const result = await conn.execute('DELETE FROM sessions');
+        await conn.commit();
+        console.log(`✅ Deleted ${result.rowsAffected} sessions`);
 
         console.log('👥 All users will need to log in again after deployment');
-        
-        await mongoose.connection.close();
+
+        await conn.close();
         console.log('✅ Database connection closed');
         console.log('🚀 Ready to deploy!');
-        
+
         process.exit(0);
     } catch (error) {
         console.error('❌ Error clearing sessions:', error.message);
+        if (conn) {
+            try { await conn.close(); } catch (e) { /* ignore */ }
+        }
         process.exit(1);
     }
 }

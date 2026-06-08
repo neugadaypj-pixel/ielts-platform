@@ -2323,14 +2323,16 @@ const sseClients = new Map();
 // Cleanup stale heartbeat entries every 5 minutes
 setInterval(() => {
     const cutoff = Date.now() - 300000; // 5 minutes
-    heartbeatStore.forEach((studentMap) => {
+    const emptyTestIds = [];
+    heartbeatStore.forEach((studentMap, testId) => {
+        const staleKeys = [];
         studentMap.forEach((data, name) => {
-            if (data.lastSeen < cutoff) studentMap.delete(name);
+            if (data.lastSeen < cutoff) staleKeys.push(name);
         });
-        if (studentMap.size === 0) heartbeatStore.delete(Array.from(heartbeatStore.keys()).find(k => heartbeatStore.get(k) === studentMap));
+        staleKeys.forEach(k => studentMap.delete(k));
+        if (studentMap.size === 0) emptyTestIds.push(testId);
     });
-    // Clean out empty maps
-    heartbeatStore.forEach((v, k) => { if (v.size === 0) heartbeatStore.delete(k); });
+    emptyTestIds.forEach(k => heartbeatStore.delete(k));
 }, 300000);
 
 function getActiveStudents(testId) {
@@ -3359,6 +3361,56 @@ require('./routes/missing-routes')(app, {
     canEditTest, getAccessibleTest, saveStudentSubmission
 });
 
+// === HEALTH CHECK ENDPOINT ===
+app.get('/health', async (req, res) => {
+    const status = {
+        status: 'ok',
+        timestamp: new Date().toISOString(),
+        uptime: process.uptime(),
+        memory: process.memoryUsage(),
+        nodeVersion: process.version,
+        pid: process.pid
+    };
+
+    // DB check
+    try {
+        const pool = await getPool();
+        const conn = await pool.getConnection();
+        const result = await conn.execute('SELECT COUNT(*) AS cnt FROM users');
+        status.db = {
+            connected: true,
+            poolConnectionsInUse: pool.connectionsInUse,
+            poolConnectionsOpen: pool.connectionsOpen,
+            userCount: result.rows[0][0]
+        };
+        await conn.close();
+    } catch (err) {
+        status.db = { connected: false, error: err.message };
+        status.status = 'degraded';
+    }
+
+    // B2 check (probe bucket existence)
+    try {
+        const s3client = new S3Client({
+            region: b2Config.region,
+            endpoint: b2Config.endpoint,
+            credentials: {
+                accessKeyId: process.env.B2_KEY_ID || '',
+                secretAccessKey: process.env.B2_APP_KEY || ''
+            },
+            forcePathStyle: true
+        });
+        await s3client.send(new (require('@aws-sdk/client-s3').HeadBucketCommand)({ Bucket: b2Config.bucket }));
+        status.storage = { connected: true, bucket: b2Config.bucket };
+    } catch (err) {
+        status.storage = { connected: false, error: err.message };
+        if (status.status === 'ok') status.status = 'degraded';
+    }
+
+    const httpCode = status.status === 'ok' ? 200 : 503;
+    res.status(httpCode).json(status);
+});
+
 // 404 Handler
 app.use((req, res) => {
     res.status(404).render('error', {
@@ -3385,6 +3437,9 @@ app.use(multerErrorHandler);
 app.use(errorHandler);
 
 // === START SERVER ===
+let serverInstance = null;
+let shuttingDown = false;
+
 async function startServer() {
     await connectDatabase();
 
@@ -3411,26 +3466,103 @@ async function startServer() {
     }
 
     const PORT = process.env.PORT || 3000;
-    app.listen(PORT, () => {
+    serverInstance = app.listen(PORT, () => {
         logger.info(`Oracle-mode server running on port ${PORT}`);
         console.log(`Server running on http://localhost:${PORT}`);
     });
 
-    // Periodic pool health check
+    // === PRODUCTION HARDENING: Periodic health checks & self-healing ===
+
+    // 1. Pool health check every 30s with auto-recovery
     setInterval(async () => {
         try {
             const pool = await getPool();
             const conn = await pool.getConnection();
             await conn.execute('SELECT 1 FROM dual');
             await conn.close();
-            poolReady = true;
+            if (!poolReady) {
+                logger.info('Oracle pool recovered — marking ready');
+                poolReady = true;
+            }
         } catch (err) {
             logger.warn('Oracle health check failed', { error: err.message });
             poolReady = false;
-            // Try reconnecting
-            connectDatabase();
+            connectDatabase().catch(e => logger.error('DB reconnection failed', { error: e.message }));
         }
     }, 30000);
+
+    // 2. Log pool stats every 10 minutes for diagnostics
+    setInterval(async () => {
+        try {
+            const pool = await getPool();
+            logger.info('Oracle pool stats', {
+                connectionsInUse: pool.connectionsInUse,
+                connectionsOpen: pool.connectionsOpen,
+                poolMax: pool.poolMax,
+                poolMin: pool.poolMin,
+                poolPingInterval: pool.poolPingInterval
+            });
+        } catch (err) {
+            logger.warn('Could not read pool stats', { error: err.message });
+        }
+    }, 600000);
+
+    // 3. Memory monitoring every 15 minutes — log & optionally trigger GC
+    const MEMORY_WARN_MB = 512; // 512 MB RSS warning threshold
+    setInterval(() => {
+        const mem = process.memoryUsage();
+        const memMB = {
+            rss: Math.round(mem.rss / 1024 / 1024),
+            heapTotal: Math.round(mem.heapTotal / 1024 / 1024),
+            heapUsed: Math.round(mem.heapUsed / 1024 / 1024),
+            external: Math.round(mem.external / 1024 / 1024)
+        };
+        logger.info('Memory usage', memMB);
+        if (memMB.rss > MEMORY_WARN_MB) {
+            logger.warn('High memory usage detected — triggering GC hint', memMB);
+            if (global.gc) {
+                global.gc();
+                logger.info('Manual GC triggered');
+            }
+        }
+    }, 900000);
+
+    // 4. Session table cleanup — remove expired sessions every hour
+    async function cleanupExpiredSessions() {
+        try {
+            const result = await execute(
+                `DELETE FROM sessions WHERE expires < CURRENT_TIMESTAMP`
+            );
+            if (result.rowsAffected > 0) {
+                logger.info('Expired sessions cleaned', { count: result.rowsAffected });
+            }
+        } catch (err) {
+            logger.warn('Session cleanup failed', { error: err.message });
+        }
+    }
+    // Run immediately then every hour
+    cleanupExpiredSessions();
+    setInterval(cleanupExpiredSessions, 3600000);
+
+    // 5. Cache diagnostics every 30 minutes — auto-flush if hit rate degrades
+    setInterval(() => {
+        const stats = cache.getStats();
+        logger.info('NodeCache stats', {
+            keys: stats.keys,
+            hits: stats.hits,
+            misses: stats.misses,
+            ksize: stats.ksize,
+            vsize: stats.vsize
+        });
+        const total = stats.hits + stats.misses;
+        if (total > 100 && stats.hits / total < 0.5 && stats.keys > 100) {
+            logger.warn('Low cache hit rate — flushing cache', {
+                hitRate: Math.round(stats.hits / total * 100) + '%',
+                keys: stats.keys
+            });
+            cache.flushAll();
+        }
+    }, 1800000);
 
     // Schedule automated daily backups at 2 AM
     if (process.env.NODE_ENV === 'production') {
@@ -3463,8 +3595,93 @@ async function startServer() {
         });
         console.log('⏰ AI analysis cleanup scheduled for 3:30 AM daily');
     }
+
+    // === PROCESS SELF-HEALING WATCHDOG ===
+    // If poolReady stays false for >5 minutes, attempt full recovery
+    let lastHealthyTime = Date.now();
+    setInterval(() => {
+        if (poolReady) {
+            lastHealthyTime = Date.now();
+            return;
+        }
+        const downDuration = Date.now() - lastHealthyTime;
+        if (downDuration > 300000) {
+            logger.error('Database has been down for >5 minutes — triggering full reconnect cycle');
+            console.error('⚠️  WATCHDOG: DB down >5min, forcing full reconnect...');
+            connectDatabase().catch(e => logger.error('Watchdog reconnect failed', { error: e.message }));
+            lastHealthyTime = Date.now(); // Reset to avoid spam
+        }
+    }, 60000);
+
+    logger.info('All production hardening measures activated');
 }
 
+// === GRACEFUL SHUTDOWN ===
+async function gracefulShutdown(signal) {
+    if (shuttingDown) return;
+    shuttingDown = true;
+    console.log(`\n🛑 Received ${signal} — starting graceful shutdown...`);
+    logger.info(`Graceful shutdown initiated`, { signal });
+
+    // Stop accepting new connections (Render gives 10s before SIGKILL)
+    if (serverInstance) {
+        serverInstance.close(() => {
+            console.log('✅ HTTP server closed');
+        });
+    }
+
+    // Close Oracle pool
+    try {
+        const { closePool } = require('./database/connection');
+        await closePool();
+        console.log('✅ Oracle pool closed');
+    } catch (err) {
+        console.error('❌ Error closing Oracle pool:', err.message);
+    }
+
+    // Flush Sentry events
+    if (process.env.SENTRY_DSN) {
+        try {
+            await Sentry.close(2000);
+            console.log('✅ Sentry flushed');
+        } catch (err) {
+            console.error('❌ Error closing Sentry:', err.message);
+        }
+    }
+
+    console.log('👋 Shutdown complete — exiting');
+    logger.info('Graceful shutdown complete');
+    process.exit(0);
+}
+
+// === CRASH HANDLERS ===
+process.on('uncaughtException', (err) => {
+    console.error('💥 FATAL uncaughtException:', err.message);
+    console.error(err.stack);
+    logger.error('FATAL uncaughtException', { message: err.message, stack: err.stack });
+    // Attempt graceful shutdown, but force exit after 5s in case shutdown hangs
+    gracefulShutdown('uncaughtException');
+    setTimeout(() => {
+        console.error('⚠️  Forced exit after uncaughtException timeout');
+        process.exit(1);
+    }, 5000);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+    const message = reason instanceof Error ? reason.message : String(reason);
+    const stack = reason instanceof Error ? reason.stack : 'No stack trace';
+    console.error('💥 FATAL unhandledRejection:', message);
+    console.error(stack);
+    logger.error('FATAL unhandledRejection', { message, stack });
+    // Don't exit — unhandled rejections don't crash Node 16+
+    // They are logged to Sentry via the logger
+});
+
+// Platform signals (Render sends SIGTERM, terminal sends SIGINT)
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+
+// === START ===
 startServer();
 
 module.exports = app;

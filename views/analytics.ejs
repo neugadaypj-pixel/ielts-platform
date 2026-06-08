@@ -5,133 +5,47 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Analytics Dashboard</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <%- include('../partials/design-system') %>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: "Segoe UI", sans-serif;
-            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-            min-height: 100vh;
-            padding: 24px;
-            color: #1f2937;
-        }
-        .container { max-width: 1400px; margin: 0 auto; }
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 28px 32px;
-            border-radius: 28px;
-            background: rgba(255,255,255,0.92);
-            box-shadow: 0 18px 42px rgba(15,23,42,0.08);
-            margin-bottom: 24px;
-        }
-        .header h1 { font-size: 2rem; font-weight: 900; }
-        .btn {
-            padding: 12px 18px;
-            border-radius: 999px;
-            text-decoration: none;
-            font-weight: 800;
-            background: white;
-            color: #334155;
-            border: 1px solid #dbe3f1;
-        }
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 18px;
-            margin-bottom: 24px;
-        }
-        .stat-card {
-            padding: 24px;
-            border-radius: 24px;
-            background: rgba(255,255,255,0.92);
-            box-shadow: 0 12px 28px rgba(15,23,42,0.06);
-            text-align: center;
-        }
-        .stat-value { font-size: 2.2rem; font-weight: 900; color: #667eea; }
-        .stat-label { color: #64748b; margin-top: 8px; font-size: 0.9rem; }
+        /* ============================================================
+           ANALYTICS DASHBOARD — charts + stat cards
+           ============================================================ */
+        body { padding: var(--space-lg); }
+
+        .analytics-container { max-width: 1400px; margin: 0 auto; }
+
         .chart-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
-            gap: 24px;
+            gap: var(--space-lg);
         }
         .chart-card {
-            padding: 28px;
-            border-radius: 28px;
-            background: rgba(255,255,255,0.92);
-            box-shadow: 0 18px 42px rgba(15,23,42,0.08);
+            padding: var(--space-xl);
+            border-radius: var(--radius-lg);
+            background: var(--surface-glass);
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
+            box-shadow: var(--shadow-card);
+            border: 1px solid rgba(255,255,255,0.12);
         }
-        .chart-card h2 { font-size: 1.3rem; font-weight: 900; margin-bottom: 20px; }
+        .chart-card h2 { font-size: 1.1rem; font-weight: 900; margin-bottom: var(--space-lg); color: var(--text-primary); }
         canvas { max-height: 300px; }
+
+        body.dark-mode .chart-card { background: var(--surface-glass); }
+
         @media (max-width: 1200px) {
-            .stats-grid { grid-template-columns: repeat(2, 1fr); }
             .chart-grid { grid-template-columns: 1fr; }
-        }
-
-        /* Dark Mode Styles */
-        body.dark-mode {
-            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-            color: #e2e8f0;
-        }
-
-        body.dark-mode .header {
-            background: rgba(30, 41, 59, 0.95);
-            box-shadow: 0 18px 42px rgba(0, 0, 0, 0.3);
-        }
-
-        body.dark-mode .header h1 {
-            color: #f1f5f9;
-        }
-
-        body.dark-mode .header p {
-            color: #cbd5e1;
-        }
-
-        body.dark-mode .btn {
-            background: rgba(51, 65, 85, 0.9);
-            color: #e2e8f0;
-            border-color: #475569;
-        }
-
-        body.dark-mode .btn:hover {
-            background: rgba(51, 65, 85, 0.99);
-        }
-
-        body.dark-mode .stat-card {
-            background: rgba(30, 41, 59, 0.95);
-            box-shadow: 0 12px 28px rgba(0, 0, 0, 0.3);
-        }
-
-        body.dark-mode .stat-value {
-            color: #a5f4fc;
-        }
-
-        body.dark-mode .stat-label {
-            color: #94a3b8;
-        }
-
-        body.dark-mode .chart-card {
-            background: rgba(30, 41, 59, 0.95);
-            box-shadow: 0 18px 42px rgba(0, 0, 0, 0.3);
-        }
-
-        body.dark-mode .chart-card h2 {
-            color: #f1f5f9;
-        }
-
-        body.dark-mode canvas {
-            filter: invert(0.93) hue-rotate(180deg);
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
+    <div class="analytics-container">
+        <div class="page-header">
             <div>
-                <h1>📊 Analytics Dashboard</h1>
-                <p style="color:#64748b;margin-top:8px;">Performance insights and trends across all your students</p>
+                <h1 class="page-title">📊 Analytics Dashboard</h1>
+                <p class="page-subtitle">Performance insights and trends across all your students</p>
             </div>
-            <a href="/teacher-dashboard" class="btn">← Back</a>
+            <a href="/teacher-dashboard" class="btn btn-ghost">← Back</a>
         </div>
 
         <div class="stats-grid">
@@ -146,7 +60,7 @@
             <div class="stat-card">
                 <div class="stat-value">
                     <% const scoredSubmissions = submissions.filter(s => Number.isFinite(Number(s.percentage))); %>
-                    <% const avgScore = scoredSubmissions.length > 0 
+                    <% const avgScore = scoredSubmissions.length > 0
                         ? Math.round(scoredSubmissions.reduce((sum, s) => sum + Number(s.percentage), 0) / scoredSubmissions.length)
                         : 0; %>
                     <%= avgScore %>%
@@ -181,7 +95,7 @@
 
     <script>
         const submissions = <%- JSON.stringify(submissions) %>;
-        
+
         // Type distribution
         const typeCounts = { reading: 0, listening: 0, writing: 0 };
         submissions.forEach(s => typeCounts[s.type] = (typeCounts[s.type] || 0) + 1);
@@ -270,5 +184,6 @@
             options: { responsive: true, scales: { y: { beginAtZero: true } } }
         });
     </script>
+    <%- include('../partials/notifications') %>
 </body>
 </html>

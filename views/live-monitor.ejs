@@ -4,27 +4,28 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Live Monitor — <%= test.title %></title>
+    <%- include('../partials/design-system') %>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            font-family: "Segoe UI", sans-serif;
             background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
             min-height: 100vh;
             padding: 24px;
-            color: #1f2937;
+            color: var(--text-primary);
         }
-        .header {
+        .monitor-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             padding: 24px 28px;
-            border-radius: 24px;
-            background: rgba(255,255,255,0.92);
-            box-shadow: 0 18px 40px rgba(15,23,42,0.08);
+            border-radius: var(--radius-xl);
+            background: var(--surface-glass);
+            box-shadow: var(--shadow-xl);
             margin-bottom: 24px;
+            flex-wrap: wrap;
+            gap: 16px;
         }
-        .header h1 { font-size: 1.6rem; font-weight: 900; }
-        .header p { color: #64748b; margin-top: 4px; }
+        .monitor-header h1 { font-size: 1.6rem; font-weight: 900; }
+        .monitor-header p { color: var(--text-muted); margin-top: 4px; }
         .live-badge {
             display: flex;
             align-items: center;
@@ -54,38 +55,38 @@
         }
         .stat-card {
             padding: 20px 24px;
-            border-radius: 20px;
-            background: rgba(255,255,255,0.92);
-            box-shadow: 0 10px 24px rgba(15,23,42,0.06);
+            border-radius: var(--radius-lg);
+            background: var(--surface-glass);
+            box-shadow: var(--shadow-md);
             text-align: center;
         }
-        .stat-value { font-size: 2rem; font-weight: 900; color: #1f2937; }
-        .stat-label { color: #64748b; font-size: 0.88rem; margin-top: 4px; }
+        .stat-value { font-size: 2rem; font-weight: 900; color: var(--text-primary); }
+        .stat-label { color: var(--text-muted); font-size: 0.88rem; margin-top: 4px; }
         .table-card {
             padding: 24px;
-            border-radius: 24px;
-            background: rgba(255,255,255,0.92);
-            box-shadow: 0 18px 40px rgba(15,23,42,0.08);
+            border-radius: var(--radius-xl);
+            background: var(--surface-glass);
+            box-shadow: var(--shadow-xl);
         }
         .table-card h2 { font-size: 1.2rem; font-weight: 900; margin-bottom: 16px; }
         table { width: 100%; border-collapse: collapse; }
-        th, td { text-align: left; padding: 14px 12px; border-bottom: 1px solid #e2e8f0; }
-        th { font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.04em; color: #64748b; }
-        td { color: #334155; }
+        th, td { text-align: left; padding: 14px 12px; border-bottom: 1px solid var(--border); }
+        th { font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-muted); }
+        td { color: var(--text-secondary); }
         .progress-bar {
             height: 8px;
             border-radius: 999px;
-            background: #e5e7eb;
+            background: var(--gray-200);
             overflow: hidden;
             min-width: 80px;
         }
         .progress-fill {
             height: 100%;
             border-radius: inherit;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, var(--primary-400) 0%, var(--primary-600) 100%);
             transition: width 0.5s ease;
         }
-        .empty { color: #94a3b8; text-align: center; padding: 40px; }
+        .empty { color: var(--text-muted); text-align: center; padding: 40px; }
         .back-btn {
             display: inline-flex;
             align-items: center;
@@ -94,16 +95,42 @@
             padding: 10px 18px;
             border-radius: 999px;
             background: white;
-            border: 1px solid #dbe3f1;
-            color: #334155;
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
             font-weight: 700;
             font-size: 0.9rem;
+            transition: all 0.2s;
         }
-        .refresh-note { color: #94a3b8; font-size: 0.85rem; margin-top: 8px; }
+        .back-btn:hover { background: var(--gray-50); }
+        .refresh-note { color: var(--text-muted); font-size: 0.85rem; margin-top: 8px; }
+        .warning-badge {
+            display: inline-block;
+            margin-top: 6px;
+            padding: 3px 8px;
+            background: #fca5a5;
+            color: #7f1d1d;
+            border-radius: 999px;
+            font-size: 0.75rem;
+            font-weight: 700;
+        }
+        .writing-preview {
+            padding: 8px;
+            background: var(--gray-50);
+            border-radius: 8px;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            max-height: 60px;
+            overflow: hidden;
+            margin-top: 4px;
+        }
+        @media (max-width: 768px) {
+            .stats-row { grid-template-columns: 1fr; }
+            .monitor-header { flex-direction: column; text-align: center; }
+        }
     </style>
 </head>
 <body>
-    <div class="header">
+    <div class="monitor-header">
         <div>
             <h1>📡 Live Monitor</h1>
             <p><strong><%= test.title %></strong> &mdash; <%= test.type %> test</p>
@@ -244,5 +271,6 @@
             }, 3500);
         };
     </script>
+    <%- include('../partials/notifications') %>
 </body>
 </html>

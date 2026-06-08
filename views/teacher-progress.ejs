@@ -4,329 +4,118 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Test Progress</title>
+    <%- include('../partials/design-system') %>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        /* ============================================================
+           TEACHER PROGRESS — student submission table + stats
+           ============================================================ */
+        body { padding: var(--space-lg); }
 
-        body {
-            font-family: "Segoe UI", "Trebuchet MS", sans-serif;
-            min-height: 100vh;
-            color: #1f2937;
-            background:
-                radial-gradient(circle at top left, rgba(255,255,255,0.45), transparent 30%),
-                linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-            padding: 28px;
-        }
+        .progress-container { max-width: 1280px; margin: 0 auto; }
 
-        .container {
-            max-width: 1280px;
-            margin: 0 auto;
-        }
-
-        .header {
-            display: flex;
-            justify-content: space-between;
-            gap: 18px;
-            align-items: flex-start;
-            padding: 28px 30px;
-            border-radius: 28px;
-            background: rgba(255,255,255,0.92);
-            backdrop-filter: blur(18px);
-            box-shadow: 0 20px 40px rgba(15, 23, 42, 0.08);
-            margin-bottom: 22px;
-        }
-
-        .header h1 {
-            font-size: 2.2rem;
-            font-weight: 900;
-            letter-spacing: -0.04em;
-            margin-bottom: 10px;
-        }
-
-        .header p {
-            color: #64748b;
-            line-height: 1.6;
-        }
-
-        .actions {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-        }
-
-        .btn {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            text-decoration: none;
-            border: none;
-            border-radius: 999px;
-            padding: 12px 18px;
-            font-weight: 800;
-            cursor: pointer;
-            transition: transform 0.25s ease, box-shadow 0.25s ease;
-        }
-
-        .btn:hover { transform: translateY(-2px); }
-
-        .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: #fff;
-            box-shadow: 0 12px 26px rgba(102, 126, 234, 0.26);
-        }
-
-        .btn-secondary {
-            background: white;
-            color: #334155;
-            border: 1px solid #dbe3f1;
-            box-shadow: 0 8px 18px rgba(15, 23, 42, 0.05);
-        }
-
-        .stats {
-            display: grid;
-            grid-template-columns: repeat(4, minmax(0, 1fr));
-            gap: 16px;
-            margin-bottom: 22px;
-        }
-
-        .stat-card {
-            padding: 20px;
-            border-radius: 24px;
-            background: rgba(255,255,255,0.92);
-            backdrop-filter: blur(14px);
-            box-shadow: 0 16px 34px rgba(15, 23, 42, 0.08);
-        }
-
-        .stat-card strong {
-            display: block;
-            font-size: 2rem;
-            font-weight: 900;
-            margin-bottom: 4px;
-            color: #1f2937;
-        }
-
-        .stat-card span {
-            color: #64748b;
-            line-height: 1.5;
-            font-size: 0.92rem;
-        }
-
-        .section {
-            padding: 26px;
-            border-radius: 28px;
-            background: rgba(255,255,255,0.92);
-            backdrop-filter: blur(16px);
-            box-shadow: 0 18px 38px rgba(15, 23, 42, 0.08);
-        }
-
-        .section h2 {
-            font-size: 1.4rem;
-            font-weight: 900;
-            margin-bottom: 8px;
-        }
-
-        .section p {
-            color: #64748b;
-            line-height: 1.6;
-            margin-bottom: 18px;
-        }
-
-        .group-row {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-            margin-bottom: 18px;
-        }
+        .actions { display: flex; flex-wrap: wrap; gap: var(--space-sm); }
 
         .pill {
-            padding: 8px 12px;
-            border-radius: 999px;
-            background: #eef2ff;
-            color: #4338ca;
-            font-size: 0.82rem;
-            font-weight: 800;
-        }
-
-        .table-wrap {
-            overflow-x: auto;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        th, td {
-            text-align: left;
-            padding: 16px 14px;
-            border-bottom: 1px solid #e2e8f0;
-            vertical-align: top;
-        }
-
-        th {
-            font-size: 0.84rem;
-            text-transform: uppercase;
-            letter-spacing: 0.04em;
-            color: #64748b;
-        }
-
-        td {
-            color: #475569;
-            line-height: 1.55;
-        }
-
-        .student-name {
-            font-weight: 900;
-            color: #1f2937;
-        }
-
-        .tag {
             display: inline-flex;
             align-items: center;
-            padding: 7px 11px;
-            border-radius: 999px;
+            padding: 6px 14px;
+            border-radius: var(--radius-full);
+            background: var(--primary-100);
+            color: var(--primary-800);
             font-size: 0.82rem;
             font-weight: 800;
-            background: #f1f5f9;
-            color: #475569;
         }
-
-        .tag.success {
-            background: #dcfce7;
-            color: #166534;
-        }
-
-        .tag.warning {
-            background: #fee2e2;
-            color: #b91c1c;
-        }
+        body.dark-mode .pill { background: rgba(99, 102, 241, 0.15); color: var(--primary-200); }
 
         .snippet {
             max-width: 340px;
-            color: #64748b;
+            color: var(--text-muted);
             font-size: 0.9rem;
         }
 
-        .empty {
-            padding: 18px;
-            border-radius: 18px;
-            background: #f8fafc;
-            border: 1px dashed #cbd5e1;
-            color: #64748b;
+        /* AI Modal */
+        #aiModal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.7);
+            backdrop-filter: blur(4px);
+            z-index: 9999;
+            overflow: auto;
+            animation: fadeIn 0.2s ease-out;
         }
+        #aiModal.open { display: block; }
+        .ai-modal-content {
+            max-width: 900px;
+            margin: 50px auto;
+            background: var(--surface);
+            border-radius: var(--radius-xl);
+            padding: var(--space-2xl);
+            position: relative;
+            box-shadow: var(--shadow-xl);
+        }
+        .ai-modal-content h2 { font-size: 1.5rem; font-weight: 900; margin-bottom: var(--space-lg); color: var(--text-primary); }
+        #aiContent { line-height: 1.8; color: var(--text-secondary); white-space: pre-wrap; font-size: 0.95rem; }
+
+        .group-row { display: flex; flex-wrap: wrap; gap: var(--space-sm); margin-bottom: var(--space-md); }
 
         @media (max-width: 1100px) {
-            .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
         }
-
         @media (max-width: 760px) {
-            body { padding: 16px; }
-            .header { flex-direction: column; }
-            .stats { grid-template-columns: 1fr; }
-        }
-
-        /* Dark Mode Styles */
-        body.dark-mode {
-            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-            color: #e2e8f0;
-        }
-
-        body.dark-mode .header,
-        body.dark-mode .section {
-            background: rgba(30, 41, 59, 0.95);
-            box-shadow: 0 18px 40px rgba(0, 0, 0, 0.3);
-        }
-
-        body.dark-mode h1,
-        body.dark-mode h2 {
-            color: #f1f5f9;
-        }
-
-        body.dark-mode p {
-            color: #cbd5e1;
-        }
-
-        body.dark-mode .stat-card {
-            background: rgba(30, 41, 59, 0.98);
-            border-color: #334155;
-        }
-
-        body.dark-mode .stat-value {
-            color: #a5f4fc;
-        }
-
-        body.dark-mode .stat-label {
-            color: #94a3b8;
-        }
-
-        body.dark-mode .progress-card {
-            background: rgba(30, 41, 59, 0.98);
-            border-color: #334155;
-        }
-
-        body.dark-mode .progress-item p {
-            color: #cbd5e1;
-        }
-
-        body.dark-mode .progress-bar {
-            background: rgba(15, 23, 42, 0.9);
-        }
-
-        body.dark-mode .empty {
-            background: rgba(15, 23, 42, 0.9);
-            border-color: #334155;
-            color: #94a3b8;
+            body { padding: var(--space-md); }
+            .page-header { flex-direction: column; }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <header class="header">
+    <div class="progress-container">
+        <div class="page-header">
             <div>
-                <h1><%= test.title %></h1>
-                <p><strong><%= test.type %></strong> progress for <%= currentUser %>. Preview and download stay tied to the same student-facing renderer.</p>
+                <h1 class="page-title"><%= test.title %></h1>
+                <p class="page-subtitle"><strong><%= test.type %></strong> progress for <%= currentUser %>. Preview and download stay tied to the same student-facing renderer.</p>
             </div>
             <div class="actions">
-                <a href="/teacher-dashboard" class="btn btn-secondary">Back To Dashboard</a>
-                <a href="/view-test/<%= test._id %>" target="_blank" class="btn btn-secondary">Preview Test</a>
-                <a href="/download-test/<%= test._id %>" class="btn btn-primary">Download HTML</a>
+                <a href="/teacher-dashboard" class="btn btn-ghost btn-sm">Back To Dashboard</a>
+                <a href="/view-test/<%= test._id %>" target="_blank" class="btn btn-ghost btn-sm">Preview Test</a>
+                <a href="/download-test/<%= test._id %>" class="btn btn-primary btn-sm">Download HTML</a>
             </div>
-        </header>
+        </div>
 
-        <section class="stats">
+        <div class="stats-grid">
             <div class="stat-card">
-                <strong><%= summary.assignedStudents %></strong>
-                <span>Assigned students across the linked groups</span>
+                <div class="stat-value"><%= summary.assignedStudents %></div>
+                <div class="stat-label">Assigned students across the linked groups</div>
             </div>
             <div class="stat-card">
-                <strong><%= summary.completedStudents %></strong>
-                <span>Students with a saved submission</span>
+                <div class="stat-value"><%= summary.completedStudents %></div>
+                <div class="stat-label">Students with a saved submission</div>
             </div>
             <div class="stat-card">
-                <strong><%= summary.pendingStudents %></strong>
-                <span>Assigned students who have not submitted yet</span>
+                <div class="stat-value"><%= summary.pendingStudents %></div>
+                <div class="stat-label">Assigned students who have not submitted yet</div>
             </div>
             <div class="stat-card">
-                <strong>
+                <div class="stat-value">
                     <% if (summary.averageScore !== null) { %>
                         <%= summary.averageScore.toFixed(1) %>
                     <% } else { %>
                         --
                     <% } %>
-                </strong>
-                <span>
+                </div>
+                <div class="stat-label">
                     <% if (summary.averagePercentage !== null) { %>
                         Average score, <%= summary.averagePercentage %>% overall
                     <% } else { %>
                         Score average is only shown for graded reading/listening attempts
                     <% } %>
-                </span>
+                </div>
             </div>
-        </section>
+        </div>
 
-        <section class="section">
-            <h2>Assigned Groups</h2>
-            <p>The rows below include currently assigned students plus any saved submissions already linked to this test.</p>
+        <div class="card">
+            <h2 style="font-size:1.3rem;font-weight:900;margin-bottom:var(--space-sm);">Assigned Groups</h2>
+            <p style="color:var(--text-muted);margin-bottom:var(--space-md);">The rows below include currently assigned students plus any saved submissions already linked to this test.</p>
 
             <div class="group-row">
                 <% if (groups.length > 0) { %>
@@ -339,7 +128,7 @@
             </div>
 
             <% if (rows.length > 0) { %>
-                <div class="table-wrap">
+                <div class="table-container">
                     <table>
                         <thead>
                             <tr>
@@ -355,18 +144,18 @@
                             <% rows.forEach(row => { const submission = row.submission; %>
                                 <tr>
                                     <td>
-                                        <div class="student-name"><%= row.studentName %></div>
+                                        <div style="font-weight:900;color:var(--text-primary);"><%= row.studentName %></div>
                                         <% if (submission) { %>
-                                            <div style="margin-top: 6px; color: #94a3b8; font-size: 0.86rem;">Attempts saved: <%= submission.attemptCount %></div>
-                                            <a href="/teacher/student-patterns/<%= row.studentId %>" style="display:inline-block;margin-top:8px;padding:6px 12px;background:#10b981;color:white;text-decoration:none;border-radius:8px;font-size:0.8rem;font-weight:700;">🔍 View Patterns</a>
+                                            <div style="margin-top:4px;color:var(--text-muted);font-size:0.82rem;">Attempts saved: <%= submission.attemptCount %></div>
+                                            <a href="/teacher/student-patterns/<%= row.studentId %>" class="btn btn-sm" style="margin-top:6px;background:var(--success);color:#fff;">🔍 View Patterns</a>
                                         <% } %>
                                     </td>
-                                    <td><span class="tag"><%= row.groupName || 'Ungrouped' %></span></td>
+                                    <td><span class="badge"><%= row.groupName || 'Ungrouped' %></span></td>
                                     <td>
                                         <% if (submission) { %>
-                                            <span class="tag success">Completed</span>
+                                            <span class="badge badge-success">Completed</span>
                                         <% } else { %>
-                                            <span class="tag warning">Pending</span>
+                                            <span class="badge badge-error">Pending</span>
                                         <% } %>
                                     </td>
                                     <td>
@@ -393,13 +182,13 @@
                                                 <div class="snippet">
                                                     T1: <%= (submission.details?.task1Preview || submission.details?.task1 || '').slice(0, 140) || 'No response stored.' %>
                                                 </div>
-                                                <div class="snippet" style="margin-top: 8px;">
+                                                <div class="snippet" style="margin-top:8px;">
                                                     T2: <%= (submission.details?.task2Preview || submission.details?.task2 || '').slice(0, 140) || 'No response stored.' %>
                                                 </div>
                                             <% } else { %>
                                                 <div class="snippet"><%= submission.details?.summaryText || 'Auto-graded result saved.' %></div>
                                                 <% if (submission.details?.aiAnalysis) { %>
-                                                    <button onclick="showAIAnalysis('<%= submission._id %>')" style="margin-top:10px;padding:8px 14px;background:linear-gradient(135deg,#667eea,#764ba2);color:white;border:none;border-radius:8px;cursor:pointer;font-weight:700;font-size:0.85rem;">🤖 View AI Analysis</button>
+                                                    <button onclick="showAIAnalysis('<%= submission._id %>')" class="btn btn-primary btn-sm" style="margin-top:8px;">🤖 View AI Analysis</button>
                                                 <% } %>
                                             <% } %>
                                         <% } else { %>
@@ -419,17 +208,21 @@
                     </table>
                 </div>
             <% } else { %>
-                <div class="empty">No student submissions have been recorded for this test yet.</div>
+                <div class="empty-state">
+                    <div class="empty-icon">📋</div>
+                    <div class="empty-title">No Submissions Yet</div>
+                    <div class="empty-text">No student submissions have been recorded for this test yet.</div>
+                </div>
             <% } %>
-        </section>
+        </div>
     </div>
 
     <!-- AI Analysis Modal -->
-    <div id="aiModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);z-index:9999;overflow:auto;">
-        <div style="max-width:900px;margin:50px auto;background:white;border-radius:20px;padding:40px;position:relative;">
-            <button onclick="closeAIModal()" style="position:absolute;top:20px;right:20px;background:#ef4444;color:white;border:none;border-radius:50%;width:40px;height:40px;font-size:1.5rem;cursor:pointer;font-weight:700;">×</button>
-            <h2 style="font-size:1.8rem;font-weight:900;margin-bottom:20px;color:#1f2937;">🤖 AI Performance Analysis</h2>
-            <div id="aiContent" style="line-height:1.8;color:#475569;white-space:pre-wrap;font-size:0.95rem;"></div>
+    <div id="aiModal">
+        <div class="ai-modal-content">
+            <button onclick="closeAIModal()" class="btn btn-danger" style="position:absolute;top:var(--space-lg);right:var(--space-lg);width:36px;height:36px;border-radius:var(--radius-full);padding:0;font-size:1.3rem;line-height:1;">×</button>
+            <h2>🤖 AI Performance Analysis</h2>
+            <div id="aiContent"></div>
         </div>
     </div>
 
@@ -443,14 +236,14 @@
             const analysis = aiAnalysisData[submissionId];
             if (analysis) {
                 document.getElementById('aiContent').textContent = analysis;
-                document.getElementById('aiModal').style.display = 'block';
+                document.getElementById('aiModal').classList.add('open');
                 document.body.style.overflow = 'hidden';
             }
         }
 
         function closeAIModal() {
-            document.getElementById('aiModal').style.display = 'none';
-            document.body.style.overflow = 'auto';
+            document.getElementById('aiModal').classList.remove('open');
+            document.body.style.overflow = '';
         }
 
         // Close modal on outside click
@@ -458,5 +251,6 @@
             if (e.target === this) closeAIModal();
         });
     </script>
+    <%- include('../partials/notifications') %>
 </body>
 </html>

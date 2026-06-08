@@ -4,108 +4,78 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Settings</title>
+    <%- include('../partials/design-system') %>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: "Segoe UI", sans-serif;
-            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-            min-height: 100vh;
-            padding: 24px;
-            color: #1f2937;
-            transition: background 0.3s, color 0.3s;
+        /* ============================================================
+           SETTINGS PAGE — setting rows + password form + export
+           ============================================================ */
+        body { padding: var(--space-lg); }
+        .settings-container { max-width: 800px; margin: 0 auto; }
+
+        .settings-section {
+            background: var(--surface-glass);
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
+            border-radius: var(--radius-lg);
+            padding: var(--space-xl);
+            box-shadow: var(--shadow-card);
+            border: 1px solid rgba(255,255,255,0.12);
+            margin-bottom: var(--space-lg);
         }
-        body.dark-mode {
-            background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
-            color: #f3f4f6;
-        }
-        .container { max-width: 800px; margin: 0 auto; }
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 28px 32px;
-            border-radius: 28px;
-            background: rgba(255,255,255,0.92);
-            box-shadow: 0 18px 42px rgba(15,23,42,0.08);
-            margin-bottom: 24px;
-        }
-        body.dark-mode .header {
-            background: rgba(31,41,55,0.92);
-            box-shadow: 0 18px 42px rgba(0,0,0,0.3);
-        }
-        .header h1 { font-size: 2rem; font-weight: 900; }
-        .btn {
-            padding: 12px 18px;
-            border-radius: 999px;
-            text-decoration: none;
-            font-weight: 800;
-            background: white;
-            color: #334155;
-            border: 1px solid #dbe3f1;
-        }
-        body.dark-mode .btn {
-            background: #374151;
-            color: #f3f4f6;
-            border-color: #4b5563;
-        }
-        .section {
-            padding: 28px;
-            border-radius: 28px;
-            background: rgba(255,255,255,0.92);
-            box-shadow: 0 18px 42px rgba(15,23,42,0.08);
-            margin-bottom: 24px;
-        }
-        body.dark-mode .section {
-            background: rgba(31,41,55,0.92);
-            box-shadow: 0 18px 42px rgba(0,0,0,0.3);
-        }
-        .section h2 { font-size: 1.3rem; font-weight: 900; margin-bottom: 16px; }
+        .settings-section h2 { font-size: 1.2rem; font-weight: 900; margin-bottom: var(--space-md); color: var(--text-primary); }
+
         .setting-row {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 18px 0;
-            border-bottom: 1px solid #e2e8f0;
+            padding: var(--space-md) 0;
+            border-bottom: 1px solid var(--border);
         }
-        body.dark-mode .setting-row { border-color: #374151; }
         .setting-row:last-child { border-bottom: none; }
-        .setting-label { font-weight: 700; }
-        .setting-desc { color: #64748b; font-size: 0.9rem; margin-top: 4px; }
-        body.dark-mode .setting-desc { color: #9ca3af; }
+        .setting-label { font-weight: 700; color: var(--text-primary); }
+        .setting-desc { color: var(--text-muted); font-size: 0.85rem; margin-top: 2px; }
+
         .toggle {
             position: relative;
             width: 56px;
             height: 28px;
-            background: #e2e8f0;
-            border-radius: 999px;
+            background: var(--gray-300);
+            border-radius: var(--radius-full);
             cursor: pointer;
-            transition: background 0.3s;
+            transition: background var(--transition-fast);
+            flex-shrink: 0;
         }
-        .toggle.active { background: linear-gradient(135deg, #667eea, #764ba2); }
+        .toggle.active { background: linear-gradient(135deg, var(--primary-500), var(--primary-600)); }
         .toggle-knob {
             position: absolute;
             top: 3px;
             left: 3px;
             width: 22px;
             height: 22px;
-            background: white;
-            border-radius: 50%;
-            transition: transform 0.3s;
+            background: #fff;
+            border-radius: var(--radius-full);
+            transition: transform var(--transition-fast);
         }
         .toggle.active .toggle-knob { transform: translateX(28px); }
+
+        #passwordMessage { display: none; padding: var(--space-sm) var(--space-md); border-radius: var(--radius-sm); font-weight: 700; font-size: 0.9rem; }
+
+        @media (max-width: 480px) {
+            .setting-row { flex-direction: column; align-items: flex-start; gap: var(--space-sm); }
+        }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
+    <div class="settings-container">
+        <div class="page-header">
             <div>
-                <h1>⚙️ Settings</h1>
-                <p style="color:#64748b;margin-top:8px;">Customize your platform experience</p>
+                <h1 class="page-title">⚙️ Settings</h1>
+                <p class="page-subtitle">Customize your platform experience</p>
             </div>
-            <a href="/<%= user.role === 'admin' ? 'admin' : user.role === 'teacher' ? 'teacher-dashboard' : 'student-dashboard' %>" class="btn">← Back</a>
+            <a href="/<%= user.role === 'admin' ? 'admin' : user.role === 'teacher' ? 'teacher-dashboard' : 'student-dashboard' %>" class="btn btn-ghost btn-sm">← Back</a>
         </div>
 
-        <div class="section">
+        <div class="settings-section">
             <h2>Appearance</h2>
             <div class="setting-row">
                 <div>
@@ -118,7 +88,7 @@
             </div>
         </div>
 
-        <div class="section">
+        <div class="settings-section">
             <h2>Account Information</h2>
             <div class="setting-row">
                 <div>
@@ -151,41 +121,41 @@
         </div>
 
         <% if (user.role === 'student') { %>
-        <div class="section">
+        <div class="settings-section">
             <h2>Change Password</h2>
-            <form id="passwordForm" style="display:grid;gap:16px;">
-                <div>
-                    <label style="display:block;margin-bottom:8px;font-weight:700;">Current Password</label>
-                    <input type="password" id="currentPassword" name="currentPassword" required style="width:100%;padding:12px;border-radius:12px;border:2px solid #e2e8f0;font-size:1rem;">
+            <form id="passwordForm" style="display:grid;gap:var(--space-md);">
+                <div class="form-group">
+                    <label for="currentPassword">Current Password</label>
+                    <input type="password" id="currentPassword" name="currentPassword" class="form-input" required>
                 </div>
-                <div>
-                    <label style="display:block;margin-bottom:8px;font-weight:700;">New Password</label>
-                    <input type="password" id="newPassword" name="newPassword" required minlength="6" style="width:100%;padding:12px;border-radius:12px;border:2px solid #e2e8f0;font-size:1rem;">
+                <div class="form-group">
+                    <label for="newPassword">New Password</label>
+                    <input type="password" id="newPassword" name="newPassword" class="form-input" required minlength="6">
                 </div>
-                <div>
-                    <label style="display:block;margin-bottom:8px;font-weight:700;">Confirm New Password</label>
-                    <input type="password" id="confirmPassword" name="confirmPassword" required minlength="6" style="width:100%;padding:12px;border-radius:12px;border:2px solid #e2e8f0;font-size:1rem;">
+                <div class="form-group">
+                    <label for="confirmPassword">Confirm New Password</label>
+                    <input type="password" id="confirmPassword" name="confirmPassword" class="form-input" required minlength="6">
                 </div>
-                <button type="submit" style="padding:14px;border-radius:999px;border:none;background:linear-gradient(135deg,#667eea,#764ba2);color:white;font-weight:800;cursor:pointer;font-size:1rem;">Change Password</button>
-                <div id="passwordMessage" style="display:none;padding:12px;border-radius:12px;font-weight:700;"></div>
+                <button type="submit" class="btn btn-primary" style="justify-content:center;">Change Password</button>
+                <div id="passwordMessage"></div>
             </form>
         </div>
 
-        <div class="section">
+        <div class="settings-section">
             <h2>Export Data</h2>
             <div class="setting-row">
                 <div>
                     <div class="setting-label">Progress Report</div>
                     <div class="setting-desc">Download a comprehensive HTML report of your test performance</div>
                 </div>
-                <a href="/settings/export-report" style="padding:12px 18px;border-radius:999px;text-decoration:none;font-weight:800;background:linear-gradient(135deg,#10b981,#059669);color:white;display:inline-block;">Download Report</a>
+                <a href="/settings/export-report" class="btn btn-success btn-sm">Download Report</a>
             </div>
             <div class="setting-row">
                 <div>
                     <div class="setting-label">Test History</div>
                     <div class="setting-desc">Export all your test submissions as CSV file</div>
                 </div>
-                <a href="/settings/export-history" style="padding:12px 18px;border-radius:999px;text-decoration:none;font-weight:800;background:linear-gradient(135deg,#3b82f6,#2563eb);color:white;display:inline-block;">Download CSV</a>
+                <a href="/settings/export-history" class="btn btn-sm" style="background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff;">Download CSV</a>
             </div>
         </div>
         <% } %>
@@ -203,49 +173,50 @@
         if (passwordForm) {
             passwordForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
-                
+
                 const currentPassword = document.getElementById('currentPassword').value;
                 const newPassword = document.getElementById('newPassword').value;
                 const confirmPassword = document.getElementById('confirmPassword').value;
                 const messageDiv = document.getElementById('passwordMessage');
-                
+
                 if (newPassword !== confirmPassword) {
                     messageDiv.textContent = 'New passwords do not match';
                     messageDiv.style.display = 'block';
-                    messageDiv.style.background = '#fee2e2';
-                    messageDiv.style.color = '#b91c1c';
+                    messageDiv.style.background = 'var(--error-bg)';
+                    messageDiv.style.color = '#991b1b';
                     return;
                 }
-                
+
                 try {
                     const response = await fetch('/settings/change-password', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ currentPassword, newPassword })
                     });
-                    
+
                     const data = await response.json();
-                    
+
                     if (data.success) {
                         messageDiv.textContent = data.message;
                         messageDiv.style.display = 'block';
-                        messageDiv.style.background = '#dcfce7';
-                        messageDiv.style.color = '#166534';
+                        messageDiv.style.background = 'var(--success-bg)';
+                        messageDiv.style.color = '#065f46';
                         passwordForm.reset();
                     } else {
                         messageDiv.textContent = data.message;
                         messageDiv.style.display = 'block';
-                        messageDiv.style.background = '#fee2e2';
-                        messageDiv.style.color = '#b91c1c';
+                        messageDiv.style.background = 'var(--error-bg)';
+                        messageDiv.style.color = '#991b1b';
                     }
                 } catch (err) {
                     messageDiv.textContent = 'Error changing password';
                     messageDiv.style.display = 'block';
-                    messageDiv.style.background = '#fee2e2';
-                    messageDiv.style.color = '#b91c1c';
+                    messageDiv.style.background = 'var(--error-bg)';
+                    messageDiv.style.color = '#991b1b';
                 }
             });
         }
     </script>
+    <%- include('../partials/notifications') %>
 </body>
 </html>

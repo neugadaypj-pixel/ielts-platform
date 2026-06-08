@@ -312,7 +312,7 @@ const csrfSecret = process.env.CSRF_SECRET || crypto.randomBytes(32).toString('h
 
 const { generateCsrfToken, doubleCsrfProtection } = doubleCsrf({
     getSecret: () => csrfSecret,
-    getSessionIdentifier: (req) => req.ip || req.sessionID || 'anonymous',
+    getSessionIdentifier: (req) => 'csrf',
     cookieName: '_csrf',
     cookieOptions: {
         httpOnly: true,

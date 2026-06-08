@@ -4,277 +4,109 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Create Reading Test</title>
+    <%- include('../partials/design-system') %>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", sans-serif;
-            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-            color: #1f2937;
-            min-height: 100vh;
-            padding: 20px;
-        }
-        
-        @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        
-        .container { max-width: 1000px; margin: 0 auto; }
-        
+        /* ============================================================
+           PAGE-SPECIFIC STYLES — Create Reading Test
+           ============================================================ */
+        .container { max-width: 1000px; margin: 0 auto; padding: var(--space-md); }
+
         .back-btn {
             display: inline-flex;
             align-items: center;
-            gap: 8px;
-            color: #667eea;
+            gap: var(--space-sm);
+            color: var(--primary-500);
             text-decoration: none;
             font-weight: 600;
-            margin-bottom: 32px;
-            transition: all 0.3s ease;
+            margin-bottom: var(--space-xl);
+            transition: transform var(--transition-base);
         }
-        
-        .back-btn:hover { transform: translateX(-4px); }
-        
-        .header-card {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(20px);
-            padding: 40px;
-            border-radius: 24px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
-            margin-bottom: 32px;
+        .back-btn:hover { transform: translateX(-4px); color: var(--primary-400); }
+
+        .create-form-section {
+            margin-bottom: var(--space-lg);
             animation: slideUp 0.6s ease-out;
         }
-        
-        .header-card h1 {
-            font-size: 2.5rem;
-            font-weight: 900;
-            color: #1f2937;
-            margin-bottom: 12px;
+        .create-form-section h2 {
+            font-size: 1.3rem;
+            font-weight: 800;
+            color: var(--text-primary);
+            margin-bottom: var(--space-lg);
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: var(--space-sm);
         }
-        
-        .header-card p {
-            color: #6b7280;
-            font-size: 1.05rem;
+
+        .hint {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-top: 6px;
         }
-        
-        .form-section {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(20px);
-            padding: 32px;
-            border-radius: 20px;
-            margin-bottom: 24px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
-            animation: slideUp 0.6s ease-out;
-        }
-        
-        .form-section h2 {
-            font-size: 1.4rem;
-            color: #1f2937;
-            margin-bottom: 24px;
+
+        .button-group {
             display: flex;
-            align-items: center;
-            gap: 8px;
+            gap: var(--space-md);
+            justify-content: flex-end;
+            margin-top: var(--space-xl);
+            padding-top: var(--space-lg);
+            border-top: 1px solid var(--border);
         }
-        
-        .form-group {
-            margin-bottom: 24px;
-        }
-        
-        .form-group:last-child { margin-bottom: 0; }
-        
-        label {
-            display: block;
-            font-weight: 600;
-            color: #374151;
-            margin-bottom: 8px;
-            font-size: 0.95rem;
-        }
-        
-        input, textarea, select {
-            width: 100%;
-            padding: 12px 16px;
-            border: 2px solid #e5e7eb;
-            border-radius: 12px;
-            font-size: 0.95rem;
-            font-family: inherit;
-            transition: all 0.3s ease;
-        }
-        
-        input:focus, textarea:focus, select:focus {
-            outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-        }
-        
+
         textarea {
             resize: vertical;
             min-height: 150px;
         }
-        
-        .button-group {
-            display: flex;
-            gap: 16px;
-            justify-content: flex-end;
-            margin-top: 32px;
-            padding-top: 24px;
-            border-top: 1px solid #e5e7eb;
-        }
-        
-        button {
-            padding: 14px 32px;
-            border: none;
-            border-radius: 12px;
-            font-weight: 700;
-            font-size: 0.95rem;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-        
-        .btn-submit {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            box-shadow: 0 6px 16px rgba(102, 126, 234, 0.3);
-        }
-        
-        .btn-submit:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 24px rgba(102, 126, 234, 0.4);
-        }
-        
-        .btn-cancel {
-            background: #f3f4f6;
-            color: #374151;
-        }
-        
-        .btn-cancel:hover { background: #e5e7eb; }
-        
-        .hint {
-            font-size: 0.85rem;
-            color: #9ca3af;
-            margin-top: 6px;
-        }
-        
+
         @media (max-width: 768px) {
-            .header-card { padding: 24px; }
-            .header-card h1 { font-size: 1.8rem; }
             .button-group { flex-direction: column; }
-            button { width: 100%; }
-        }
-
-        /* Dark Mode Styles */
-        body.dark-mode {
-            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-            color: #e2e8f0;
-        }
-
-        body.dark-mode .back-btn {
-            color: #667eea;
-        }
-
-        body.dark-mode .back-btn:hover {
-            color: #a5b4fc;
-        }
-
-        body.dark-mode .header-card,
-        body.dark-mode .form-section {
-            background: rgba(30, 41, 59, 0.95);
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-        }
-
-        body.dark-mode .header-card h1,
-        body.dark-mode .form-section h2 {
-            color: #f1f5f9;
-        }
-
-        body.dark-mode .header-card p {
-            color: #cbd5e1;
-        }
-
-        body.dark-mode label {
-            color: #cbd5e1;
-        }
-
-        body.dark-mode input,
-        body.dark-mode textarea,
-        body.dark-mode select {
-            background: rgba(15, 23, 42, 0.95) !important;
-            border-color: #475569 !important;
-            color: #e2e8f0 !important;
-        }
-
-        body.dark-mode input::placeholder,
-        body.dark-mode textarea::placeholder {
-            color: #64748b !important;
-        }
-
-        body.dark-mode input:focus,
-        body.dark-mode textarea:focus,
-        body.dark-mode select:focus {
-            border-color: #667eea !important;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2) !important;
-        }
-
-        body.dark-mode .hint {
-            color: #94a3b8;
-        }
-
-        body.dark-mode .button-group {
-            border-color: #334155;
-        }
-
-        body.dark-mode .btn-cancel {
-            background: rgba(51, 65, 85, 0.9);
-            color: #e2e8f0;
-        }
-
-        body.dark-mode .btn-cancel:hover {
-            background: rgba(51, 65, 85, 0.99);
+            .button-group .btn { width: 100%; justify-content: center; }
         }
     </style>
 </head>
 <body>
+    <script src="/dark-mode.js"></script>
     <div class="container">
         <a href="/create-test" class="back-btn">← Choose Test Type</a>
-        
-        <div class="header-card">
-            <h1>📖 Create Reading Test</h1>
-            <p>Set up your reading comprehension assessment</p>
+
+        <div class="card create-form-section">
+            <h1 style="font-size:2.2rem;font-weight:900;color:var(--text-primary);margin-bottom:8px;display:flex;align-items:center;gap:12px;">📖 Create Reading Test</h1>
+            <p style="color:var(--text-secondary);font-size:1.05rem;">Set up your reading comprehension assessment</p>
         </div>
-        
+
         <form method="POST" action="/create-test-reading">
             <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-            <div class="form-section">
+            <div class="card create-form-section">
                 <h2>📋 Test Information</h2>
-                
+
                 <div class="form-group">
                     <label for="title">Test Title *</label>
-                    <input type="text" id="title" name="title" required placeholder="e.g., Reading Comprehension Module">
+                    <input type="text" id="title" name="title" class="form-input" required placeholder="e.g., Reading Comprehension Module">
                     <div class="hint">Give your test a clear, descriptive name</div>
                 </div>
-                
+
                 <div class="form-group">
                     <label for="description">Description</label>
-                    <textarea id="description" name="description" placeholder="Describe what students will read and analyze..."></textarea>
+                    <textarea id="description" name="description" class="form-input" placeholder="Describe what students will read and analyze..."></textarea>
                 </div>
-                
+
                 <div class="form-group">
                     <label for="duration">Duration (minutes) *</label>
-                    <input type="number" id="duration" name="duration" required min="1" placeholder="e.g., 45" value="45">
+                    <input type="number" id="duration" name="duration" class="form-input" required min="1" placeholder="e.g., 45" value="45">
                 </div>
             </div>
-            
-            <div class="form-section">
+
+            <div class="card create-form-section">
                 <h2>📄 Reading Passage</h2>
-                
+
                 <div class="form-group">
                     <label for="passage">Reading Passage *</label>
-                    <textarea id="passage" name="passage" required placeholder="Enter the passage that students will read..."></textarea>
+                    <textarea id="passage" name="passage" class="form-input" required placeholder="Enter the passage that students will read..."></textarea>
                     <div class="hint">Paste the text students will read and analyze</div>
                 </div>
-                
+
                 <div class="form-group">
                     <label for="difficulty">Difficulty Level</label>
-                    <select id="difficulty" name="difficulty">
+                    <select id="difficulty" name="difficulty" class="form-select">
                         <option>Beginner</option>
                         <option>Intermediate</option>
                         <option>Advanced</option>
@@ -282,14 +114,15 @@
                     </select>
                 </div>
             </div>
-            
-            <div class="form-section">
+
+            <div class="card create-form-section">
                 <div class="button-group">
-                    <a href="/create-test" class="btn-cancel" onclick="return confirm(''Are you sure? Progress will be lost.'');">Cancel</a>
-                    <button type="submit" class="btn-submit">Create Reading Test →</button>
+                    <a href="/create-test" class="btn btn-ghost" onclick="return confirm('Are you sure? Progress will be lost.');">Cancel</a>
+                    <button type="submit" class="btn btn-primary">Create Reading Test →</button>
                 </div>
             </div>
         </form>
     </div>
+    <%- include('../partials/notifications') %>
 </body>
 </html>

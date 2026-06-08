@@ -4,22 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Student Dashboard</title>
+    <%- include('../partials/design-system') %>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-
-        body {
-            font-family: "Segoe UI", "Trebuchet MS", sans-serif;
-            min-height: 100vh;
-            color: #1f2937;
-            background:
-                radial-gradient(circle at top left, rgba(255,255,255,0.45), transparent 30%),
-                linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-            padding: 24px;
-        }
-
+        /* ============================================================
+           PAGE-SPECIFIC STYLES — Student Dashboard
+           ============================================================ */
         .container {
             max-width: 1280px;
             margin: 0 auto;
+            padding: var(--space-md);
         }
 
         .hero {
@@ -27,92 +20,34 @@
             justify-content: space-between;
             gap: 18px;
             align-items: center;
-            padding: 30px;
-            border-radius: 30px;
-            background: rgba(255,255,255,0.92);
-            backdrop-filter: blur(18px);
-            box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
-            margin-bottom: 24px;
-        }
-
-        .hero h1 {
-            font-size: 2.3rem;
-            font-weight: 900;
-            letter-spacing: -0.04em;
-            margin-bottom: 10px;
-        }
-
-        .hero p {
-            color: #64748b;
-            line-height: 1.6;
         }
 
         .group-pill {
             display: inline-flex;
             align-items: center;
             padding: 9px 14px;
-            border-radius: 999px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
+            border-radius: var(--radius-full);
+            background: linear-gradient(135deg, var(--primary-500), var(--primary-700));
+            color: #fff;
             font-weight: 800;
             margin-top: 12px;
-        }
-
-        .logout {
-            text-decoration: none;
-            border-radius: 999px;
-            padding: 12px 18px;
-            background: white;
-            color: #334155;
-            border: 1px solid #dbe3f1;
-            font-weight: 800;
-            box-shadow: 0 8px 18px rgba(15, 23, 42, 0.05);
-        }
-
-        .section {
-            padding: 26px;
-            border-radius: 28px;
-            background: rgba(255,255,255,0.92);
-            backdrop-filter: blur(16px);
-            box-shadow: 0 18px 38px rgba(15, 23, 42, 0.08);
-            margin-bottom: 22px;
-        }
-
-        .section-header {
-            display: flex;
-            justify-content: space-between;
-            gap: 16px;
-            align-items: flex-start;
-            margin-bottom: 18px;
-        }
-
-        .section-header h2 {
-            font-size: 1.45rem;
-            font-weight: 900;
-            margin-bottom: 8px;
-        }
-
-        .section-header p {
-            color: #64748b;
-            line-height: 1.6;
         }
 
         .type-grid {
             display: grid;
             grid-template-columns: repeat(3, minmax(0, 1fr));
-            gap: 18px;
+            gap: var(--space-md);
         }
 
         .type-column {
-            padding: 18px;
-            border-radius: 24px;
-            border: 1px solid #e2e8f0;
-            background: linear-gradient(180deg, rgba(248,250,252,0.92) 0%, rgba(241,245,249,0.78) 100%);
+            padding: var(--space-md);
+            border-radius: var(--radius-xl);
+            border: 1px solid var(--border);
+            background: linear-gradient(180deg, var(--surface-glass) 0%, var(--gray-100) 100%);
         }
-
-        .reading { border-top: 6px solid #3b82f6; }
-        .listening { border-top: 6px solid #10b981; }
-        .writing { border-top: 6px solid #f97316; }
+        .type-column.reading { border-top: 6px solid var(--info); }
+        .type-column.listening { border-top: 6px solid var(--success); }
+        .type-column.writing { border-top: 6px solid #f97316; }
 
         .type-header {
             display: flex;
@@ -120,20 +55,10 @@
             align-items: center;
             margin-bottom: 14px;
         }
-
         .type-header h3 {
             font-size: 1.12rem;
             font-weight: 900;
-        }
-
-        .badge {
-            padding: 6px 10px;
-            border-radius: 999px;
-            font-size: 0.8rem;
-            font-weight: 800;
-            background: white;
-            border: 1px solid #dbe3f1;
-            color: #334155;
+            color: var(--text-primary);
         }
 
         .test-list {
@@ -142,21 +67,20 @@
         }
 
         .test-card {
-            padding: 18px;
-            border-radius: 22px;
-            background: white;
-            border: 1px solid #e2e8f0;
-            box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+            padding: var(--space-md);
+            border-radius: var(--radius-lg);
+            background: var(--surface);
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow-sm);
         }
-
         .test-card h4 {
             font-size: 1.06rem;
             font-weight: 900;
+            color: var(--text-primary);
             margin-bottom: 8px;
         }
-
         .test-card p {
-            color: #64748b;
+            color: var(--text-secondary);
             line-height: 1.55;
             font-size: 0.92rem;
         }
@@ -164,27 +88,25 @@
         .meta-row {
             display: flex;
             flex-wrap: wrap;
-            gap: 8px;
+            gap: var(--space-sm);
             margin: 14px 0;
         }
 
         .meta-pill {
             padding: 7px 11px;
-            border-radius: 999px;
+            border-radius: var(--radius-full);
             font-size: 0.82rem;
             font-weight: 800;
-            background: #eef2ff;
-            color: #4338ca;
+            background: var(--primary-100);
+            color: var(--primary-800);
         }
-
         .meta-pill.success {
-            background: #dcfce7;
-            color: #166534;
+            background: var(--success-bg);
+            color: #065f46;
         }
-
         .meta-pill.warning {
-            background: #fee2e2;
-            color: #b91c1c;
+            background: var(--error-bg);
+            color: #991b1b;
         }
 
         .actions {
@@ -193,150 +115,76 @@
             gap: 10px;
         }
 
-        .btn {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            padding: 11px 16px;
-            border-radius: 999px;
-            text-decoration: none;
-            font-weight: 800;
-            transition: transform 0.25s ease, box-shadow 0.25s ease;
+        .st-empty {
+            padding: var(--space-md);
+            border-radius: var(--radius-md);
+            background: var(--surface-glass);
+            border: 1px dashed var(--border);
+            color: var(--text-muted);
+            text-align: center;
         }
 
-        .btn:hover { transform: translateY(-2px); }
-
-        .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            box-shadow: 0 12px 26px rgba(102, 126, 234, 0.26);
+        .ai-analysis-callout {
+            padding: 12px;
+            background: var(--primary-100);
+            border-radius: var(--radius-md);
+            margin-bottom: 14px;
+            border-left: 4px solid var(--primary-500);
+        }
+        .ai-analysis-callout p {
+            color: var(--primary-800);
+            font-weight: 700;
+            font-size: 0.9rem;
+            margin: 0;
         }
 
-        .empty {
-            padding: 18px;
-            border-radius: 18px;
-            background: rgba(255,255,255,0.75);
-            border: 1px dashed #cbd5e1;
-            color: #64748b;
-        }
-
-        @media (max-width: 1180px) {
-            .type-grid { grid-template-columns: 1fr; }
-        }
-
-        @media (max-width: 760px) {
-            body { padding: 16px; }
-            .hero { flex-direction: column; align-items: flex-start; }
-        }
-
-        /* Dark Mode */
-        body.dark-mode {
-            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-            color: #e2e8f0;
-        }
-        body.dark-mode .hero, body.dark-mode .section {
-            background: rgba(30, 41, 59, 0.92);
-            box-shadow: 0 18px 40px rgba(0, 0, 0, 0.3);
-        }
-        body.dark-mode h1, body.dark-mode h2, body.dark-mode h3, body.dark-mode h4 {
-            color: #f1f5f9;
-        }
-        body.dark-mode p, body.dark-mode .empty {
-            color: #94a3b8;
-        }
-        body.dark-mode .type-column {
-            background: linear-gradient(180deg, rgba(30, 41, 59, 0.92) 0%, rgba(15, 23, 42, 0.78) 100%);
-            border-color: #334155;
-        }
-        body.dark-mode .test-card {
-            background: rgba(30, 41, 59, 0.98);
-            border-color: #334155;
-        }
-        body.dark-mode .logout, body.dark-mode .badge {
-            background: rgba(51, 65, 85, 0.9);
-            color: #e2e8f0;
-            border-color: #475569;
-        }
-
-        body.dark-mode .hero p,
-        body.dark-mode .section-header p {
-            color: #94a3b8;
-        }
-
-        body.dark-mode .test-card p {
-            color: #94a3b8;
-        }
-
-        body.dark-mode .group-pill {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-        }
-        body.dark-mode .meta-pill {
-            background: rgba(102, 126, 234, 0.2);
-            color: #a5b4fc;
-        }
-        body.dark-mode .meta-pill.success {
-            background: rgba(16, 185, 129, 0.2);
-            color: #6ee7b7;
-        }
-        body.dark-mode .meta-pill.warning {
-            background: rgba(239, 68, 68, 0.2);
-            color: #fca5a5;
-        }
-
-        /* Floating AI Chat Button */
+        /* ============================================================
+           FLOATING AI CHAT BUTTON
+           ============================================================ */
         .ai-chat-fab {
             position: fixed;
             bottom: 30px;
             right: 30px;
             width: 70px;
             height: 70px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, var(--primary-500), var(--primary-700));
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+            box-shadow: 0 10px 30px rgba(99, 102, 241, 0.4);
             cursor: pointer;
             z-index: 9999;
-            transition: all 0.3s ease;
+            transition: all var(--transition-base);
             text-decoration: none;
             border: 3px solid rgba(255, 255, 255, 0.3);
-            animation: pulse 2s infinite;
+            animation: pulse-fab 2s infinite;
             overflow: hidden;
         }
-
         .ai-chat-fab::before {
             content: '';
             position: absolute;
             width: 100%;
             height: 100%;
             background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.3) 0%, transparent 60%);
-            animation: shimmer 3s infinite;
+            animation: shimmer-fab 3s infinite;
         }
-
         .ai-chat-fab:hover {
             transform: translateY(-5px) scale(1.05);
-            box-shadow: 0 15px 40px rgba(102, 126, 234, 0.5);
+            box-shadow: 0 15px 40px rgba(99, 102, 241, 0.5);
         }
-
         .ai-chat-fab:active {
             transform: translateY(-2px) scale(1);
         }
-
-        .ai-chat-fab .icon {
-            position: relative;
-            z-index: 1;
-        }
+        .ai-chat-fab .icon { position: relative; z-index: 1; }
 
         .ai-icon {
             width: 40px;
             height: 40px;
             position: relative;
-            animation: float 3s ease-in-out infinite;
+            animation: float-fab 3s ease-in-out infinite;
         }
 
-        /* Circular spiral design */
         .spiral-circle {
             position: absolute;
             border: 2px solid white;
@@ -346,30 +194,9 @@
             transform: translate(-50%, -50%);
             animation: spiral-rotate 4s linear infinite;
         }
-
-        .circle-1 {
-            width: 32px;
-            height: 32px;
-            border-top-color: transparent;
-            border-right-color: transparent;
-        }
-
-        .circle-2 {
-            width: 24px;
-            height: 24px;
-            border-bottom-color: transparent;
-            border-left-color: transparent;
-            animation-duration: 3s;
-            animation-direction: reverse;
-        }
-
-        .circle-3 {
-            width: 16px;
-            height: 16px;
-            border-top-color: transparent;
-            border-right-color: transparent;
-            animation-duration: 2.5s;
-        }
+        .circle-1 { width: 32px; height: 32px; border-top-color: transparent; border-right-color: transparent; }
+        .circle-2 { width: 24px; height: 24px; border-bottom-color: transparent; border-left-color: transparent; animation-duration: 3s; animation-direction: reverse; }
+        .circle-3 { width: 16px; height: 16px; border-top-color: transparent; border-right-color: transparent; animation-duration: 2.5s; }
 
         .center-dot {
             position: absolute;
@@ -383,7 +210,6 @@
             animation: pulse-dot 2s ease-in-out infinite;
         }
 
-        /* Orbiting particles */
         .orbit-particle {
             position: absolute;
             width: 4px;
@@ -392,94 +218,72 @@
             border-radius: 50%;
             animation: orbit-around 3s linear infinite;
         }
+        .particle-1 { animation-delay: 0s; }
+        .particle-2 { animation-delay: 1s; }
+        .particle-3 { animation-delay: 2s; }
 
-        .particle-1 {
-            animation-delay: 0s;
+        @keyframes pulse-fab {
+            0%, 100% { box-shadow: 0 10px 30px rgba(99, 102, 241, 0.4); }
+            50% { box-shadow: 0 10px 40px rgba(99, 102, 241, 0.6), 0 0 0 10px rgba(99, 102, 241, 0.1); }
         }
-
-        .particle-2 {
-            animation-delay: 1s;
-        }
-
-        .particle-3 {
-            animation-delay: 2s;
-        }
-
-        @keyframes pulse {
-            0%, 100% {
-                box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
-            }
-            50% {
-                box-shadow: 0 10px 40px rgba(102, 126, 234, 0.6), 0 0 0 10px rgba(102, 126, 234, 0.1);
-            }
-        }
-
-        @keyframes shimmer {
+        @keyframes shimmer-fab {
             0%, 100% { transform: rotate(0deg) scale(1); opacity: 0.3; }
             50% { transform: rotate(180deg) scale(1.2); opacity: 0.6; }
         }
-
-        @keyframes float {
+        @keyframes float-fab {
             0%, 100% { transform: translateY(0px); }
             50% { transform: translateY(-4px); }
         }
-
         @keyframes spiral-rotate {
             0% { transform: translate(-50%, -50%) rotate(0deg); }
             100% { transform: translate(-50%, -50%) rotate(360deg); }
         }
-
         @keyframes pulse-dot {
             0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
             50% { transform: translate(-50%, -50%) scale(1.5); opacity: 0.6; }
         }
-
         @keyframes orbit-around {
-            0% {
-                transform: translate(-50%, -50%) rotate(0deg) translateX(18px) rotate(0deg);
-                opacity: 0;
-            }
+            0% { transform: translate(-50%, -50%) rotate(0deg) translateX(18px) rotate(0deg); opacity: 0; }
             10% { opacity: 1; }
             90% { opacity: 1; }
-            100% {
-                transform: translate(-50%, -50%) rotate(360deg) translateX(18px) rotate(-360deg);
-                opacity: 0;
-            }
+            100% { transform: translate(-50%, -50%) rotate(360deg) translateX(18px) rotate(-360deg); opacity: 0; }
         }
 
-        body.dark-mode .ai-chat-fab {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border-color: rgba(255, 255, 255, 0.2);
+        @media (max-width: 1180px) {
+            .type-grid { grid-template-columns: 1fr; }
+        }
+        @media (max-width: 760px) {
+            .hero { flex-direction: column; align-items: flex-start; }
         }
     </style>
 </head>
 <body>
     <script src="/dark-mode.js"></script>
-    <%- include('partials/notifications') %>
+    <%- include('../partials/notifications') %>
     <div class="container">
-        <header class="hero">
+        <header class="hero card">
             <div>
-                <h1>Welcome, <%= student.username %></h1>
-                <p>Your assigned tests are grouped below by skill area so it’s easy to jump into the right exam format.</p>
+                <h1 class="page-title" style="margin-bottom:8px;">Welcome, <%= student.username %></h1>
+                <p class="page-subtitle">Your assigned tests are grouped below by skill area so it's easy to jump into the right exam format.</p>
                 <% if (groupName && groupName !== 'No Group Assigned') { %>
                     <div class="group-pill"><%= groupName %></div>
                 <% } %>
             </div>
             <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
-                <a href="/settings" class="logout">⚙️ Settings</a>
-                <a href="/student/feedback" class="logout" style="background:linear-gradient(135deg,#f97316,#ea580c);color:white;border:none;">🐛 Report Issue</a>
-                <a href="/logout" class="logout">Logout</a>
+                <a href="/settings" class="btn btn-ghost btn-sm">⚙️ Settings</a>
+                <a href="/student/feedback" class="btn btn-success">🐛 Report Issue</a>
+                <a href="/logout" class="btn btn-ghost btn-sm">Logout</a>
             </div>
         </header>
 
-        <section class="section">
-            <div class="section-header">
+        <section class="card" style="margin-top:var(--space-lg);">
+            <div class="page-header" style="margin-bottom:var(--space-md);">
                 <div>
-                    <h2>Your Tests</h2>
-                    <p>Each test opens in the same student view your teacher previewed and can resume from saved progress.</p>
+                    <h2 class="page-title" style="font-size:1.45rem;">Your Tests</h2>
+                    <p class="page-subtitle">Each test opens in the same student view your teacher previewed and can resume from saved progress.</p>
                 </div>
                 <div style="display:flex;gap:10px;align-items:center;">
-                    <input type="text" id="searchTests" placeholder="Search tests..." value="<%= pagination.search || '' %>" style="padding:10px 14px;border-radius:12px;border:2px solid #e2e8f0;font-size:0.95rem;" oninput="searchTests()">
+                    <input type="text" id="searchTests" class="form-input" style="width:auto;" placeholder="Search tests..." value="<%= pagination.search || '' %>" oninput="searchTests()">
                 </div>
             </div>
 
@@ -495,7 +299,7 @@
                         <div class="type-column <%= type.className %>">
                             <div class="type-header">
                                 <h3><%= type.label %></h3>
-                                <div class="badge"><%= typeTests.length %> tests</div>
+                                <span class="badge"><%= typeTests.length %> tests</span>
                             </div>
 
                             <% if (typeTests.length > 0) { %>
@@ -506,10 +310,10 @@
                                                 <h4>🔒 Scheduled Test</h4>
                                                 <p>This test will be available soon.</p>
                                                 <div class="meta-row">
-                                                    <div class="meta-pill warning">Locked</div>
-                                                    <div class="meta-pill">Available: <%= new Date(test.availableFrom).toLocaleString() %></div>
+                                                    <span class="meta-pill warning">Locked</span>
+                                                    <span class="meta-pill">Available: <%= new Date(test.availableFrom).toLocaleString() %></span>
                                                 </div>
-                                                <div id="countdown-<%= test._id %>" style="margin-top:12px;font-weight:700;color:#667eea;"></div>
+                                                <div id="countdown-<%= test._id %>" style="margin-top:12px;font-weight:700;color:var(--primary-500);"></div>
                                                 <script>
                                                 (function() {
                                                     const target = new Date('<%= test.availableFrom %>').getTime();
@@ -537,31 +341,31 @@
 
                                             <div class="meta-row">
                                                 <% if (test.submission) { %>
-                                                    <div class="meta-pill success">Completed</div>
+                                                    <span class="meta-pill success">Completed</span>
                                                     <% if (test.type === 'writing') { %>
-                                                        <div class="meta-pill">Writing saved</div>
+                                                        <span class="meta-pill">Writing saved</span>
                                                     <% } else { %>
-                                                        <div class="meta-pill"><%= test.submission.score %>/<%= test.submission.totalQuestions %></div>
+                                                        <span class="meta-pill"><%= test.submission.score %>/<%= test.submission.totalQuestions %></span>
                                                     <% } %>
                                                 <% } else { %>
-                                                    <div class="meta-pill warning">Not submitted yet</div>
+                                                    <span class="meta-pill warning">Not submitted yet</span>
                                                 <% } %>
-                                                <div class="meta-pill">ID <%= test._id.toString().slice(-6) %></div>
+                                                <span class="meta-pill">ID <%= test._id.toString().slice(-6) %></span>
                                             </div>
 
                                             <% if (test.submission && test.submission.lastSubmittedAt) { %>
                                                 <p style="margin-bottom: 14px;">Last saved result: <strong><%= new Date(test.submission.lastSubmittedAt).toLocaleString() %></strong></p>
                                                 <% if (test.submission.details?.aiAnalysis && (test.type === 'reading' || test.type === 'listening')) { %>
-                                                    <div style="padding:12px;background:#eef2ff;border-radius:12px;margin-bottom:14px;border-left:4px solid #667eea;">
-                                                        <p style="color:#4338ca;font-weight:700;font-size:0.9rem;margin:0;">🤖 AI Analysis Available</p>
+                                                    <div class="ai-analysis-callout">
+                                                        <p>🤖 AI Analysis Available</p>
                                                     </div>
                                                 <% } %>
                                             <% } %>
 
                                             <div class="actions">
-                                                <a href="/view-test/<%= test._id %>" class="btn btn-primary">Open Test</a>
+                                                <a href="/view-test/<%= test._id %>" class="btn btn-primary btn-sm">Open Test</a>
                                                 <% if (test.submission && test.submission.details?.aiAnalysis && (test.type === 'reading' || test.type === 'listening')) { %>
-                                                    <a href="/student/ai-feedback/<%= test.submission._id %>" class="btn" style="background:linear-gradient(135deg,#10b981,#059669);color:white;box-shadow:0 12px 26px rgba(16,185,129,0.26);">🤖 View AI Feedback</a>
+                                                    <a href="/student/ai-feedback/<%= test.submission._id %>" class="btn btn-success btn-sm">🤖 View AI Feedback</a>
                                                 <% } %>
                                             </div>
                                             <% } %>
@@ -569,23 +373,23 @@
                                     <% }) %>
                                 </div>
                             <% } else { %>
-                                <div class="empty">No <%= type.label.toLowerCase() %> tests assigned right now.</div>
+                                <div class="st-empty">No <%= type.label.toLowerCase() %> tests assigned right now.</div>
                             <% } %>
                         </div>
                     <% }) %>
                 </div>
             <% } else { %>
-                <div class="empty">No tests have been assigned to you yet. Your teacher will place them here when they are ready.</div>
+                <div class="st-empty">No tests have been assigned to you yet. Your teacher will place them here when they are ready.</div>
             <% } %>
 
             <% if (pagination.totalPages > 1) { %>
-                <div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-top:24px;flex-wrap:wrap;">
+                <div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-top:var(--space-lg);flex-wrap:wrap;">
                     <% if (pagination.page > 1) { %>
-                        <a href="?page=<%= pagination.page - 1 %><%= pagination.search ? '&search=' + pagination.search : '' %>" class="btn btn-primary" style="padding:10px 18px;">← Prev</a>
+                        <a href="?page=<%= pagination.page - 1 %><%= pagination.search ? '&search=' + pagination.search : '' %>" class="btn btn-ghost btn-sm">← Prev</a>
                     <% } %>
-                    <span style="font-weight:800;color:#64748b;font-size:0.9rem;">Page <%= pagination.page %> of <%= pagination.totalPages %> (<%= pagination.total %> tests)</span>
+                    <span style="font-weight:800;color:var(--text-secondary);font-size:0.9rem;">Page <%= pagination.page %> of <%= pagination.totalPages %> (<%= pagination.total %> tests)</span>
                     <% if (pagination.page < pagination.totalPages) { %>
-                        <a href="?page=<%= pagination.page + 1 %><%= pagination.search ? '&search=' + pagination.search : '' %>" class="btn btn-primary" style="padding:10px 18px;">Next →</a>
+                        <a href="?page=<%= pagination.page + 1 %><%= pagination.search ? '&search=' + pagination.search : '' %>" class="btn btn-ghost btn-sm">Next →</a>
                     <% } %>
                 </div>
             <% } %>

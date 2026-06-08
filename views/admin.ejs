@@ -5,51 +5,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard</title>
+    <%- include('../partials/design-system') %>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: "Segoe UI", "Trebuchet MS", sans-serif;
-            min-height: 100vh;
-            color: #1f2937;
-            background:
-                radial-gradient(circle at top left, rgba(255, 255, 255, 0.45), transparent 30%),
-                linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-            padding: 24px;
-        }
-
+        /* ============================================================
+           PAGE-SPECIFIC STYLES — Admin Dashboard
+           ============================================================ */
         .container {
             max-width: 1360px;
             margin: 0 auto;
-        }
-
-        .header {
-            display: flex;
-            justify-content: space-between;
-            gap: 18px;
-            align-items: center;
-            padding: 30px;
-            border-radius: 30px;
-            background: rgba(255, 255, 255, 0.92);
-            backdrop-filter: blur(18px);
-            box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
-            margin-bottom: 24px;
-        }
-
-        .header h1 {
-            font-size: 2.3rem;
-            font-weight: 900;
-            letter-spacing: -0.04em;
-            margin-bottom: 10px;
-        }
-
-        .header p {
-            color: #64748b;
-            line-height: 1.6;
         }
 
         .header-actions {
@@ -58,253 +21,26 @@
             gap: 10px;
         }
 
-        .btn {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            text-decoration: none;
-            border: none;
-            border-radius: 999px;
-            padding: 12px 18px;
-            font-weight: 800;
-            cursor: pointer;
-            transition: transform 0.25s ease, box-shadow 0.25s ease;
-        }
-
-        .btn:hover {
-            transform: translateY(-2px);
-        }
-
-        .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            box-shadow: 0 12px 26px rgba(102, 126, 234, 0.26);
-        }
-
-        .btn-success {
-            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-            color: white;
-            box-shadow: 0 12px 26px rgba(16, 185, 129, 0.24);
-        }
-
-        .btn-secondary {
-            background: white;
-            color: #334155;
-            border: 1px solid #dbe3f1;
-            box-shadow: 0 8px 18px rgba(15, 23, 42, 0.05);
-        }
-
-        .btn-danger {
-            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-            color: white;
-            box-shadow: 0 10px 20px rgba(239, 68, 68, 0.24);
-        }
-
-        .section {
-            padding: 26px;
-            border-radius: 28px;
-            background: rgba(255, 255, 255, 0.92);
-            backdrop-filter: blur(16px);
-            box-shadow: 0 18px 38px rgba(15, 23, 42, 0.08);
-            margin-bottom: 22px;
-        }
-
-        .section-header {
-            display: flex;
-            justify-content: space-between;
-            gap: 16px;
-            align-items: flex-start;
-            margin-bottom: 18px;
-        }
-
-        .section-header h2 {
-            font-size: 1.45rem;
-            font-weight: 900;
-            margin-bottom: 8px;
-        }
-
-        .section-header p {
-            color: #64748b;
-            line-height: 1.6;
-        }
-
         .assign-form {
             display: grid;
             grid-template-columns: 1fr 1fr auto;
             gap: 12px;
         }
 
-        input[type="text"],
-        select {
-            width: 100%;
-            padding: 12px 14px;
-            border-radius: 16px;
-            border: 2px solid #e2e8f0;
-            background: white;
-            font-size: 0.95rem;
-            font-family: inherit;
-            transition: all 0.2s ease;
-            cursor: pointer;
-            appearance: none;
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23667eea' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
-            background-repeat: no-repeat;
-            background-position: right 8px center;
-            background-size: 20px;
-            padding-right: 36px;
-        }
-
-        select {
-            background-color: #f8fafc;
-        }
-
-        select:hover {
-            border-color: #cbd5e1;
-            background-color: white;
-        }
-
-        select:focus,
-        input:focus {
-            outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.12);
-            background-color: white;
-        }
-
-        select option {
-            padding: 8px 12px;
-            background: white;
-            color: #1f2937;
-        }
-
-        select option:hover {
-            background: #667eea;
-            color: white;
-        }
-
-        .ms-select-wrap {
-            position: relative;
-        }
-
-        .ms-button {
-            width: 100%;
-            padding: 12px 44px 12px 14px;
-            border-radius: 16px;
-            border: 2px solid #e2e8f0;
-            background: #f8fafc;
-            font-size: 0.95rem;
-            font-family: inherit;
-            cursor: pointer;
-            text-align: left;
-            transition: all 0.2s ease;
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23667eea' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
-            background-repeat: no-repeat;
-            background-position: right 12px center;
-            background-size: 20px;
-        }
-
-        .ms-button:hover {
-            border-color: #cbd5e1;
-            background: white;
-        }
-
-        .ms-button:focus {
-            outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.12);
-            background: white;
-        }
-
-        .ms-panel {
-            position: fixed;
-            z-index: 9999;
-            border-radius: 18px;
-            border: 1px solid #e2e8f0;
-            background: rgba(255, 255, 255, 0.98);
-            box-shadow: 0 18px 40px rgba(15, 23, 42, 0.12);
-            padding: 10px;
-            display: none;
-            min-width: 220px;
-        }
-
-        .ms-panel.open {
-            display: block;
-        }
-
-        .ms-search {
-            width: 100%;
-            padding: 12px 14px;
-            border-radius: 12px;
-            border: 1px solid #e2e8f0;
-            background: #f8fafc;
-            font-family: inherit;
-            font-size: 0.95rem;
-            transition: all 0.2s ease;
-        }
-
-        .ms-search:focus {
-            outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-        }
-
-        .ms-options {
-            margin-top: 8px;
-            max-height: 300px;
-            overflow-y: auto;
-            border-radius: 12px;
-            background: white;
-        }
-
-        .ms-option {
-            padding: 12px 14px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: 600;
-            color: #334155;
-            transition: all 0.2s ease;
-            border-left: 3px solid transparent;
-            margin: 4px 6px;
-        }
-
-        .ms-option:hover {
-            background: linear-gradient(135deg, rgba(102, 126, 234, 0.08) 0%, rgba(118, 75, 162, 0.04) 100%);
-            color: #667eea;
-            border-left-color: #667eea;
-            transform: translateX(2px);
-        }
-
-        .ms-option.selected {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            font-weight: 700;
-            border-left-color: #fff;
-        }
-
         .library-grid {
             display: grid;
             grid-template-columns: repeat(3, minmax(0, 1fr));
-            gap: 18px;
+            gap: var(--space-md);
         }
-
         .library-column {
-            padding: 18px;
-            border-radius: 24px;
-            border: 1px solid #e2e8f0;
-            background: linear-gradient(180deg, rgba(248, 250, 252, 0.92) 0%, rgba(241, 245, 249, 0.78) 100%);
+            padding: var(--space-md);
+            border-radius: var(--radius-xl);
+            border: 1px solid var(--border);
+            background: linear-gradient(180deg, var(--surface-glass) 0%, var(--gray-100) 100%);
         }
-
-        .reading {
-            border-top: 6px solid #3b82f6;
-        }
-
-        .listening {
-            border-top: 6px solid #10b981;
-        }
-
-        .writing {
-            border-top: 6px solid #f97316;
-        }
+        .library-column.reading { border-top: 6px solid var(--info); }
+        .library-column.listening { border-top: 6px solid var(--success); }
+        .library-column.writing { border-top: 6px solid #f97316; }
 
         .type-header {
             display: flex;
@@ -312,20 +48,10 @@
             align-items: center;
             margin-bottom: 14px;
         }
-
         .type-header h3 {
             font-size: 1.12rem;
             font-weight: 900;
-        }
-
-        .badge {
-            padding: 6px 10px;
-            border-radius: 999px;
-            font-size: 0.8rem;
-            font-weight: 800;
-            background: white;
-            border: 1px solid #dbe3f1;
-            color: #334155;
+            color: var(--text-primary);
         }
 
         .test-list {
@@ -334,21 +60,20 @@
         }
 
         .test-card {
-            padding: 18px;
-            border-radius: 22px;
-            background: white;
-            border: 1px solid #e2e8f0;
-            box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+            padding: var(--space-md);
+            border-radius: var(--radius-lg);
+            background: var(--surface);
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow-sm);
         }
-
         .test-card h4 {
             font-size: 1.06rem;
             font-weight: 900;
+            color: var(--text-primary);
             margin-bottom: 6px;
         }
-
         .test-card p {
-            color: #64748b;
+            color: var(--text-secondary);
             line-height: 1.55;
             font-size: 0.92rem;
         }
@@ -356,232 +81,102 @@
         .action-row {
             display: flex;
             flex-wrap: wrap;
-            gap: 8px;
+            gap: var(--space-sm);
             margin-top: 14px;
         }
 
-        .table-wrap {
-            overflow-x: auto;
-        }
-
-        table {
+        /* Multi-select (custom dropdown) — preserved from original */
+        .ms-select-wrap { position: relative; }
+        .ms-button {
             width: 100%;
-            border-collapse: collapse;
-        }
-
-        th,
-        td {
+            padding: 12px 44px 12px 14px;
+            border-radius: var(--radius-md);
+            border: 2px solid var(--border);
+            background: var(--surface-2);
+            font-size: 0.95rem;
+            font-family: var(--font-sans);
+            cursor: pointer;
             text-align: left;
-            padding: 16px 14px;
-            border-bottom: 1px solid #e2e8f0;
+            transition: all var(--transition-fast);
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23667eea' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            background-size: 20px;
+        }
+        .ms-button:hover { border-color: var(--gray-400); background: var(--surface); }
+        .ms-button:focus { outline: none; border-color: var(--primary-400); box-shadow: var(--shadow-glow); background: var(--surface); }
+
+        .ms-panel {
+            position: fixed;
+            z-index: 9999;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border);
+            background: var(--surface-glass);
+            backdrop-filter: blur(16px);
+            box-shadow: var(--shadow-lg);
+            padding: 10px;
+            display: none;
+            min-width: 220px;
+        }
+        .ms-panel.open { display: block; }
+
+        .ms-search {
+            width: 100%;
+            padding: 12px 14px;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border);
+            background: var(--surface-2);
+            font-family: var(--font-sans);
+            font-size: 0.95rem;
+            transition: all var(--transition-fast);
+        }
+        .ms-search:focus { outline: none; border-color: var(--primary-400); box-shadow: var(--shadow-glow); }
+
+        .ms-options {
+            margin-top: 8px;
+            max-height: 300px;
+            overflow-y: auto;
+            border-radius: var(--radius-sm);
+            background: var(--surface);
         }
 
-        th {
-            font-size: 0.84rem;
-            text-transform: uppercase;
-            letter-spacing: 0.04em;
-            color: #64748b;
+        .ms-option {
+            padding: 12px 14px;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            font-weight: 600;
+            color: var(--text-primary);
+            transition: all var(--transition-fast);
+            border-left: 3px solid transparent;
+            margin: 4px 6px;
+        }
+        .ms-option:hover {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.08), rgba(118, 75, 162, 0.04));
+            color: var(--primary-500);
+            border-left-color: var(--primary-500);
+            transform: translateX(2px);
+        }
+        .ms-option.selected {
+            background: linear-gradient(135deg, var(--primary-500), var(--primary-700));
+            color: #fff;
+            font-weight: 700;
+            border-left-color: #fff;
         }
 
-        td {
-            color: #475569;
-            vertical-align: middle;
-        }
-
-        .empty {
-            padding: 18px;
-            border-radius: 18px;
-            background: rgba(255, 255, 255, 0.75);
-            border: 1px dashed #cbd5e1;
-            color: #64748b;
+        .admin-empty {
+            padding: var(--space-md);
+            border-radius: var(--radius-md);
+            background: var(--surface-glass);
+            border: 1px dashed var(--border);
+            color: var(--text-muted);
+            text-align: center;
         }
 
         @media (max-width: 1180px) {
-            .library-grid {
-                grid-template-columns: 1fr;
-            }
+            .library-grid { grid-template-columns: 1fr; }
         }
-
         @media (max-width: 860px) {
-            .assign-form {
-                grid-template-columns: 1fr;
-            }
-
-            .header {
-                flex-direction: column;
-                align-items: flex-start;
-            }
-        }
-
-        /* Dark Mode */
-        body.dark-mode {
-            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-            color: #e2e8f0;
-        }
-
-        body.dark-mode .header,
-        body.dark-mode .section {
-            background: rgba(30, 41, 59, 0.92);
-            box-shadow: 0 18px 40px rgba(0, 0, 0, 0.3);
-        }
-
-        body.dark-mode h1,
-        body.dark-mode h2,
-        body.dark-mode h3,
-        body.dark-mode h4 {
-            color: #f1f5f9;
-        }
-
-        body.dark-mode p {
-            color: #94a3b8;
-        }
-
-        body.dark-mode .library-column {
-            background: linear-gradient(180deg, rgba(30, 41, 59, 0.92) 0%, rgba(15, 23, 42, 0.78) 100%);
-            border-color: #334155;
-        }
-
-        body.dark-mode .test-card,
-        body.dark-mode .teacher-card {
-            background: rgba(30, 41, 59, 0.98);
-            border-color: #334155;
-        }
-
-        body.dark-mode .badge,
-        body.dark-mode .pill {
-            background: rgba(102, 126, 234, 0.2);
-            color: #a5b4fc;
-        }
-
-        body.dark-mode .teacher-card p,
-        body.dark-mode .test-card p {
-            color: #94a3b8;
-        }
-
-        body.dark-mode .type-header h3 {
-            color: #f1f5f9;
-        }
-
-        body.dark-mode .assign-form {
-            background: rgba(30, 41, 59, 0.92);
-            border-color: #334155;
-        }
-
-        body.dark-mode input,
-        body.dark-mode select {
-            background: rgba(15, 23, 42, 0.9);
-            border-color: #334155;
-            color: #e2e8f0;
-        }
-
-        body.dark-mode input:focus,
-        body.dark-mode select:focus {
-            background: rgba(30, 41, 59, 0.95);
-            border-color: #667eea;
-        }
-
-        body.dark-mode .btn-secondary {
-            background: rgba(51, 65, 85, 0.9);
-            color: #e2e8f0;
-            border-color: #475569;
-        }
-
-        /* Comprehensive dark mode form fixes */
-        body.dark-mode input[type="text"],
-        body.dark-mode input[type="email"],
-        body.dark-mode input[type="password"],
-        body.dark-mode input[type="datetime-local"],
-        body.dark-mode input[type="date"],
-        body.dark-mode input[type="time"],
-        body.dark-mode textarea,
-        body.dark-mode select {
-            background: rgba(15, 23, 42, 0.95) !important;
-            border-color: #475569 !important;
-            color: #e2e8f0 !important;
-        }
-
-        body.dark-mode input::placeholder,
-        body.dark-mode textarea::placeholder {
-            color: #64748b !important;
-        }
-
-        body.dark-mode input:focus,
-        body.dark-mode textarea:focus,
-        body.dark-mode select:focus {
-            background: rgba(30, 41, 59, 0.98) !important;
-            border-color: #667eea !important;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2) !important;
-        }
-
-        body.dark-mode label {
-            color: #cbd5e1 !important;
-        }
-
-        body.dark-mode .ms-button {
-            background: rgba(15, 23, 42, 0.95) !important;
-            border-color: #475569 !important;
-            color: #e2e8f0 !important;
-        }
-
-        body.dark-mode .ms-button:hover {
-            background: rgba(30, 41, 59, 0.99) !important;
-            border-color: #667eea !important;
-        }
-
-        body.dark-mode .ms-panel {
-            background: rgba(15, 23, 42, 0.99) !important;
-            border-color: #475569 !important;
-            box-shadow: 0 18px 40px rgba(0, 0, 0, 0.6) !important;
-        }
-
-        body.dark-mode .ms-search {
-            background: rgba(30, 41, 59, 0.95) !important;
-            border-color: #475569 !important;
-            color: #e2e8f0 !important;
-        }
-
-        body.dark-mode .ms-options {
-            background: rgba(15, 23, 42, 0.98) !important;
-        }
-
-        body.dark-mode .ms-option {
-            color: #cbd5e1 !important;
-            background: transparent !important;
-            border-left-color: transparent !important;
-        }
-
-        body.dark-mode .ms-option:hover {
-            background: linear-gradient(135deg, rgba(102, 126, 234, 0.2) 0%, rgba(118, 75, 162, 0.1) 100%) !important;
-            color: #a5f4fc !important;
-            border-left-color: #667eea !important;
-            transform: translateX(2px);
-        }
-
-        body.dark-mode .ms-option.selected {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
-            color: #fff !important;
-            border-left-color: #fff !important;
-        }
-
-        body.dark-mode .empty {
-            background: rgba(15, 23, 42, 0.9) !important;
-            border-color: #334155 !important;
-            color: #94a3b8 !important;
-        }
-
-        body.dark-mode th {
-            color: #cbd5e1 !important;
-            background: rgba(30, 41, 59, 0.8) !important;
-        }
-
-        body.dark-mode td {
-            color: #cbd5e1 !important;
-        }
-
-        body.dark-mode .teacher-card,
-        body.dark-mode .student-card {
-            background: rgba(30, 41, 59, 0.98) !important;
-            border-color: #334155 !important;
+            .assign-form { grid-template-columns: 1fr; }
         }
     </style>
     <script>
@@ -810,10 +405,10 @@
     <script src="/dark-mode.js"></script>
     <%- include('partials/notifications') %>
         <div class="container">
-            <header class="header">
+            <header class="card">
                 <div>
-                    <h1>Admin Control Center</h1>
-                    <p>Create builder-based tests, group them by skill area, and grant teachers access to the exact
+                    <h1 class="page-title">Admin Control Center</h1>
+                    <p class="page-subtitle">Create builder-based tests, group them by skill area, and grant teachers access to the exact
                         student-facing versions.</p>
                 </div>
                 <div class="header-actions">
@@ -822,13 +417,13 @@
                     <a href="/admin/feedback" class="btn"
                         style="background:linear-gradient(135deg,#f97316,#ea580c);color:white;box-shadow:0 12px 26px rgba(249,115,22,0.24);">📬
                         Feedback</a>
-                    <a href="/settings" class="btn btn-secondary">⚙️ Settings</a>
-                    <a href="/logout" class="btn btn-secondary">Logout</a>
+                    <a href="/settings" class="btn btn-ghost">⚙️ Settings</a>
+                    <a href="/logout" class="btn btn-ghost">Logout</a>
                 </div>
             </header>
 
-            <section class="section">
-                <div class="section-header">
+            <section class="card">
+                <div class="page-header">
                     <div>
                         <h2>Assign Tests To Teachers</h2>
                         <p>Teachers can preview and download the same HTML their students will use once you grant access
@@ -837,7 +432,7 @@
                 </div>
                 <form action="/admin/assign-test" method="POST" class="assign-form">
                     <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-                    <select name="testId" required>
+                    <select name="testId" required class="form-select">
                         <option value="">Select a test</option>
                         <% tests.forEach(test=> { %>
                             <option value="<%= test._id %>">
@@ -845,7 +440,7 @@
                             </option>
                             <% }) %>
                     </select>
-                    <select name="teacherId" required>
+                    <select name="teacherId" required class="form-select">
                         <option value="">Select a teacher</option>
                         <% teachers.forEach(teacher=> { %>
                             <option value="<%= teacher._id %>">
@@ -857,8 +452,8 @@
                 </form>
             </section>
 
-            <section class="section">
-                <div class="section-header">
+            <section class="card">
+                <div class="page-header">
                     <div>
                         <h2>Tests By Type</h2>
                         <p>The test library is grouped by reading, listening, and writing so builders and exports stay
@@ -878,9 +473,9 @@
                                         <h3>
                                             <%= type.label %>
                                         </h3>
-                                        <div class="badge">
+                                        <span class="badge">
                                             <%= typeTests.length %> tests
-                                        </div>
+                                        </span>
                                     </div>
 
                                     <% if (typeTests.length> 0) { %>
@@ -898,9 +493,9 @@
                                                         <a href="/edit-test/<%= test._id %>"
                                                             class="btn btn-primary">Edit</a>
                                                         <a href="/view-test/<%= test._id %>" target="_blank"
-                                                            class="btn btn-secondary">Preview</a>
+                                                            class="btn btn-ghost">Preview</a>
                                                         <a href="/download-test/<%= test._id %>"
-                                                            class="btn btn-secondary">Download HTML</a>
+                                                            class="btn btn-ghost">Download HTML</a>
                                                         <button class="btn btn-danger"
                                                             onclick="deleteItem('test', '<%= test._id %>', '<%= test.title %>')">Delete</button>
                                                     </div>
@@ -908,20 +503,20 @@
                                                 <% }) %>
                                         </div>
                                         <% } else { %>
-                                            <div class="empty">No <%= type.label.toLowerCase() %> tests created yet.
+                                            <div class="admin-empty">No <%= type.label.toLowerCase() %> tests created yet.
                                             </div>
                                             <% } %>
                                 </div>
                                 <% }) %>
                         </div>
                         <% } else { %>
-                            <div class="empty">No tests have been created yet. Start from the builder-based creation
+                            <div class="admin-empty">No tests have been created yet. Start from the builder-based creation
                                 hub.</div>
                             <% } %>
             </section>
 
-            <section class="section">
-                <div class="section-header">
+            <section class="card">
+                <div class="page-header">
                     <div>
                         <h2>Teachers</h2>
                         <p>Manage who receives tests and keep the teacher roster clean.</p>
@@ -929,7 +524,7 @@
                 </div>
 
                 <% if (teachers.length> 0) { %>
-                    <div class="table-wrap">
+                    <div class="table-container">
                         <table>
                             <thead>
                                 <tr>
@@ -941,7 +536,7 @@
                             <tbody>
                                 <% teachers.forEach(teacher=> { %>
                                     <tr>
-                                        <td style="font-weight: 900; color: #1f2937;">
+                                        <td style="font-weight: 900; color: var(--text-primary);">
                                             <%= teacher.username %>
                                         </td>
                                         <td>
@@ -949,7 +544,7 @@
                                         </td>
                                         <td>
                                             <div class="action-row">
-                                                <button class="btn btn-secondary"
+                                                <button class="btn btn-ghost"
                                                     onclick="viewPassword('<%= teacher._id %>', '<%= teacher.username %>', 'teacher')"
                                                     style="padding:8px 14px;font-size:0.85rem;">🔑 View
                                                     Password</button>
@@ -963,31 +558,31 @@
                         </table>
                     </div>
                     <% } else { %>
-                        <div class="empty">No teachers added yet. Use the button above to create the first teacher
+                        <div class="admin-empty">No teachers added yet. Use the button above to create the first teacher
                             account.</div>
                         <% } %>
             </section>
-            <section class="section">
-                <div class="section-header">
+            <section class="card">
+                <div class="page-header">
                     <div>
                         <h2>Activity Logs</h2>
                         <p>Search and browse server logs by level. Most recent entries shown first.</p>
                     </div>
                     <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
-                        <select id="logLevel" onchange="loadLogs(1)" style="width:auto;padding:10px 36px 10px 14px;">
+                        <select id="logLevel" onchange="loadLogs(1)" class="form-select" style="width:auto;padding:10px 36px 10px 14px;">
                             <option value="info">Info</option>
                             <option value="warn">Warn</option>
                             <option value="error">Error</option>
                         </select>
-                        <button class="btn btn-secondary" onclick="loadLogs(1)"
+                        <button class="btn btn-ghost" onclick="loadLogs(1)"
                             style="padding:10px 18px;">Refresh</button>
                     </div>
                 </div>
                 <div id="logContainer">
-                    <div class="empty">Click Refresh to load logs.</div>
+                    <div class="admin-empty">Click Refresh to load logs.</div>
                 </div>
                 <div id="logPagination"
-                    style="display:flex;align-items:center;justify-content:center;gap:10px;margin-top:16px;flex-wrap:wrap;">
+                    style="display:flex;align-items:center;justify-content:center;gap:var(--space-sm);margin-top:var(--space-md);flex-wrap:wrap;">
                 </div>
             </section>
 
@@ -1001,25 +596,25 @@
                         .then(data => {
                             const container = document.getElementById('logContainer');
                             if (!data.entries || data.entries.length === 0) {
-                                container.innerHTML = '<div class="empty">No log entries found.</div>';
+                                container.innerHTML = '<div class="admin-empty">No log entries found.</div>';
                                 document.getElementById('logPagination').innerHTML = '';
                                 return;
                             }
                             container.innerHTML = `<div style="overflow-x:auto;"><table><thead><tr><th>Time</th><th>Level</th><th>Message</th><th>Details</th></tr></thead><tbody>${data.entries.map(e => {
                                 const bg = e.level === 'ERROR' ? '#fee2e2' : e.level === 'WARN' ? '#fef9c3' : 'transparent';
                                 const details = Object.entries(e).filter(([k]) => !['timestamp', 'level', 'message'].includes(k)).map(([k, v]) => `<span style="margin-right:8px;"><strong>${k}:</strong> ${JSON.stringify(v)}</span>`).join('');
-                                return `<tr style="background:${bg}"><td style="white-space:nowrap;font-size:0.82rem;">${e.timestamp || ''}</td><td><strong>${e.level || ''}</strong></td><td>${e.message || e.raw || ''}</td><td style="font-size:0.82rem;color:#64748b;">${details}</td></tr>`;
+                                return `<tr style="background:${bg}"><td style="white-space:nowrap;font-size:0.82rem;">${e.timestamp || ''}</td><td><strong>${e.level || ''}</strong></td><td>${e.message || e.raw || ''}</td><td style="font-size:0.82rem;color:var(--text-muted);">${details}</td></tr>`;
                             }).join('')
                                 }</tbody></table></div>`;
                             const pag = document.getElementById('logPagination');
                             pag.innerHTML = '';
                             if (data.totalPages > 1) {
-                                if (page > 1) { const b = document.createElement('button'); b.className = 'btn btn-secondary'; b.style.padding = '8px 16px'; b.textContent = '\u2190 Prev'; b.onclick = () => loadLogs(page - 1); pag.appendChild(b); }
-                                const s = document.createElement('span'); s.style.cssText = 'font-weight:800;color:#64748b;font-size:0.9rem;'; s.textContent = `Page ${page} of ${data.totalPages} (${data.total} entries)`; pag.appendChild(s);
-                                if (page < data.totalPages) { const b = document.createElement('button'); b.className = 'btn btn-secondary'; b.style.padding = '8px 16px'; b.textContent = 'Next \u2192'; b.onclick = () => loadLogs(page + 1); pag.appendChild(b); }
+                                if (page > 1) { const b = document.createElement('button'); b.className = 'btn btn-ghost'; b.style.padding = '8px 16px'; b.textContent = '\u2190 Prev'; b.onclick = () => loadLogs(page - 1); pag.appendChild(b); }
+                                const s = document.createElement('span'); s.style.cssText = 'font-weight:800;color:var(--text-muted);font-size:0.9rem;'; s.textContent = `Page ${page} of ${data.totalPages} (${data.total} entries)`; pag.appendChild(s);
+                                if (page < data.totalPages) { const b = document.createElement('button'); b.className = 'btn btn-ghost'; b.style.padding = '8px 16px'; b.textContent = 'Next \u2192'; b.onclick = () => loadLogs(page + 1); pag.appendChild(b); }
                             }
                         })
-                        .catch(err => { document.getElementById('logContainer').innerHTML = `<div class="empty">Error loading logs: ${err.message}</div>`; });
+                        .catch(err => { document.getElementById('logContainer').innerHTML = `<div class="admin-empty">Error loading logs: ${err.message}</div>`; });
                 }
             </script>
         </div>

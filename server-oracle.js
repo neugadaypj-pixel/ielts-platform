@@ -8,7 +8,7 @@ const session = require('express-session');
 const rateLimit = require('express-rate-limit');
 const helmet = require('helmet');
 const cookieParser = require('cookie-parser');
-const csrf = require('csurf');
+const { doubleCsrf } = require('csrf-csrf');
 const multer = require('multer');
 const NodeCache = require('node-cache');
 const { S3Client, PutObjectCommand, GetObjectCommand } = require('@aws-sdk/client-s3');
@@ -226,18 +226,23 @@ const upload = multer({
 // === SESSION ===
 const sessionConfig = {
     store: new OracleSessionStore(),
-    secret: process.env.SESSION_SECRET || 'test-platform-secret-change-me',
+    secret: process.env.SESSION_SECRET || (() => {
+        const fallback = crypto.randomBytes(64).toString('hex');
+        console.warn('WARNING: SESSION_SECRET environment variable is not set. Using a randomly generated secret for this session. All existing sessions will be invalidated on restart. Set SESSION_SECRET in your environment for persistent sessions across restarts.');
+        return fallback;
+    })(),
     resave: false,
     saveUninitialized: false,
     cookie: {
-        secure: false, // Must be false on HTTP; set true only if behind HTTPS
+        secure: process.env.NODE_ENV === 'production', // true behind nginx HTTPS; false for local dev
         httpOnly: true,
         maxAge: 24 * 60 * 60 * 1000, // 24 hours
         sameSite: 'lax'
     }
 };
 
-// Trust the nginx reverse proxy (port 80 → 3000)
+// Trust the nginx reverse proxy (port 80 → 3000).
+// proxy: true tells Express to trust X-Forwarded-Proto so req.secure works correctly.
 app.set('trust proxy', 1);
 
 app.use(session(sessionConfig));
@@ -245,19 +250,27 @@ app.use(session(sessionConfig));
 // Cookie parser required for CSRF cookies
 app.use(cookieParser());
 
+// Generate CSRF token for all EJS views (replaces csurf's implicit cookie set)
+app.use(generateToken);
+
 // === RATE LIMITERS ===
+// Classroom/same-IP rationale: many students share a single public IP (NAT).
+// We use per-IP windows large enough for classroom use (~20 students).
+// Login uses IP+username composite key to prevent one failing student from
+// locking out others behind the same IP while still throttling brute-force.
+
 const loginLimiter = rateLimit({
-    windowMs: 60 * 1000, // 1 minute (was 15 min — too strict for shared-IP environments)
-    max: 10,
+    windowMs: 60 * 1000, // 1 minute
+    max: 10,              // per IP+username bucket
     message: { error: 'Too many login attempts. Please try again later.' },
     standardHeaders: true,  // expose X-RateLimit-Remaining / X-RateLimit-Reset
     legacyHeaders: false,
     keyGenerator: (req) => {
-        // Combine IP + username so each user gets their own bucket,
-        // avoiding shared-IP lockouts (e.g. school/office NAT)
+        // Composite key: IP + username so each user gets their own bucket,
+        // preventing one failing student from locking out others on the same IP.
         const ip = req.ip || req.connection?.remoteAddress || 'unknown';
-        const user = req.body?.username || 'anonymous';
-        return `${ip}::${user}`;
+        const user = req.body?.username || 'unknown';
+        return `${ip}-${user}`;
     },
     skip: (req) => {
         // Don't count requests from already-logged-in users
@@ -268,41 +281,54 @@ const loginLimiter = rateLimit({
 const strictLimiter = rateLimit({
     windowMs: 60 * 1000,
     max: 5,
-    message: { error: 'Too many requests. Please slow down.' }
+    message: { error: 'Too many requests. Please slow down.' },
+    standardHeaders: true,
+    legacyHeaders: false
 });
 
+// Global API rate limiter — classroom-safe (1000 req / 15 min per IP).
+// Rationale: 20+ students behind a single NAT IP each making ~50 requests
+// during a 15-minute test session must not be throttled.
 const apiLimiter = rateLimit({
-    windowMs: 60 * 1000,
-    max: 60,
-    message: { error: 'Too many API requests.' }
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 1000,
+    message: { error: 'Too many API requests. Please try again shortly.' },
+    standardHeaders: true,
+    legacyHeaders: false
 });
 
 const testCreationLimiter = rateLimit({
     windowMs: 60 * 1000,
     max: 10,
-    message: { error: 'Too many test creation attempts.' }
+    message: { error: 'Too many test creation attempts.' },
+    standardHeaders: true,
+    legacyHeaders: false
 });
 
 // === CSRF PROTECTION ===
-// Cookie-based CSRF. The _csrf cookie is set the first time any route with
-// csrfProtection middleware renders. All GET routes that serve pages with forms
-// should include csrfProtection so the cookie is always available.
-const csrfProtection = csrf({ cookie: true });
+// Double-submit cookie pattern via csrf-csrf (replaces deprecated csurf).
+// generateToken — global middleware that provides req.csrfToken() for EJS views.
+// doubleCsrfProtection — per-route middleware that validates the token.
+
+const csrfSecret = process.env.CSRF_SECRET || crypto.randomBytes(32).toString('hex');
+
+const { generateToken, doubleCsrfProtection } = doubleCsrf({
+    getSecret: () => csrfSecret,
+    cookieName: '_csrf',
+    cookieOptions: {
+        httpOnly: true,
+        sameSite: 'lax',
+        secure: process.env.NODE_ENV === 'production',
+        path: '/'
+    },
+    size: 64,
+    getTokenFromRequest: (req) => req.body._csrf || req.headers['x-csrf-token'] || req.headers['csrf-token']
+});
 
 // === AUTH MIDDLEWARE ===
-function isAdmin(req, res, next) {
-    if (req.session.userRole !== CONSTANTS.ROLES.ADMIN) {
-        return res.status(403).send('Access denied. Admin only.');
-    }
-    next();
-}
-
-function isTeacher(req, res, next) {
-    if (req.session.userRole !== CONSTANTS.ROLES.TEACHER && req.session.userRole !== CONSTANTS.ROLES.ADMIN) {
-        return res.status(403).send('Access denied. Teacher only.');
-    }
-    next();
-}
+// Imported from middleware/auth.js (single source of truth).
+// Returns 403 JSON for API consumers; no redirects.
+const { isAdmin, isTeacher, isAuthenticated, isStudent } = require('./middleware/auth');
 
 async function canEditTest(req, testId) {
     if (!testId) return false;
@@ -686,7 +712,7 @@ app.get('/api/stats', async (req, res) => {
 });
 
 // === AUTH ROUTES ===
-app.get('/login', csrfProtection, (req, res) => {
+app.get('/login', doubleCsrfProtection, (req, res) => {
     if (req.session.userId) {
         const role = req.session.userRole;
         if (role === 'admin') return res.redirect('/admin');
@@ -696,7 +722,7 @@ app.get('/login', csrfProtection, (req, res) => {
     res.render('login', { error: null, csrfToken: req.csrfToken() });
 });
 
-app.post('/login', loginLimiter, csrfProtection, async (req, res) => {
+app.post('/login', loginLimiter, doubleCsrfProtection, async (req, res) => {
     try {
         const { username, password } = req.body;
         if (!username || !password) {
@@ -705,7 +731,7 @@ app.post('/login', loginLimiter, csrfProtection, async (req, res) => {
         if (!isDatabaseReady()) return sendDatabaseUnavailable(res);
 
         const user = await User.findOne({ username });
-        if (!user) {
+        if (!user || !user.password) {
             return res.render('login', { error: 'Invalid username or password', csrfToken: req.csrfToken() });
         }
 
@@ -714,21 +740,32 @@ app.post('/login', loginLimiter, csrfProtection, async (req, res) => {
             return res.render('login', { error: 'Invalid username or password', csrfToken: req.csrfToken() });
         }
 
-        req.session.userId = user._id;
-        req.session.username = user.username;
-        req.session.userRole = user.role;
-
-        req.session.save((err) => {
+        // Regenerate session to prevent session fixation attacks
+        req.session.regenerate((err) => {
             if (err) {
-                logger.error('Session save error', { error: err.message, stack: err.stack });
+                logger.error('Session regeneration error', { error: err.message, stack: err.stack });
                 return res.render('login', { error: 'Login error. Please try again.', csrfToken: req.csrfToken() });
             }
 
-            logger.info('User logged in', { userId: user._id, username: user.username, role: user.role });
+            req.session.userId = user._id;
+            req.session.user_id = user._id;
+            req.session.username = user.username;
+            req.session.full_name = user.username;
+            req.session.userRole = user.role;
+            req.session.role = user.role;
 
-            if (user.role === CONSTANTS.ROLES.ADMIN) return res.redirect('/admin');
-            if (user.role === CONSTANTS.ROLES.TEACHER) return res.redirect('/teacher-dashboard');
-            return res.redirect('/student-dashboard');
+            req.session.save((err2) => {
+                if (err2) {
+                    logger.error('Session save error', { error: err2.message, stack: err2.stack });
+                    return res.render('login', { error: 'Login error. Please try again.', csrfToken: req.csrfToken() });
+                }
+
+                logger.info('User logged in', { userId: user._id, username: user.username, role: user.role });
+
+                if (user.role === CONSTANTS.ROLES.ADMIN) return res.redirect('/admin');
+                if (user.role === CONSTANTS.ROLES.TEACHER) return res.redirect('/teacher-dashboard');
+                return res.redirect('/student-dashboard');
+            });
         });
     } catch (err) {
         logger.error('Login error', { error: err.message });
@@ -741,7 +778,7 @@ app.get('/logout', (req, res) => {
 });
 
 // === ADMIN ROUTES ===
-app.get('/admin', isAdmin, csrfProtection, async (req, res) => {
+app.get('/admin', isAdmin, doubleCsrfProtection, async (req, res) => {
     try {
         if (!isDatabaseReady()) return sendDatabaseUnavailable(res);
 
@@ -838,12 +875,12 @@ app.post('/admin/run-migration', async (req, res) => {
 });
 
 // Add teacher page
-app.get('/admin/add-teacher', isAdmin, csrfProtection, (req, res) => {
+app.get('/admin/add-teacher', isAdmin, doubleCsrfProtection, (req, res) => {
     res.render('add-teacher', { csrfToken: req.csrfToken() });
 });
 
 // Add teacher
-app.post('/admin/add-teacher', isAdmin, csrfProtection, async (req, res) => {
+app.post('/admin/add-teacher', isAdmin, doubleCsrfProtection, async (req, res) => {
     try {
         const { username, password } = req.body;
         if (!username || !password) {
@@ -871,7 +908,7 @@ app.post('/admin/add-teacher', isAdmin, csrfProtection, async (req, res) => {
 });
 
 // Add student
-app.post('/admin/add-student', isAdmin, csrfProtection, async (req, res) => {
+app.post('/admin/add-student', isAdmin, doubleCsrfProtection, async (req, res) => {
     try {
         const { username, password, teacherId } = req.body;
         if (!username || !password) {
@@ -900,7 +937,7 @@ app.post('/admin/add-student', isAdmin, csrfProtection, async (req, res) => {
 });
 
 // Assign test to teacher
-app.post('/admin/assign-test', isAdmin, csrfProtection, async (req, res) => {
+app.post('/admin/assign-test', isAdmin, doubleCsrfProtection, async (req, res) => {
     try {
         const teacherId = Number(req.body.teacherId);
         const testId = Number(req.body.testId);
@@ -951,7 +988,7 @@ app.get('/create-test', isTeacher, (req, res) => {
 });
 
 // === CREATE TEST (READING) ===
-app.get('/create-test-reading', isTeacher, csrfProtection, (req, res) => {
+app.get('/create-test-reading', isTeacher, doubleCsrfProtection, (req, res) => {
     try {
         const html = getAuthoringPageHtml('reading', null, req.csrfToken());
         res.send(html);
@@ -961,8 +998,8 @@ app.get('/create-test-reading', isTeacher, csrfProtection, (req, res) => {
     }
 });
 
-// NOTE: csrfProtection must come AFTER multer for multipart forms so req.body._csrf is available
-app.post('/create-test-reading', isTeacher, testCreationLimiter, upload.single('builderJson'), csrfProtection, async (req, res) => {
+// NOTE: doubleCsrfProtection must come AFTER multer for multipart forms so req.body._csrf is available
+app.post('/create-test-reading', isTeacher, testCreationLimiter, upload.single('builderJson'), doubleCsrfProtection, async (req, res) => {
     try {
         if (!isDatabaseReady()) return sendDatabaseUnavailable(res);
 
@@ -1023,7 +1060,7 @@ app.post('/create-test-reading', isTeacher, testCreationLimiter, upload.single('
 });
 
 // Alias route for builder compatibility (builder posts to /create-test/reading)
-app.post('/create-test/reading', isTeacher, testCreationLimiter, csrfProtection, async (req, res) => {
+app.post('/create-test/reading', isTeacher, testCreationLimiter, doubleCsrfProtection, async (req, res) => {
     try {
         if (!isDatabaseReady()) return sendDatabaseUnavailable(res);
 
@@ -1055,7 +1092,7 @@ app.post('/create-test/reading', isTeacher, testCreationLimiter, csrfProtection,
 });
 
 // === CREATE TEST (LISTENING) ===
-app.get('/create-test-listening', isTeacher, csrfProtection, (req, res) => {
+app.get('/create-test-listening', isTeacher, doubleCsrfProtection, (req, res) => {
     try {
         const html = getAuthoringPageHtml('listening', null, req.csrfToken());
         res.send(html);
@@ -1065,11 +1102,11 @@ app.get('/create-test-listening', isTeacher, csrfProtection, (req, res) => {
     }
 });
 
-// NOTE: csrfProtection must come AFTER multer for multipart forms so req.body._csrf is available
+// NOTE: doubleCsrfProtection must come AFTER multer for multipart forms so req.body._csrf is available
 app.post('/create-test-listening', isTeacher, testCreationLimiter, upload.fields([
     { name: 'builderJson', maxCount: 1 },
     { name: 'audioFiles', maxCount: 20 }
-]), csrfProtection, async (req, res) => {
+]), doubleCsrfProtection, async (req, res) => {
     try {
         if (!isDatabaseReady()) return sendDatabaseUnavailable(res);
 
@@ -1131,14 +1168,14 @@ app.post('/create-test-listening', isTeacher, testCreationLimiter, upload.fields
 });
 
 // Alias route for builder compatibility (builder posts to /create-test/listening)
-// NOTE: csrfProtection must come AFTER multer for multipart forms so req.body._csrf is available
+// NOTE: doubleCsrfProtection must come AFTER multer for multipart forms so req.body._csrf is available
 app.post('/create-test/listening', isTeacher, testCreationLimiter, upload.fields([
     { name: 'audioFile', maxCount: 1 },
     { name: 'part1', maxCount: 1 },
     { name: 'part2', maxCount: 1 },
     { name: 'part3', maxCount: 1 },
     { name: 'part4', maxCount: 1 }
-]), csrfProtection, async (req, res) => {
+]), doubleCsrfProtection, async (req, res) => {
     try {
         if (!isDatabaseReady()) return sendDatabaseUnavailable(res);
 
@@ -1198,7 +1235,7 @@ app.post('/create-test/listening', isTeacher, testCreationLimiter, upload.fields
 });
 
 // === CREATE TEST (WRITING) ===
-app.get('/create-test-writing', isTeacher, csrfProtection, (req, res) => {
+app.get('/create-test-writing', isTeacher, doubleCsrfProtection, (req, res) => {
     try {
         const html = getAuthoringPageHtml('writing', null, req.csrfToken());
         res.send(html);
@@ -1208,7 +1245,7 @@ app.get('/create-test-writing', isTeacher, csrfProtection, (req, res) => {
     }
 });
 
-app.post('/create-test-writing', isTeacher, testCreationLimiter, csrfProtection, async (req, res) => {
+app.post('/create-test-writing', isTeacher, testCreationLimiter, doubleCsrfProtection, async (req, res) => {
     try {
         if (!isDatabaseReady()) return sendDatabaseUnavailable(res);
 
@@ -1250,7 +1287,7 @@ app.post('/create-test-writing', isTeacher, testCreationLimiter, csrfProtection,
 });
 
 // Alias route for builder compatibility (builder posts to /create-test/writing)
-app.post('/create-test/writing', isTeacher, testCreationLimiter, csrfProtection, async (req, res) => {
+app.post('/create-test/writing', isTeacher, testCreationLimiter, doubleCsrfProtection, async (req, res) => {
     try {
         if (!isDatabaseReady()) return sendDatabaseUnavailable(res);
 
@@ -1282,7 +1319,7 @@ app.post('/create-test/writing', isTeacher, testCreationLimiter, csrfProtection,
 });
 
 // === TEST EDIT ===
-app.get('/edit-test/:id', isTeacher, csrfProtection, async (req, res) => {
+app.get('/edit-test/:id', isTeacher, doubleCsrfProtection, async (req, res) => {
     try {
         if (!isDatabaseReady()) return sendDatabaseUnavailable(res);
 
@@ -1300,7 +1337,7 @@ app.get('/edit-test/:id', isTeacher, csrfProtection, async (req, res) => {
     }
 });
 
-app.post('/edit-test/:id', isTeacher, csrfProtection, async (req, res) => {
+app.post('/edit-test/:id', isTeacher, doubleCsrfProtection, async (req, res) => {
     try {
         if (!isDatabaseReady()) return sendDatabaseUnavailable(res);
 
@@ -1338,7 +1375,7 @@ app.post('/edit-test/:id', isTeacher, csrfProtection, async (req, res) => {
 });
 
 // Alias for builder compatibility — builderAuthoring.js uses /update-test/:id
-app.post('/update-test/:id', isTeacher, csrfProtection, async (req, res) => {
+app.post('/update-test/:id', isTeacher, doubleCsrfProtection, async (req, res) => {
     try {
         if (!isDatabaseReady()) return sendDatabaseUnavailable(res);
 
@@ -1376,7 +1413,7 @@ app.post('/update-test/:id', isTeacher, csrfProtection, async (req, res) => {
 });
 
 // === TEACHER DASHBOARD ===
-app.get('/teacher-dashboard', isTeacher, csrfProtection, async (req, res) => {
+app.get('/teacher-dashboard', isTeacher, doubleCsrfProtection, async (req, res) => {
     try {
         if (!isDatabaseReady()) return sendDatabaseUnavailable(res);
 
@@ -1557,12 +1594,12 @@ app.get('/teacher-dashboard', isTeacher, csrfProtection, async (req, res) => {
 });
 
 // Add student page
-app.get('/teacher/add-student', isTeacher, csrfProtection, (req, res) => {
+app.get('/teacher/add-student', isTeacher, doubleCsrfProtection, (req, res) => {
     res.render('add-student', { csrfToken: req.csrfToken() });
 });
 
 // Teacher adds student
-app.post('/teacher/add-student', isTeacher, csrfProtection, async (req, res) => {
+app.post('/teacher/add-student', isTeacher, doubleCsrfProtection, async (req, res) => {
     try {
         const { username, password } = req.body;
         if (!username || !password) {
@@ -1594,7 +1631,7 @@ app.post('/teacher/add-student', isTeacher, csrfProtection, async (req, res) => 
 });
 
 // Teacher adds student to group
-app.post('/teacher/add-student-to-group', isTeacher, csrfProtection, async (req, res) => {
+app.post('/teacher/add-student-to-group', isTeacher, doubleCsrfProtection, async (req, res) => {
     try {
         const { studentId, groupId } = req.body;
         const [student, group] = await Promise.all([
@@ -1621,7 +1658,7 @@ app.post('/teacher/add-student-to-group', isTeacher, csrfProtection, async (req,
 });
 
 // Create group
-app.post('/teacher/create-group', isTeacher, csrfProtection, async (req, res) => {
+app.post('/teacher/create-group', isTeacher, doubleCsrfProtection, async (req, res) => {
     try {
         const { groupName } = req.body;
         if (!groupName || !groupName.trim()) return res.status(400).json({ success: false, message: 'Group name required' });
@@ -1631,7 +1668,8 @@ app.post('/teacher/create-group', isTeacher, csrfProtection, async (req, res) =>
             teacherId: req.session.userId
         });
 
-        res.json({ success: true, group: newGroup });
+        logger.info('Group created', { groupId: newGroup._id, teacherId: req.session.userId, groupName: groupName.trim() });
+        res.json({ success: true, group: newGroup, message: 'Group "' + groupName.trim() + '" created successfully' });
     } catch (err) {
         logger.error('Create group error', { error: err.message });
         res.status(500).json({ success: false, message: err.message });
@@ -1639,7 +1677,7 @@ app.post('/teacher/create-group', isTeacher, csrfProtection, async (req, res) =>
 });
 
 // Assign student to group (alias route)
-app.post('/teacher/assign-to-group', isTeacher, csrfProtection, async (req, res) => {
+app.post('/teacher/assign-to-group', isTeacher, doubleCsrfProtection, async (req, res) => {
     try {
         const { studentId, groupId } = req.body;
         const [student, group] = await Promise.all([
@@ -1664,7 +1702,7 @@ app.post('/teacher/assign-to-group', isTeacher, csrfProtection, async (req, res)
         await User.findByIdAndUpdate(studentId, { $set: { groupId: groupId } });
 
         logger.info('Student assigned to group', { studentId, groupId, teacherId: req.session.userId });
-        res.redirect('/teacher-dashboard');
+        res.redirect('/teacher-dashboard?toast=' + encodeURIComponent('Student assigned to group successfully') + '&toastType=success');
     } catch (err) {
         logger.error('Assign to group error', { error: err.message });
         res.status(500).send("Error assigning student to group: " + err.message);
@@ -1761,7 +1799,7 @@ app.get('/test/:id', async (req, res) => {
 });
 
 // === SUBMISSION ===
-app.post('/submit-test', apiLimiter, csrfProtection, async (req, res) => {
+app.post('/submit-test', apiLimiter, doubleCsrfProtection, async (req, res) => {
     if (!req.session.userId) return res.status(401).json({ success: false, message: 'Not logged in' });
     try {
         if (!isDatabaseReady()) return sendDatabaseUnavailable(res);
@@ -1780,7 +1818,7 @@ app.post('/submit-test', apiLimiter, csrfProtection, async (req, res) => {
     }
 });
 
-app.post('/submit-writing', apiLimiter, csrfProtection, async (req, res) => {
+app.post('/submit-writing', apiLimiter, doubleCsrfProtection, async (req, res) => {
     if (!req.session.userId) return res.status(401).json({ success: false, message: 'Not logged in' });
     try {
         if (!isDatabaseReady()) return sendDatabaseUnavailable(res);
@@ -2430,7 +2468,7 @@ app.get('/teacher/live/:testId', isTeacher, async (req, res) => {
 });
 
 // === DELETE ROUTES ===
-app.post('/teacher/delete-test/:id', isTeacher, csrfProtection, async (req, res) => {
+app.post('/teacher/delete-test/:id', isTeacher, doubleCsrfProtection, async (req, res) => {
     await handleDelete(req, res, {
         model: Test,
         modelName: 'Test',
@@ -2451,7 +2489,7 @@ app.post('/teacher/delete-test/:id', isTeacher, csrfProtection, async (req, res)
     });
 });
 
-app.post('/teacher/delete-group/:id', isTeacher, csrfProtection, async (req, res) => {
+app.post('/teacher/delete-group/:id', isTeacher, doubleCsrfProtection, async (req, res) => {
     await handleDelete(req, res, {
         model: Group,
         modelName: 'Group',
@@ -2472,7 +2510,7 @@ app.post('/teacher/delete-group/:id', isTeacher, csrfProtection, async (req, res
     });
 });
 
-app.post('/teacher/delete-student/:id', isTeacher, csrfProtection, async (req, res) => {
+app.post('/teacher/delete-student/:id', isTeacher, doubleCsrfProtection, async (req, res) => {
     await handleDelete(req, res, {
         model: User,
         modelName: 'Student',
@@ -2493,7 +2531,7 @@ app.post('/teacher/delete-student/:id', isTeacher, csrfProtection, async (req, r
     });
 });
 
-app.post('/admin/delete-user/:id', isAdmin, csrfProtection, async (req, res) => {
+app.post('/admin/delete-user/:id', isAdmin, doubleCsrfProtection, async (req, res) => {
     await handleDelete(req, res, {
         model: User,
         modelName: 'User',
@@ -2516,7 +2554,7 @@ app.post('/admin/delete-user/:id', isAdmin, csrfProtection, async (req, res) => 
 });
 
 // === BACKWARD-COMPATIBLE DELETE ROUTES (unprefixed paths matching frontend deleteItem()) ===
-app.post('/delete-test/:id', isTeacher, csrfProtection, async (req, res) => {
+app.post('/delete-test/:id', isTeacher, doubleCsrfProtection, async (req, res) => {
     await handleDelete(req, res, {
         model: Test,
         modelName: 'Test',
@@ -2534,7 +2572,7 @@ app.post('/delete-test/:id', isTeacher, csrfProtection, async (req, res) => {
     });
 });
 
-app.post('/delete-group/:id', isTeacher, csrfProtection, async (req, res) => {
+app.post('/delete-group/:id', isTeacher, doubleCsrfProtection, async (req, res) => {
     await handleDelete(req, res, {
         model: Group,
         modelName: 'Group',
@@ -2554,7 +2592,7 @@ app.post('/delete-group/:id', isTeacher, csrfProtection, async (req, res) => {
     });
 });
 
-app.post('/delete-student/:id', isTeacher, csrfProtection, async (req, res) => {
+app.post('/delete-student/:id', isTeacher, doubleCsrfProtection, async (req, res) => {
     await handleDelete(req, res, {
         model: User,
         modelName: 'Student',
@@ -2573,7 +2611,7 @@ app.post('/delete-student/:id', isTeacher, csrfProtection, async (req, res) => {
     });
 });
 
-app.post('/delete-teacher/:id', isAdmin, csrfProtection, async (req, res) => {
+app.post('/delete-teacher/:id', isAdmin, doubleCsrfProtection, async (req, res) => {
     await handleDelete(req, res, {
         model: User,
         modelName: 'User',
@@ -2596,7 +2634,7 @@ app.post('/delete-teacher/:id', isAdmin, csrfProtection, async (req, res) => {
 });
 
 // --- MANUAL BACKUP ENDPOINT (Admin only) ---
-app.post('/admin/backup-database', isAdmin, csrfProtection, async (req, res) => {
+app.post('/admin/backup-database', isAdmin, doubleCsrfProtection, async (req, res) => {
     try {
         console.log('🔄 Manual backup triggered by admin:', req.session.username);
         const result = await backupDatabase({ closeConnection: false });
@@ -2619,7 +2657,7 @@ app.post('/admin/backup-database', isAdmin, csrfProtection, async (req, res) => 
 });
 
 // Remove student from group
-app.post('/teacher/remove-student-from-group/:groupId/:studentId', isTeacher, csrfProtection, async (req, res) => {
+app.post('/teacher/remove-student-from-group/:groupId/:studentId', isTeacher, doubleCsrfProtection, async (req, res) => {
     try {
         const { groupId, studentId } = req.params;
         const groupValidation = validateObjectId(groupId);
@@ -2671,7 +2709,7 @@ app.post('/teacher/remove-student-from-group/:groupId/:studentId', isTeacher, cs
 });
 
 // Remove test from group
-app.post('/teacher/remove-test-from-group/:groupId/:testId', isTeacher, csrfProtection, async (req, res) => {
+app.post('/teacher/remove-test-from-group/:groupId/:testId', isTeacher, doubleCsrfProtection, async (req, res) => {
     try {
         const { groupId, testId } = req.params;
         const groupValidation = validateObjectId(groupId);
@@ -2701,7 +2739,7 @@ app.post('/teacher/remove-test-from-group/:groupId/:testId', isTeacher, csrfProt
 });
 
 // === PASSWORD VIEWERS ===
-app.get('/admin/view-password/:userId', isAdmin, csrfProtection, async (req, res) => {
+app.get('/admin/view-password/:userId', isAdmin, doubleCsrfProtection, async (req, res) => {
     try {
         const user = await User.findById(req.params.userId);
         if (!user) return res.status(404).json({ error: 'User not found' });
@@ -2715,7 +2753,7 @@ app.get('/admin/view-password/:userId', isAdmin, csrfProtection, async (req, res
     }
 });
 
-app.post('/admin/reset-password/:userId', isAdmin, csrfProtection, async (req, res) => {
+app.post('/admin/reset-password/:userId', isAdmin, doubleCsrfProtection, async (req, res) => {
     try {
         const { newPassword } = req.body;
         if (!newPassword || newPassword.length < 6) {
@@ -2751,7 +2789,7 @@ app.get('/teacher/view-password/:studentId', isTeacher, async (req, res) => {
     }
 });
 
-app.post('/teacher/reset-password/:studentId', isTeacher, csrfProtection, async (req, res) => {
+app.post('/teacher/reset-password/:studentId', isTeacher, doubleCsrfProtection, async (req, res) => {
     try {
         const { newPassword } = req.body;
         if (!newPassword || newPassword.length < 6) {
@@ -2775,7 +2813,7 @@ app.post('/teacher/reset-password/:studentId', isTeacher, csrfProtection, async 
 });
 
 // === BULK DELETE ===
-app.post('/admin/bulk-delete', isAdmin, csrfProtection, async (req, res) => {
+app.post('/admin/bulk-delete', isAdmin, doubleCsrfProtection, async (req, res) => {
     try {
         const { type, ids } = req.body;
         if (!Array.isArray(ids) || ids.length === 0) return res.status(400).json({ success: false, message: 'No items selected' });
@@ -2807,7 +2845,7 @@ app.post('/admin/bulk-delete', isAdmin, csrfProtection, async (req, res) => {
     }
 });
 
-app.post('/teacher/bulk-delete-students', isTeacher, csrfProtection, async (req, res) => {
+app.post('/teacher/bulk-delete-students', isTeacher, doubleCsrfProtection, async (req, res) => {
     try {
         const { ids } = req.body;
         if (!Array.isArray(ids) || ids.length === 0) return res.status(400).json({ success: false, message: 'No students selected' });
@@ -2845,7 +2883,7 @@ app.get('/api/search-tests', isTeacher, async (req, res) => {
 });
 
 // === FEEDBACK ===
-app.get('/feedback', csrfProtection, async (req, res) => {
+app.get('/feedback', doubleCsrfProtection, async (req, res) => {
     if (!req.session.userId) return res.redirect('/login');
     try {
         let submissions = [];
@@ -2863,7 +2901,7 @@ app.get('/feedback', csrfProtection, async (req, res) => {
     }
 });
 
-app.post('/feedback', csrfProtection, async (req, res) => {
+app.post('/feedback', doubleCsrfProtection, async (req, res) => {
     if (!req.session.userId) return res.status(401).json({ error: 'Not logged in' });
     try {
         // Removed 3 unused parallel queries (submissions, tests, students) —
@@ -2881,7 +2919,7 @@ app.post('/feedback', csrfProtection, async (req, res) => {
     }
 });
 
-app.post('/feedback/:id/reply', isTeacher, csrfProtection, async (req, res) => {
+app.post('/feedback/:id/reply', isTeacher, doubleCsrfProtection, async (req, res) => {
     try {
         await Feedback.findByIdAndUpdate(req.params.id, {
             reply: req.body.reply,
@@ -3035,7 +3073,7 @@ app.get('/settings/export-report', async (req, res) => {
 });
 
 // === SCHEDULED TEST ACCESS ===
-app.post('/teacher/assign-test-group', isTeacher, csrfProtection, async (req, res) => {
+app.post('/teacher/assign-test-group', isTeacher, doubleCsrfProtection, async (req, res) => {
     const { testId, groupId, scheduleType, availableFrom } = req.body;
     try {
         const group = await Group.findByIdWithStudents(groupId);
@@ -3098,14 +3136,18 @@ app.post('/teacher/assign-test-group', isTeacher, csrfProtection, async (req, re
         }
 
         logger.info('Test assigned to group', { testId, groupId, scheduleType, teacherId: req.session.userId });
-        res.redirect('/teacher-dashboard');
+        // Pass toast via query param for client-side showToast() on next page load
+        var toastMsg = scheduleType === 'scheduled'
+            ? 'Test scheduled for group "' + group.name + '"'
+            : 'Test assigned to group "' + group.name + '"';
+        res.redirect('/teacher-dashboard?toast=' + encodeURIComponent(toastMsg) + '&toastType=success');
     } catch (err) {
         res.status(500).send("Error assigning test.");
     }
 });
 
 // === ADMIN LOG VIEWER ===
-app.get('/admin/logs', isAdmin, csrfProtection, async (req, res) => {
+app.get('/admin/logs', isAdmin, doubleCsrfProtection, async (req, res) => {
     try {
         const level = (req.query.level || 'info').toLowerCase();
         const page = Math.max(1, parseInt(req.query.page) || 1);
@@ -3131,7 +3173,7 @@ app.get('/admin/logs', isAdmin, csrfProtection, async (req, res) => {
 });
 
 // === CACHE STATISTICS ===
-app.get('/admin/cache-stats', isAdmin, csrfProtection, (req, res) => {
+app.get('/admin/cache-stats', isAdmin, doubleCsrfProtection, (req, res) => {
     const stats = cache.getStats();
     const keys = cache.keys();
 
@@ -3152,7 +3194,7 @@ app.get('/admin/cache-stats', isAdmin, csrfProtection, (req, res) => {
     });
 });
 
-app.post('/admin/clear-cache', isAdmin, csrfProtection, (req, res) => {
+app.post('/admin/clear-cache', isAdmin, doubleCsrfProtection, (req, res) => {
     cache.flushAll();
     res.json({ success: true, message: 'Cache cleared' });
 });
@@ -3297,7 +3339,7 @@ app.get('/settings', async (req, res) => {
     }
 });
 
-app.post('/settings/change-password', csrfProtection, async (req, res) => {
+app.post('/settings/change-password', doubleCsrfProtection, async (req, res) => {
     if (!req.session.userId) return res.status(401).json({ error: 'Not logged in' });
     try {
         const { currentPassword, newPassword } = req.body;
@@ -3357,7 +3399,7 @@ app.get('/', (req, res) => {
 
 // Oracle-missing routes (aliases + new handlers) — must be before 404 handler
 require('./routes/missing-routes')(app, {
-    csrfProtection, apiLimiter, isTeacher, isAdmin,
+    doubleCsrfProtection, apiLimiter, isTeacher, isAdmin,
     canEditTest, getAccessibleTest, saveStudentSubmission
 });
 
@@ -3555,6 +3597,24 @@ async function startServer() {
             vsize: stats.vsize
         });
     }, 1800000);
+
+    // 6. Self-ping every 13 minutes to prevent Render free-tier sleep
+    //    (15 min inactivity threshold → ping at 13 min = 2 min safety margin)
+    //    Complements UptimeRobot — keeps app alive even if UR temporarily fails.
+    const appUrl = process.env.RENDER_EXTERNAL_URL || `http://localhost:${PORT}`;
+    setInterval(async () => {
+        try {
+            const res = await fetch(`${appUrl}/health`);
+            if (res.ok) {
+                logger.debug('Self-ping OK', { status: res.status });
+            } else {
+                logger.warn('Self-ping returned non-200', { status: res.status });
+            }
+        } catch (err) {
+            // Don't log every failure aggressively — could just be a transient blip
+            logger.warn('Self-ping failed', { error: err.message });
+        }
+    }, 780000); // 13 minutes
 
     // Schedule automated daily backups at 2 AM
     if (process.env.NODE_ENV === 'production') {

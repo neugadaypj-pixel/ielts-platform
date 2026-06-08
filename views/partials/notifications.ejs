@@ -1,4 +1,189 @@
-<div id="notification-bell" style="position: fixed; top: 20px; right: 20px; z-index: 9999;">
+<!-- ============================================================ -->
+<!-- TOAST NOTIFICATION CONTAINER (modern glassmorphism)         -->
+<!-- Checks server-passed locals: toast, success, error, message -->
+<!-- ============================================================ -->
+<div id="toast-container" aria-live="polite" aria-atomic="false" style="position:fixed;bottom:24px;right:24px;z-index:99999;display:flex;flex-direction:column-reverse;gap:10px;pointer-events:none;max-width:380px;"></div>
+
+<style>
+    .toast-item {
+        pointer-events: auto;
+        padding: 14px 20px;
+        border-radius: 12px;
+        font-weight: 700;
+        font-size: 0.92rem;
+        line-height: 1.45;
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        box-shadow: 0 8px 32px rgba(15, 23, 42, 0.2);
+        animation: toastSlideIn 0.35s cubic-bezier(0.21, 1.02, 0.73, 1) forwards;
+        transition: transform 0.3s ease, opacity 0.3s ease;
+        color: #fff;
+        cursor: default;
+        max-width: 100%;
+        word-break: break-word;
+    }
+    .toast-item.toast-success {
+        background: rgba(16, 185, 129, 0.88);
+        border: 1px solid rgba(255, 255, 255, 0.18);
+    }
+    .toast-item.toast-error {
+        background: rgba(239, 68, 68, 0.9);
+        border: 1px solid rgba(255, 255, 255, 0.18);
+    }
+    .toast-item.toast-info {
+        background: rgba(59, 130, 246, 0.88);
+        border: 1px solid rgba(255, 255, 255, 0.18);
+    }
+    .toast-item.toast-warning {
+        background: rgba(245, 158, 11, 0.88);
+        border: 1px solid rgba(255, 255, 255, 0.18);
+    }
+    .toast-item.toast-removing {
+        opacity: 0;
+        transform: translateX(120%);
+    }
+    .toast-close {
+        flex-shrink: 0;
+        background: rgba(255, 255, 255, 0.2);
+        border: none;
+        color: #fff;
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        font-size: 1rem;
+        line-height: 1;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: background 0.2s;
+        margin-left: auto;
+        margin-top: -2px;
+    }
+    .toast-close:hover {
+        background: rgba(255, 255, 255, 0.35);
+    }
+    @keyframes toastSlideIn {
+        from { opacity: 0; transform: translateX(120%) scale(0.92); }
+        to { opacity: 1; transform: translateX(0) scale(1); }
+    }
+    body.dark-mode .toast-item.toast-success { background: rgba(16, 185, 129, 0.78); }
+    body.dark-mode .toast-item.toast-error { background: rgba(239, 68, 68, 0.8); }
+    body.dark-mode .toast-item.toast-info { background: rgba(59, 130, 246, 0.78); }
+    body.dark-mode .toast-item.toast-warning { background: rgba(245, 158, 11, 0.78); }
+</style>
+
+<!-- Server-side flash integration: inject JS variable if flash present -->
+<% 
+var flashToast = null;
+var flashType = 'success';
+if (typeof toast !== 'undefined' && toast) { flashToast = toast; flashType = toastType || 'success'; }
+else if (typeof success !== 'undefined' && success) { flashToast = success; flashType = 'success'; }
+else if (typeof error !== 'undefined' && error) { flashToast = error; flashType = 'error'; }
+else if (typeof message !== 'undefined' && message) { flashToast = message; flashType = messageType || 'info'; }
+%>
+<% if (flashToast) { %>
+<script>
+window.__flashToast = { message: '<%- flashToast.replace(/'/g, "\\'") %>', type: '<%= flashType %>' };
+</script>
+<% } %>
+
+<script>
+(function() {
+    'use strict';
+    var AUTO_DISMISS_MS = 5000;
+
+    /**
+     * showToast(message, type)
+     * type: 'success' | 'error' | 'info' | 'warning' (default: 'info')
+     * Creates a glassmorphism toast at bottom-right with slide-in animation,
+     * color-coded by type, close button, and auto-dismiss after 5 seconds.
+     */
+    window.showToast = function(message, type) {
+        type = type || 'info';
+        if (typeof message !== 'string' || !message.trim()) return;
+
+        var container = document.getElementById('toast-container');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'toast-container';
+            container.setAttribute('aria-live', 'polite');
+            container.setAttribute('aria-atomic', 'false');
+            container.style.cssText = 'position:fixed;bottom:24px;right:24px;z-index:99999;display:flex;flex-direction:column-reverse;gap:10px;pointer-events:none;max-width:380px;';
+            document.body.appendChild(container);
+        }
+
+        var toast = document.createElement('div');
+        toast.className = 'toast-item toast-' + type;
+        toast.setAttribute('role', 'alert');
+
+        var icons = { success: '\u2705', error: '\u274C', info: '\u2139\uFE0F', warning: '\u26A0\uFE0F' };
+        var icon = icons[type] || '\u2139\uFE0F';
+
+        var msgSpan = document.createElement('span');
+        msgSpan.style.flex = '1';
+        msgSpan.textContent = icon + ' ' + message;
+        toast.appendChild(msgSpan);
+
+        var closeBtn = document.createElement('button');
+        closeBtn.className = 'toast-close';
+        closeBtn.innerHTML = '&times;';
+        closeBtn.setAttribute('aria-label', 'Close notification');
+        closeBtn.addEventListener('click', function() { dismissToast(toast); });
+        toast.appendChild(closeBtn);
+
+        container.appendChild(toast);
+
+        var timer = setTimeout(function() { dismissToast(toast); }, AUTO_DISMISS_MS);
+
+        toast.addEventListener('mouseenter', function() { clearTimeout(timer); });
+        toast.addEventListener('mouseleave', function() {
+            timer = setTimeout(function() { dismissToast(toast); }, AUTO_DISMISS_MS);
+        });
+
+        toast._dismissTimer = timer;
+    };
+
+    function dismissToast(toast) {
+        if (toast._dismissing) return;
+        toast._dismissing = true;
+        if (toast._dismissTimer) clearTimeout(toast._dismissTimer);
+        toast.classList.add('toast-removing');
+        setTimeout(function() { if (toast.parentNode) toast.remove(); }, 300);
+    }
+
+    // --- Page-load toast from server-side flash ---
+    function showFlashIfPresent() {
+        if (window.__flashToast && window.__flashToast.message) {
+            window.showToast(window.__flashToast.message, window.__flashToast.type);
+        }
+        // Also check query params for redirect-based flash (e.g., ?toast=...)
+        var params = new URLSearchParams(window.location.search);
+        var qToast = params.get('toast');
+        if (qToast) {
+            window.showToast(qToast, params.get('toastType') || 'success');
+            var url = new URL(window.location);
+            url.searchParams.delete('toast');
+            url.searchParams.delete('toastType');
+            window.history.replaceState({}, '', url);
+        }
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', showFlashIfPresent);
+    } else {
+        showFlashIfPresent();
+    }
+})();
+</script>
+
+<!-- ============================================================ -->
+<!-- BELL NOTIFICATION PANEL (persistent notification widget)     -->
+<!-- ============================================================ -->
+<div id="notification-bell" style="position: fixed; top: 20px; right: 20px; z-index: 9998;">
     <button id="notif-btn" style="position: relative; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none; border-radius: 50%; width: 50px; height: 50px; cursor: pointer; box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3); transition: all 0.3s ease;">
         <span style="font-size: 1.5rem;">🔔</span>
         <span id="notif-badge" style="display: none; position: absolute; top: -5px; right: -5px; background: #ef4444; color: white; border-radius: 50%; width: 20px; height: 20px; font-size: 0.7rem; font-weight: bold; display: flex; align-items: center; justify-content: center;"></span>
@@ -23,120 +208,68 @@
         transform: translateY(-2px);
         box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
     }
-    
     .notif-item {
         padding: 16px;
         border-bottom: 1px solid #e2e8f0;
         cursor: pointer;
         transition: background 0.2s;
     }
-    
-    .notif-item:hover {
-        background: #f8fafc;
-    }
-    
-    .notif-item.unread {
-        background: #eef2ff;
-        border-left: 4px solid #667eea;
-    }
-    
-    .notif-title {
-        font-weight: 700;
-        color: #1f2937;
-        margin-bottom: 4px;
-        font-size: 0.95rem;
-    }
-    
-    .notif-message {
-        color: #64748b;
-        font-size: 0.85rem;
-        line-height: 1.4;
-        margin-bottom: 6px;
-    }
-    
-    .notif-time {
-        color: #94a3b8;
-        font-size: 0.75rem;
-    }
-    
-    body.dark-mode #notif-panel {
-        background: rgba(30, 41, 59, 0.98);
-        border: 1px solid #475569;
-    }
-    
-    body.dark-mode .notif-item {
-        border-bottom-color: #334155;
-    }
-    
-    body.dark-mode .notif-item:hover {
-        background: rgba(51, 65, 85, 0.5);
-    }
-    
-    body.dark-mode .notif-item.unread {
-        background: rgba(102, 126, 234, 0.15);
-        border-left-color: #667eea;
-    }
-    
-    body.dark-mode .notif-title {
-        color: #f1f5f9;
-    }
-    
-    body.dark-mode .notif-message {
-        color: #cbd5e1;
-    }
-    
-    body.dark-mode .notif-time {
-        color: #94a3b8;
-    }
+    .notif-item:hover { background: #f8fafc; }
+    .notif-item.unread { background: #eef2ff; border-left: 4px solid #667eea; }
+    .notif-title { font-weight: 700; color: #1f2937; margin-bottom: 4px; font-size: 0.95rem; }
+    .notif-message { color: #64748b; font-size: 0.85rem; line-height: 1.4; margin-bottom: 6px; }
+    .notif-time { color: #94a3b8; font-size: 0.75rem; }
+    body.dark-mode #notif-panel { background: rgba(30, 41, 59, 0.98); border: 1px solid #475569; }
+    body.dark-mode .notif-item { border-bottom-color: #334155; }
+    body.dark-mode .notif-item:hover { background: rgba(51, 65, 85, 0.5); }
+    body.dark-mode .notif-item.unread { background: rgba(102, 126, 234, 0.15); border-left-color: #667eea; }
+    body.dark-mode .notif-title { color: #f1f5f9; }
+    body.dark-mode .notif-message { color: #cbd5e1; }
+    body.dark-mode .notif-time { color: #94a3b8; }
 </style>
 
 <script>
 (function() {
-    const btn = document.getElementById('notif-btn');
-    const panel = document.getElementById('notif-panel');
-    const badge = document.getElementById('notif-badge');
-    const list = document.getElementById('notif-list');
-    const markAllBtn = document.getElementById('mark-all-read');
-    
-    let isOpen = false;
+    var btn = document.getElementById('notif-btn');
+    var panel = document.getElementById('notif-panel');
+    var badge = document.getElementById('notif-badge');
+    var list = document.getElementById('notif-list');
+    var markAllBtn = document.getElementById('mark-all-read');
+    var isOpen = false;
     
     function formatTime(date) {
-        const now = new Date();
-        const diff = now - new Date(date);
-        const minutes = Math.floor(diff / 60000);
-        const hours = Math.floor(diff / 3600000);
-        const days = Math.floor(diff / 86400000);
-        
+        var now = new Date();
+        var diff = now - new Date(date);
+        var minutes = Math.floor(diff / 60000);
+        var hours = Math.floor(diff / 3600000);
+        var days = Math.floor(diff / 86400000);
         if (minutes < 1) return 'Just now';
-        if (minutes < 60) return `${minutes}m ago`;
-        if (hours < 24) return `${hours}h ago`;
-        return `${days}d ago`;
+        if (minutes < 60) return minutes + 'm ago';
+        if (hours < 24) return hours + 'h ago';
+        return days + 'd ago';
     }
     
     function renderNotifications(notifications) {
         if (!notifications || notifications.length === 0) {
-            list.innerHTML = '<div style="padding: 40px 20px; text-align: center; color: #94a3b8;"><span style="font-size: 3rem;">📭</span><p style="margin-top: 10px;">No notifications</p></div>';
+            list.innerHTML = '<div style="padding: 40px 20px; text-align: center; color: #94a3b8;"><span style="font-size:3rem;">📭</span><p style="margin-top:10px;">No notifications</p></div>';
             return;
         }
-        
-        list.innerHTML = notifications.map(n => `
-            <div class="notif-item ${n.isRead ? '' : 'unread'}" data-id="${n._id}">
-                <div class="notif-title">${n.title}</div>
-                <div class="notif-message">${n.message}</div>
-                <div class="notif-time">${formatTime(n.createdAt)}</div>
-            </div>
-        `).join('');
-        
-        document.querySelectorAll('.notif-item').forEach(item => {
-            item.addEventListener('click', () => markAsRead(item.dataset.id));
+        list.innerHTML = notifications.map(function(n) {
+            return '<div class="notif-item ' + (n.isRead ? '' : 'unread') + '" data-id="' + n._id + '">' +
+                '<div class="notif-title">' + n.title + '</div>' +
+                '<div class="notif-message">' + n.message + '</div>' +
+                '<div class="notif-time">' + formatTime(n.createdAt) + '</div></div>';
+        }).join('');
+        document.querySelectorAll('.notif-item').forEach(function(item) {
+            item.addEventListener('click', function() { markAsRead(item.dataset.id); });
         });
     }
     
     async function loadNotifications() {
         try {
-            const res = await fetch('/api/notifications');
-            if (res.status === 401) return; // not logged in, silently skip
-            const data = await res.json();
+            var res = await fetch('/api/notifications');
+            if (res.status === 401) return;
+            var data = await res.json();
             if (data.success) {
                 renderNotifications(data.notifications);
                 if (data.unreadCount > 0) {
@@ -146,41 +279,32 @@
                     badge.style.display = 'none';
                 }
             }
-        } catch (err) {
-            console.error('Failed to load notifications:', err);
-        }
+        } catch (err) { console.error('Failed to load notifications:', err); }
     }
     
     async function markAsRead(id) {
         try {
-            await fetch(`/api/notifications/${id}/read`, { method: 'POST' });
+            await fetch('/api/notifications/' + id + '/read', { method: 'POST' });
             loadNotifications();
-        } catch (err) {
-            console.error('Failed to mark as read:', err);
-        }
+        } catch (err) { console.error('Failed to mark as read:', err); }
     }
     
     async function markAllRead() {
         try {
             await fetch('/api/notifications/mark-all-read', { method: 'POST' });
             loadNotifications();
-        } catch (err) {
-            console.error('Failed to mark all as read:', err);
-        }
+        } catch (err) { console.error('Failed to mark all as read:', err); }
     }
     
-    btn.addEventListener('click', () => {
+    btn.addEventListener('click', function() {
         isOpen = !isOpen;
         panel.style.display = isOpen ? 'block' : 'none';
         if (isOpen) loadNotifications();
     });
     
-    markAllBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        markAllRead();
-    });
+    markAllBtn.addEventListener('click', function(e) { e.stopPropagation(); markAllRead(); });
     
-    document.addEventListener('click', (e) => {
+    document.addEventListener('click', function(e) {
         if (!document.getElementById('notification-bell').contains(e.target)) {
             isOpen = false;
             panel.style.display = 'none';

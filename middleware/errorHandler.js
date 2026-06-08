@@ -2,9 +2,23 @@ const logger = require('../utils/logger');
 const CONSTANTS = require('../utils/constants');
 const { sendErrorResponse } = require('../utils/errorUtils');
 
+// Attempt to load CsrfError from csrf-csrf for compat with the new package;
+// fall back gracefully if the old csurf is still installed.
+let CsrfError;
+try { CsrfError = require('csrf-csrf').CsrfError; } catch (_) { /* not installed yet, ignore */ }
+
 // CSRF error handler
+// Handles both:
+//   - csurf (error.code === 'EBADCSRFTOKEN')
+//   - csrf-csrf (error instanceof CsrfError or error.message === 'Invalid CSRF token')
 function csrfErrorHandler(err, req, res, next) {
-    if (err && err.code === 'EBADCSRFTOKEN') {
+    const isCsrfErr = err && (
+        err.code === 'EBADCSRFTOKEN' ||
+        (CsrfError && err instanceof CsrfError) ||
+        (err.message && err.message.toLowerCase().includes('csrf'))
+    );
+
+    if (isCsrfErr) {
         logger.warn('CSRF token validation failed', {
             userId: req.session?.userId,
             path: req.path,

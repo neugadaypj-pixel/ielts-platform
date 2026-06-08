@@ -192,7 +192,7 @@ const Submission = {
 
         if (update.$set) {
             for (const [key, val] of Object.entries(update.$set)) {
-                const col = key === 'aiAnalysis' ? `details = JSON_MERGEPATCH(details, JSON_OBJECT('aiAnalysis' VALUE :aiVal))` : null;
+                const col = key === 'aiAnalysis' ? `details = JSON_MERGEPATCH(NVL(details, '{}'), JSON_OBJECT('aiAnalysis' VALUE :aiVal))` : null;
                 if (col === null) {
                     // Standard column update
                     const colName = key === 'lastSubmittedAt' ? 'last_submitted_at' :
@@ -220,23 +220,38 @@ const Submission = {
     },
 
     async updateMany(filter, update) {
+        // Collect matching document IDs first (single SELECT)
         const docs = await Submission.find(filter);
-        for (const doc of docs) {
-            const setClauses = [];
-            const binds = { id: doc._id };
-            if (update.$set) {
-                for (const [key, val] of Object.entries(update.$set)) {
-                    const colName = key === 'teacherId' ? 'teacher_id' :
-                                    key === 'groupId' ? 'group_id' :
-                                    key === 'lastSubmittedAt' ? 'last_submitted_at' : key;
-                    setClauses.push(`${colName} = :${key}`);
-                    binds[key] = val;
-                }
+        if (docs.length === 0) return;
+
+        // Build dynamic IN-list with bind variables (no string interpolation)
+        const idBinds = {};
+        const idPlaceholders = docs.map((doc, i) => {
+            const key = `uid${i}`;
+            idBinds[key] = doc._id;
+            return `:${key}`;
+        });
+
+        const setClauses = [];
+        const binds = { ...idBinds };
+
+        if (update.$set) {
+            for (const [key, val] of Object.entries(update.$set)) {
+                const colName = key === 'teacherId' ? 'teacher_id' :
+                                key === 'groupId' ? 'group_id' :
+                                key === 'lastSubmittedAt' ? 'last_submitted_at' : key;
+                setClauses.push(`${colName} = :${key}`);
+                binds[key] = val;
             }
-            if (setClauses.length > 0) {
-                setClauses.push("last_submitted_at = CURRENT_TIMESTAMP");
-                await execute(`UPDATE submissions SET ${setClauses.join(', ')} WHERE id = :id`, binds);
-            }
+        }
+
+        if (setClauses.length > 0) {
+            setClauses.push("last_submitted_at = CURRENT_TIMESTAMP");
+            // Single batch UPDATE with WHERE id IN (:uid0, :uid1, ...)
+            await execute(
+                `UPDATE submissions SET ${setClauses.join(', ')} WHERE id IN (${idPlaceholders.join(',')})`,
+                binds
+            );
         }
     },
 

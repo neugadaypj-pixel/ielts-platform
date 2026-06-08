@@ -1,5 +1,5 @@
 // Oracle-missing routes — add these before the 404 handler in server-oracle.js
-// Require this file with: require('./routes/missing-routes')(app, { csrfProtection, apiLimiter, isTeacher, isAdmin });
+// Require this file with: require('./routes/missing-routes')(app, { doubleCsrfProtection, apiLimiter, isTeacher, isAdmin });
 const User = require('../database/models/user');
 const Test = require('../database/models/test');
 const Submission = require('../database/models/submission');
@@ -8,13 +8,13 @@ const Feedback = require('../database/models/feedback');
 const Notification = require('../database/models/notification');
 const logger = require('../utils/logger');
 const { detectPatterns } = require('../utils/aiAnalysis');
-module.exports = function(app, { csrfProtection, apiLimiter, isTeacher, isAdmin, canEditTest, getAccessibleTest, saveStudentSubmission }) {
+module.exports = function(app, { doubleCsrfProtection, apiLimiter, isTeacher, isAdmin, canEditTest, getAccessibleTest, saveStudentSubmission }) {
 
     // === ALIAS ROUTES (templates use /student/ prefix, but routes are unprefixed) ===
     app.get('/student/ai-chat', (req, res) => { if (!req.session.userId) return res.redirect('/login'); res.redirect('/ai-chat'); });
     app.get('/student/ai-feedback/:submissionId', (req, res) => { if (!req.session.userId) return res.redirect('/login'); res.redirect('/ai-feedback/' + req.params.submissionId); });
-    app.get('/student/feedback', csrfProtection, (req, res) => { if (!req.session.userId) return res.redirect('/login'); res.redirect('/feedback'); });
-    app.post('/student/feedback', csrfProtection, async (req, res) => {
+    app.get('/student/feedback', doubleCsrfProtection, (req, res) => { if (!req.session.userId) return res.redirect('/login'); res.redirect('/feedback'); });
+    app.post('/student/feedback', doubleCsrfProtection, async (req, res) => {
         if (!req.session.userId) return res.status(401).json({ error: 'Not logged in' });
         try {
             const { testType, questionType, issueDescription } = req.body;
@@ -150,7 +150,7 @@ module.exports = function(app, { csrfProtection, apiLimiter, isTeacher, isAdmin,
     });
 
     // === TEACHER: UPDATE TEST META (RENAME / FOLDER) ===
-    app.post('/teacher/update-test-meta/:id', isTeacher, csrfProtection, async (req, res) => {
+    app.post('/teacher/update-test-meta/:id', isTeacher, doubleCsrfProtection, async (req, res) => {
         try {
             const test = await Test.findById(req.params.id);
             if (!test) return res.status(404).json({ success: false, message: 'Test not found' });
@@ -185,7 +185,7 @@ module.exports = function(app, { csrfProtection, apiLimiter, isTeacher, isAdmin,
         }
     });
 
-    app.post('/admin/feedback/:id/resolve', isAdmin, csrfProtection, async (req, res) => {
+    app.post('/admin/feedback/:id/resolve', isAdmin, doubleCsrfProtection, async (req, res) => {
         try {
             const { adminNotes, adminReply } = req.body;
             await Feedback.findByIdAndUpdate(req.params.id, {
@@ -201,7 +201,7 @@ module.exports = function(app, { csrfProtection, apiLimiter, isTeacher, isAdmin,
         }
     });
 
-    app.post('/admin/feedback/:id/reply', isAdmin, csrfProtection, async (req, res) => {
+    app.post('/admin/feedback/:id/reply', isAdmin, doubleCsrfProtection, async (req, res) => {
         try {
             const { reply, studentId } = req.body;
             if (!reply || !reply.trim()) {
@@ -247,7 +247,7 @@ module.exports = function(app, { csrfProtection, apiLimiter, isTeacher, isAdmin,
     });
 
     // === REMOVE STUDENT FROM GROUP (unprefixed alias matching template) ===
-    app.post('/remove-student-from-group/:groupId/:studentId', csrfProtection, async (req, res) => {
+    app.post('/remove-student-from-group/:groupId/:studentId', doubleCsrfProtection, async (req, res) => {
         if (!req.session.userId) return res.status(401).json({ success: false, message: 'Not logged in' });
         try {
             const { groupId, studentId } = req.params;
@@ -259,7 +259,7 @@ module.exports = function(app, { csrfProtection, apiLimiter, isTeacher, isAdmin,
             await Group.findByIdAndUpdate(groupId, { $pull: { students: studentId } });
             await User.findByIdAndUpdate(studentId, { $unset: { groupId: 1 } });
             logger.info('Student removed from group', { groupId, studentId, by: req.session.userId });
-            res.json({ success: true, message: 'Student removed from group', redirect: req.body.redirect || '/teacher-dashboard' });
+            res.json({ success: true, message: 'Student removed from group successfully', redirect: req.body.redirect || '/teacher-dashboard' });
         } catch (err) {
             logger.error('Remove student from group error', { error: err.message });
             res.status(500).json({ success: false, message: err.message });
@@ -267,7 +267,7 @@ module.exports = function(app, { csrfProtection, apiLimiter, isTeacher, isAdmin,
     });
 
     // === SUBMIT WRITING TEST (alias matching export-writing template) ===
-    app.post('/submit-writing-test', apiLimiter, csrfProtection, async (req, res) => {
+    app.post('/submit-writing-test', apiLimiter, doubleCsrfProtection, async (req, res) => {
         if (!req.session.userId) return res.status(401).json({ success: false, message: 'Not logged in' });
         try {
             const payload = req.body;

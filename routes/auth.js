@@ -1,7 +1,8 @@
+// LEGACY: Used only by server.js (MongoDB). server-oracle.js has inline auth at lines 688-744.
+// DO NOT import Mongoose models here for Oracle — the Oracle server uses database/models/ instead.
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const router = express.Router();
-const User = require('../models/User');
 const logger = require('../utils/logger');
 const CONSTANTS = require('../utils/constants');
 const { validateUsername, validatePassword } = require('../utils/validation');
@@ -17,7 +18,8 @@ router.get('/login', (req, res) => {
     res.render('login');
 });
 
-// Login POST
+// Login POST  —  NOTE: the User.findOne call below queries MongoDB via Mongoose.
+// server-oracle.js has its own Oracle-native login handler.
 router.post('/login', async (req, res) => {
     try {
         const { username, password } = req.body;
@@ -33,6 +35,8 @@ router.post('/login', async (req, res) => {
             return res.status(CONSTANTS.STATUS.BAD_REQUEST).send(passwordValidation.error);
         }
 
+        // Legacy Mongoose model — used only by server.js
+        const User = require('../models/User');
         const user = await User.findOne({ username });
         if (!user) {
             logger.warn('Login attempt with non-existent username', { username });

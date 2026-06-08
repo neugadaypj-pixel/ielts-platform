@@ -321,7 +321,7 @@ const { generateCsrfToken, doubleCsrfProtection } = doubleCsrf({
         path: '/'
     },
     size: 64,
-    getTokenFromRequest: (req) => req.body._csrf || req.headers['x-csrf-token'] || req.headers['csrf-token']
+    getCsrfTokenFromRequest: (req) => req.body._csrf || req.headers['x-csrf-token'] || req.headers['csrf-token']
 });
 
 // Generate CSRF token for all EJS views (replaces csurf's implicit cookie set).

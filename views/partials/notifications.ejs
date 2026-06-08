@@ -82,10 +82,10 @@ var flashToast = null;
 var flashType = 'success';
 if (typeof toast !== 'undefined' && toast) { flashToast = toast; flashType = toastType || 'success'; }
 else if (typeof success !== 'undefined' && success) { flashToast = success; flashType = 'success'; }
-else if (typeof error !== 'undefined' && error) { flashToast = error; flashType = 'error'; }
-else if (typeof message !== 'undefined' && message) { flashToast = message; flashType = messageType || 'info'; }
+else if (typeof error === 'string' && error) { flashToast = error; flashType = 'error'; }
+else if (typeof message !== 'undefined' && message) { flashToast = message; flashType = (typeof messageType !== 'undefined' ? messageType : null) || 'info'; }
 %>
-<% if (flashToast) { %>
+<% if (flashToast && typeof flashToast === 'string') { %>
 <script>
 window.__flashToast = { message: '<%- flashToast.replace(/'/g, "\\'") %>', type: '<%= flashType %>' };
 </script>

@@ -4,23 +4,21 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Test Platform</title>
+    <%- include('../partials/design-system') %>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: #1f2937;
+            background: linear-gradient(135deg, var(--primary-400) 0%, var(--primary-600) 100%);
+            color: var(--text-primary);
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
         }
-        
-        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes float { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-10px); } }
-        
-        .container {
+        body.dark-mode {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+        }
+        .home-container {
             max-width: 1200px;
             width: 100%;
             padding: 20px;
@@ -29,42 +27,36 @@
             gap: 60px;
             align-items: center;
         }
-        
-        .content {
+        .home-content {
             color: white;
-            animation: slideUp 0.8s ease-out;
         }
-        
         .logo-icon {
             font-size: 5rem;
             margin-bottom: 20px;
             animation: float 3s ease-in-out infinite;
         }
-        
-        .content h1 {
+        @keyframes float { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-10px); } }
+        .home-content h1 {
             font-size: 3.5rem;
             font-weight: 900;
             margin-bottom: 20px;
             line-height: 1.1;
             letter-spacing: -0.02em;
         }
-        
-        .content p {
+        .home-content p {
             font-size: 1.1rem;
             opacity: 0.95;
             margin-bottom: 32px;
             line-height: 1.8;
         }
-        
         .cta-buttons {
             display: flex;
             gap: 16px;
             flex-wrap: wrap;
         }
-        
-        .btn {
+        .btn-home {
             padding: 16px 32px;
-            border-radius: 16px;
+            border-radius: var(--radius-md);
             font-weight: 700;
             font-size: 1rem;
             text-decoration: none;
@@ -75,37 +67,31 @@
             align-items: center;
             gap: 8px;
         }
-        
-        .btn-primary {
+        .btn-home-primary {
             background: white;
-            color: #667eea;
-            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.2);
+            color: var(--primary-400);
+            box-shadow: var(--shadow-lg);
         }
-        
-        .btn-primary:hover {
+        .btn-home-primary:hover {
             transform: translateY(-4px);
-            box-shadow: 0 16px 40px rgba(0, 0, 0, 0.3);
+            box-shadow: var(--shadow-xl);
         }
-        
-        .btn-secondary {
+        .btn-home-secondary {
             background: rgba(255, 255, 255, 0.2);
             backdrop-filter: blur(10px);
             color: white;
             border: 2px solid white;
         }
-        
-        .btn-secondary:hover {
+        .btn-home-secondary:hover {
             background: rgba(255, 255, 255, 0.3);
             transform: translateY(-2px);
         }
-        
         .features {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 16px;
             margin-top: 40px;
         }
-        
         .feature-item {
             display: flex;
             gap: 12px;
@@ -113,93 +99,54 @@
             opacity: 0.9;
             font-size: 0.95rem;
         }
-        
-        .feature-icon {
-            font-size: 1.5rem;
-        }
-        
+        .feature-icon { font-size: 1.5rem; }
         .illustration-box {
             background: rgba(255, 255, 255, 0.1);
             backdrop-filter: blur(20px);
             border: 2px solid rgba(255, 255, 255, 0.2);
-            border-radius: 24px;
+            border-radius: var(--radius-xl);
             padding: 60px 40px;
             text-align: center;
-            animation: slideUp 0.8s ease-out 0.2s both;
         }
-        
         .illustration-icon {
             font-size: 8rem;
             margin-bottom: 20px;
             animation: float 4s ease-in-out infinite;
         }
-        
         .illustration-text {
             color: white;
             font-size: 1.3rem;
             font-weight: 700;
             opacity: 0.95;
         }
-        
         @media (max-width: 1024px) {
-            .container {
-                grid-template-columns: 1fr;
-                gap: 40px;
-            }
-            .content h1 { font-size: 2.5rem; }
+            .home-container { grid-template-columns: 1fr; gap: 40px; }
+            .home-content h1 { font-size: 2.5rem; }
         }
-        
         @media (max-width: 768px) {
-            .content h1 { font-size: 2rem; }
+            .home-content h1 { font-size: 2rem; }
             .cta-buttons { flex-direction: column; }
-            .btn { justify-content: center; }
+            .btn-home { justify-content: center; }
             .features { grid-template-columns: 1fr; }
             .illustration-box { padding: 40px 20px; }
             .illustration-icon { font-size: 5rem; }
         }
-
-        /* Dark Mode Styles for Home Page */
-        body.dark-mode {
-            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-        }
-
-        body.dark-mode .content {
-            color: #e2e8f0;
-        }
-
-        body.dark-mode .illustration-box {
-            background: rgba(30, 41, 59, 0.2);
-            border-color: rgba(102, 126, 234, 0.3);
-        }
-
-        body.dark-mode .illustration-text {
-            color: #cbd5e1;
-        }
-
-        body.dark-mode .feature-item {
-            color: #cbd5e1;
-        }
-
-        body.dark-mode .btn-secondary {
-            background: rgba(255, 255, 255, 0.1);
-            border-color: rgba(255, 255, 255, 0.3);
-            color: #e2e8f0;
-        }
-
-        body.dark-mode .btn-secondary:hover {
-            background: rgba(255, 255, 255, 0.15);
-        }
+        body.dark-mode .home-content { color: #e2e8f0; }
+        body.dark-mode .illustration-box { background: rgba(30, 41, 59, 0.2); border-color: rgba(102, 126, 234, 0.3); }
+        body.dark-mode .illustration-text { color: #cbd5e1; }
+        body.dark-mode .feature-item { color: #cbd5e1; }
+        body.dark-mode .btn-home-secondary { background: rgba(255, 255, 255, 0.1); border-color: rgba(255, 255, 255, 0.3); color: #e2e8f0; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="content">
+    <div class="home-container">
+        <div class="home-content">
             <div class="logo-icon">📚</div>
             <h1>Assessment Excellence Platform</h1>
             <p>Create, assign, and evaluate tests with ease. Empower teachers and students with a modern, intuitive testing platform.</p>
             
             <div class="cta-buttons">
-                <a href="/login" class="btn btn-primary">🔐 Get Started</a>
+                <a href="/login" class="btn-home btn-home-primary">🔐 Get Started</a>
             </div>
             
             <div class="features">

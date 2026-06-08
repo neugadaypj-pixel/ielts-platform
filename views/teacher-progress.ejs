@@ -229,7 +229,7 @@
     <script>
         const aiAnalysisData = {};
         <% rows.forEach(row => { if (row.submission && row.submission.details?.aiAnalysis) { %>
-            aiAnalysisData['<%= row.submission._id %>'] = `<%= row.submission.details.aiAnalysis.replace(/`/g, '\\`').replace(/\n/g, '\\n').replace(/\r/g, '') %>`;
+            aiAnalysisData['<%= row.submission._id %>'] = `<%= row.submission.details.aiAnalysis.replace(/`/g, '\\`'.replace(/\n/g, '\\n').replace(/\r/g, '') %>`;
         <% } }) %>
 
         function showAIAnalysis(submissionId) {

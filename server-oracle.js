@@ -250,9 +250,6 @@ app.use(session(sessionConfig));
 // Cookie parser required for CSRF cookies
 app.use(cookieParser());
 
-// Generate CSRF token for all EJS views (replaces csurf's implicit cookie set)
-app.use(generateToken);
-
 // === RATE LIMITERS ===
 // Classroom/same-IP rationale: many students share a single public IP (NAT).
 // We use per-IP windows large enough for classroom use (~20 students).
@@ -324,6 +321,9 @@ const { generateToken, doubleCsrfProtection } = doubleCsrf({
     size: 64,
     getTokenFromRequest: (req) => req.body._csrf || req.headers['x-csrf-token'] || req.headers['csrf-token']
 });
+
+// Generate CSRF token for all EJS views (replaces csurf's implicit cookie set)
+app.use(generateToken);
 
 // === AUTH MIDDLEWARE ===
 // Imported from middleware/auth.js (single source of truth).

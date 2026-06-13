@@ -503,7 +503,7 @@ async function saveStudentSubmission({ req, payload }) {
         teacherId: student.teacherId || null,
         groupId: student.groupId || null,
         type: normalizedType,
-        studentName: String(payload.studentName || student.username || 'Student').trim(),
+        studentName: String(student.username || 'Student').trim(),
         status: 'completed',
         attemptCount: nextAttemptCount,
         score: Number.isFinite(Number(payload.score)) ? Number(payload.score) : null,

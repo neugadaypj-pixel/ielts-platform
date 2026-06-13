@@ -2201,7 +2201,7 @@ function injectReadingSubmissionHook(html, testDoc) {
         const score = Number(match[1]);
         const totalQuestions = Number(match[2]);
         const band = (document.getElementById('bandValue')?.innerText || '').replace(/^Band:\\s*/i, '').trim();
-        const studentName = (document.getElementById('studentName')?.value || '').trim() || 'Student';
+        const studentName = window.__platformStudentName || 'Student';
         const timeRemainingText = (document.getElementById('timerDisplay')?.innerText || '').trim();
         const summaryText = (document.getElementById('modalTitle')?.innerText || '').trim();
         const resultSignature = ['reading', '${safeTestId}', studentName, score, totalQuestions, band, timeRemainingText].join(':');
@@ -2319,7 +2319,7 @@ function injectListeningSubmissionHook(html, testDoc) {
         const score = Number(match[1]);
         const totalQuestions = Number(match[2]);
         const band = (document.getElementById('bandValue')?.innerText || '').replace(/^Band:\\s*/i, '').trim();
-        const studentName = (document.getElementById('studentName')?.value || '').trim() || 'Student';
+        const studentName = window.__platformStudentName || 'Student';
         const timeRemainingText = (document.getElementById('timerDisplay')?.innerText || '').trim();
         const summaryText = (document.getElementById('modalTitle')?.innerText || '').trim();
         const resultSignature = ['listening', '${safeTestId}', studentName, score, totalQuestions, band, timeRemainingText].join(':');
@@ -2644,7 +2644,7 @@ function injectWritingSubmissionHook(html, testDoc) {
         const modalVisible = document.getElementById('resultModal')?.style.display === 'flex';
         if (!submitted && !modalVisible) return null;
 
-        const studentName = (document.getElementById('studentName')?.value || '').trim() || 'Student';
+        const studentName = window.__platformStudentName || 'Student';
         const task1 = document.getElementById('view_t1')?.innerText || document.getElementById('input_task1')?.value || '';
         const task2 = document.getElementById('view_t2')?.innerText || document.getElementById('input_task2')?.value || '';
         const wordCount1 = parseCount('final_wc1', 'wc_1');
@@ -2727,15 +2727,29 @@ function injectWritingSubmissionHook(html, testDoc) {
 
 function injectStudentName(html, testDoc, studentName) {
     if (!studentName) return html;
+    const safeName = String(studentName).replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '\\"');
     const snippet = `
 <script>
 (function() {
+    window.__platformStudentName = '${safeName}';
     window.addEventListener('load', function() {
+        // Hide any studentName input
         const nameInput = document.getElementById('studentName');
-        if (!nameInput) return;
-        nameInput.value = window.__platformStudentName || '';
-        nameInput.readOnly = true;
-        nameInput.style.display = 'none';
+        if (nameInput) {
+            nameInput.value = window.__platformStudentName || '';
+            nameInput.readOnly = true;
+            nameInput.style.display = 'none';
+            // Also hide any label or parent wrapper
+            const parent = nameInput.parentElement;
+            if (parent && parent.querySelector('.name-input, #studentName')) {
+                // Keep the container but shrink the input
+            }
+        }
+        // Show name in display span if exists
+        const nameDisplay = document.getElementById('studentNameDisplay');
+        if (nameDisplay) {
+            nameDisplay.textContent = '\\u{1F464} ' + (window.__platformStudentName || 'Student');
+        }
     });
 })();
 </script>`;
@@ -2818,8 +2832,7 @@ function injectHeartbeat(html, testDoc) {
     }
 
     function getStudentName() {
-        const el = document.getElementById('studentName') || document.getElementById('lockdownName');
-        return (el ? el.value.trim() : '') || (window.__platformStudentName || 'Student');
+        return window.__platformStudentName || 'Student';
     }
 
     let heartbeatInterval = 5000;

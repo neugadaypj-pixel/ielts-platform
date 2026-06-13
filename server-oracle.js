@@ -424,6 +424,8 @@ async function getAccessibleTest(req, testId) {
 
 // === SAVE STUDENT SUBMISSION ===
 async function saveStudentSubmission({ req, payload }) {
+    // ALWAYS use the logged-in username — ignore any client-sent studentName
+    const studentName = req.session.username || 'Student';
     let isRetry = false;
     let attemptCount = 1;
     let submission;
@@ -445,7 +447,7 @@ async function saveStudentSubmission({ req, payload }) {
             { testId: payload.testId, studentId: req.session.userId },
             {
                 $set: {
-                    studentName: payload.studentName,
+                    studentName,
                     attemptCount,
                     score: payload.score,
                     totalQuestions: payload.totalQuestions,
@@ -468,7 +470,7 @@ async function saveStudentSubmission({ req, payload }) {
             teacherId: payload.teacherId || null,
             groupId: payload.groupId || null,
             type: payload.type,
-            studentName: payload.studentName,
+            studentName,
             status: payload.status || 'completed',
             attemptCount,
             score: payload.score,
@@ -1867,6 +1869,29 @@ app.post('/submit-writing', apiLimiter, doubleCsrfProtection, async (req, res) =
     }
 });
 
+// === SUBMISSION CAPTURE (from generated test HTML pages) ===
+app.post('/api/test-submissions', apiLimiter, async (req, res) => {
+    if (!req.session.userId) return res.status(401).json({ success: false, message: 'Not logged in' });
+    try {
+        if (!isDatabaseReady()) return sendDatabaseUnavailable(res);
+
+        const payload = req.body || {};
+        // Always use session username as the student name
+        payload.studentName = req.session.username || 'Student';
+
+        const result = await saveStudentSubmission({ req, payload });
+
+        res.json({
+            success: true,
+            ignored: Boolean(result.ignored),
+            submissionId: result._id || result.id || null
+        });
+    } catch (err) {
+        logger.error('Submission capture error', { error: err.message });
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
 // === AI CHAT ===
 app.get('/ai-chat', async (req, res) => {
     if (!req.session.userId) return res.redirect('/login');
@@ -1898,23 +1923,78 @@ app.post('/api/ai-chat', apiLimiter, async (req, res) => {
     try {
         const { message, testType } = req.body;
 
-        // Gather context
+        // Gather all submissions with full details
         const [readingSubmissions, listeningSubmissions, writingSubmissions] = await Promise.all([
             Submission.find({ studentId: req.session.userId, type: 'reading' }),
             Submission.find({ studentId: req.session.userId, type: 'listening' }),
             Submission.find({ studentId: req.session.userId, type: 'writing' })
         ]);
 
-        const context = {
-            reading: readingSubmissions,
-            listening: listeningSubmissions,
-            writing: writingSubmissions,
-            totalTests: readingSubmissions.length + listeningSubmissions.length + writingSubmissions.length
-        };
+        // Build rich per-test summary for the AI
+        function summarizeSubmissions(subs) {
+            return subs.map((s, i) => {
+                const details = s.details || {};
+                const incorrect = details.incorrectSummary || details.scoreText || '';
+                const questionTypes = details.questionTypes || '';
+                const timeText = s.timeRemainingText || 'Not recorded';
+                return [
+                    `#${i + 1}: Score ${s.score || '?'}/${s.totalQuestions || '?'} (${s.percentage || '?'}%)`,
+                    `Band: ${s.band || 'N/A'} | Time: ${timeText}`,
+                    `Attempt: ${s.attemptCount || 1} | Submitted: ${s.lastSubmittedAt || s.firstSubmittedAt || 'unknown'}`,
+                    incorrect ? `Mistakes: ${incorrect.slice(0, 200)}` : '',
+                    questionTypes ? `Question Types: ${questionTypes}` : ''
+                ].filter(Boolean).join(' | ');
+            }).join('\n');
+        }
 
-        const systemPrompt = `You are an IELTS tutor analyzing student performance data. 
-Student stats: ${context.totalTests} tests taken (${context.reading.length} reading, ${context.listening.length} listening, ${context.writing.length} writing).
-Provide helpful, encouraging feedback based on their actual performance data.`;
+        const readingSummary = summarizeSubmissions(readingSubmissions);
+        const listeningSummary = summarizeSubmissions(listeningSubmissions);
+        const writingSummary = summarizeSubmissions(writingSubmissions);
+
+        // Calculate additional analytics
+        function calcStats(subs) {
+            const scored = subs.filter(s => s.percentage != null && Number.isFinite(Number(s.percentage)));
+            return {
+                count: subs.length,
+                avgScore: scored.length > 0
+                    ? Math.round(scored.reduce((sum, s) => sum + Number(s.percentage), 0) / scored.length)
+                    : null,
+                best: scored.length > 0 ? Math.max(...scored.map(s => Number(s.percentage))) : null,
+                worst: scored.length > 0 ? Math.min(...scored.map(s => Number(s.percentage))) : null,
+                avgBand: subs.filter(s => s.band).length > 0
+                    ? (subs.filter(s => s.band).reduce((sum, s) => sum + Number(s.band), 0) / subs.filter(s => s.band).length).toFixed(1)
+                    : null
+            };
+        }
+
+        const readingStats = calcStats(readingSubmissions);
+        const listeningStats = calcStats(listeningSubmissions);
+        const writingStats = calcStats(writingSubmissions);
+
+        const systemPrompt = `You are an expert IELTS tutor with FULL access to this student's complete test history. Analyze their performance data in detail.
+
+STUDENT: ${req.session.username || 'Student'}
+TOTAL TESTS: ${readingStats.count + listeningStats.count + writingStats.count}
+
+=== READING TESTS (${readingStats.count}) ===
+Avg: ${readingStats.avgScore !== null ? readingStats.avgScore + '%' : 'N/A'} | Best: ${readingStats.best !== null ? readingStats.best + '%' : 'N/A'} | Worst: ${readingStats.worst !== null ? readingStats.worst + '%' : 'N/A'} | Avg Band: ${readingStats.avgBand || 'N/A'}
+${readingSummary || 'No reading tests yet'}
+
+=== LISTENING TESTS (${listeningStats.count}) ===
+Avg: ${listeningStats.avgScore !== null ? listeningStats.avgScore + '%' : 'N/A'} | Best: ${listeningStats.best !== null ? listeningStats.best + '%' : 'N/A'} | Worst: ${listeningStats.worst !== null ? listeningStats.worst + '%' : 'N/A'} | Avg Band: ${listeningStats.avgBand || 'N/A'}
+${listeningSummary || 'No listening tests yet'}
+
+=== WRITING TESTS (${writingStats.count}) ===
+${writingSummary || 'No writing tests yet'}
+
+INSTRUCTIONS:
+- Use ALL the data above to give specific, personalized feedback
+- Reference specific test scores, time taken, mistakes, and trends
+- Point out patterns: which question types cause most errors, timing issues, improvement trends
+- Give actionable study recommendations based on their actual weaknesses
+- Be encouraging but honest about areas needing work
+- If they ask about a specific test type, dive deeper into those results
+- If data is limited (few tests), acknowledge that but still give useful feedback`;
 
         const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
             method: 'POST',
@@ -1929,7 +2009,7 @@ Provide helpful, encouraging feedback based on their actual performance data.`;
                     { role: 'user', content: message }
                 ],
                 temperature: 0.7,
-                max_tokens: 1000
+                max_tokens: 1500
             })
         });
 
@@ -1940,7 +2020,7 @@ Provide helpful, encouraging feedback based on their actual performance data.`;
         res.json({
             success: true,
             reply,
-            context
+            context: { readingStats, listeningStats, writingStats }
         });
     } catch (err) {
         logger.error('AI chat error', { error: err.message });
@@ -3398,7 +3478,7 @@ app.get('/export-writing/:testId', isTeacher, async (req, res) => {
     try {
         const test = await Test.findById(req.params.testId);
         if (!test) return res.status(404).send('Test not found');
-        res.render('export-writing', { test });
+        res.render('export-writing', { test, testId: test._id, studentName: req.session.username || 'Teacher' });
     } catch (err) {
         res.status(500).send('Error exporting writing test');
     }

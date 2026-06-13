@@ -393,7 +393,7 @@
     <div class="writing-header">
         <div class="logo">
             📚 IELTS Test
-            <input type="text" id="studentName" class="name-input" placeholder="Your name" oninput="saveName(); this.classList.remove('shake-active');">
+            <span id="studentNameDisplay" style="font-weight:700;font-size:14px;color:var(--primary-500);"></span>
         </div>
         <div class="header-right">
             <button class="part-btn" onclick="document.getElementById('notesPanel').classList.toggle('open')" style="color: #d97706; background: rgba(217, 119, 6, 0.1); border-color: #d97706;">📝 Notes</button>
@@ -534,22 +534,13 @@
         document.getElementById('wc_'+taskNum).className = (count >= min) ? 'wc-good' : 'wc-bad';
     }
 
-    function saveName() { localStorage.setItem(SESSION_ID + '_name', document.getElementById('studentName').value); }
+    function getStudentName() { return window.__platformStudentName || 'Student'; }
     
     function showCustomAlert(message) {
         const alertBox = document.getElementById('customAlert');
         alertBox.innerText = message;
         alertBox.style.display = 'block';
         setTimeout(() => { alertBox.style.display = 'none'; }, 4500);
-    }
-    
-    function triggerNameWarning() {
-        const nameInput = document.getElementById('studentName');
-        nameInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        nameInput.classList.remove('shake-active');
-        void nameInput.offsetWidth;
-        nameInput.classList.add('shake-active');
-        nameInput.focus();
     }
 
     async function checkWithAI(t1, t2) {
@@ -590,12 +581,7 @@ Provide HTML feedback with scoring.`;
 
     function submitTest() {
         if(isSubmitted) { document.getElementById('resultModal').style.display = 'flex'; return; }
-        let name = document.getElementById('studentName').value.trim();
-        if (!name) {
-            showCustomAlert('Please enter your name');
-            triggerNameWarning();
-            return;
-        }
+        const name = getStudentName();
         isSubmitted = true;
         localStorage.setItem(SESSION_ID + '_submitted', 'true');
         document.getElementById('input_task1').disabled = document.getElementById('input_task2').disabled = true;
@@ -603,10 +589,10 @@ Provide HTML feedback with scoring.`;
         const t2 = document.getElementById('input_task2').value;
         const wc1 = document.getElementById('wc_1').innerText;
         const wc2 = document.getElementById('wc_2').innerText;
-        fetch('/submit-writing-test', {
+        fetch('/api/test-submissions', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ testId: '<%= testId %>', studentName: name, task1: t1, task2: t2, wordCount1: parseInt(wc1), wordCount2: parseInt(wc2) })
+            body: JSON.stringify({ testId: '<%= testId %>', studentName: name, type: 'writing', task1: t1, task2: t2, wordCount1: parseInt(wc1), wordCount2: parseInt(wc2) })
         }).catch(console.error);
         document.getElementById('final_wc1').innerText = wc1;
         document.getElementById('final_wc2').innerText = wc2;
@@ -621,7 +607,7 @@ Provide HTML feedback with scoring.`;
     function toggleDarkMode(btn) { document.body.classList.toggle('dark-mode'); }
     
     function downloadWord() {
-        const name = document.getElementById('studentName').value || 'Student';
+        const name = getStudentName();
         const t1 = document.getElementById('input_task1').value;
         const t2 = document.getElementById('input_task2').value;
         const blob = new Blob([`<h1>${name}</h1><h2>Task 1</h2><p>${t1.replace(/\n/g, '<br>')}</p><h2>Task 2</h2><p>${t2.replace(/\n/g, '<br>')}</p>`], { type: 'application/msword' });
@@ -632,7 +618,7 @@ Provide HTML feedback with scoring.`;
     }
     
     function downloadPDFDirect() {
-        html2pdf().set({ margin: 1, filename: document.getElementById('studentName').value + '_IELTS.pdf', jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' } }).from(document.getElementById('printable-content')).save();
+        html2pdf().set({ margin: 1, filename: getStudentName() + '_IELTS.pdf', jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' } }).from(document.getElementById('printable-content')).save();
     }
     
     function copyEssays() {
@@ -657,10 +643,13 @@ Provide HTML feedback with scoring.`;
     }
 
     window.addEventListener('DOMContentLoaded', function() {
+        // Display the logged-in name
+        const nameDisplay = document.getElementById('studentNameDisplay');
+        if (nameDisplay) nameDisplay.textContent = '👤 ' + getStudentName();
+
         // Restore saved data
         const savedTime = localStorage.getItem(SESSION_ID + '_timer');
         if(savedTime) time = parseInt(savedTime);
-        if(localStorage.getItem(SESSION_ID + '_name')) document.getElementById('studentName').value = localStorage.getItem(SESSION_ID + '_name');
         if(localStorage.getItem(SESSION_ID + '_t1')) { document.getElementById('input_task1').value = localStorage.getItem(SESSION_ID + '_t1'); updateCount(1); }
         if(localStorage.getItem(SESSION_ID + '_t2')) { document.getElementById('input_task2').value = localStorage.getItem(SESSION_ID + '_t2'); updateCount(2); }
         

@@ -1,4 +1,4 @@
-Areconst vm = require('vm');
+const vm = require('vm');
 const { readBuilderFinalTemplate, readBuilderSource } = require('./builderAssets');
 
 const generateFileSourceCache = new Map();

@@ -2735,15 +2735,14 @@ function injectStudentName(html, testDoc, studentName) {
 <script>
 (function() {
     window.__platformStudentName = '${safeName}';
-    // Neutralize builder name functions
+    // Neutralize builder name functions before builder scripts run
     Object.defineProperty(window, 'saveName', { value: function(){}, writable: true, configurable: true });
     Object.defineProperty(window, 'triggerNameWarning', { value: function(){}, writable: true, configurable: true });
-    // MutationObserver: detect and remove any #studentName element that builder scripts add
-    var _observer = new MutationObserver(function(mutations) {
+    // Observe documentElement immediately (always available even in <head>) —
+    // catches #studentName the instant the parser creates it in the body.
+    var _observer = new MutationObserver(function() {
         var el = document.getElementById('studentName');
-        if (el) {
-            el.parentNode && el.parentNode.removeChild(el);
-        }
+        if (el && el.parentNode) { el.parentNode.removeChild(el); }
         // Re-apply style if builder overrode it
         var style = document.getElementById('__platform_name_hide');
         if (!style) {
@@ -2753,18 +2752,23 @@ function injectStudentName(html, testDoc, studentName) {
             (document.head || document.documentElement).appendChild(style);
         }
     });
-    if (document.body) {
-        _observer.observe(document.body, { childList: true, subtree: true });
-        // Immediately remove if already present
-        var existing = document.getElementById('studentName');
-        if (existing) existing.parentNode && existing.parentNode.removeChild(existing);
-    } else {
-        document.addEventListener('DOMContentLoaded', function() {
-            _observer.observe(document.body, { childList: true, subtree: true });
-            var existing = document.getElementById('studentName');
-            if (existing) existing.parentNode && existing.parentNode.removeChild(existing);
-        });
-    }
+    _observer.observe(document.documentElement, { childList: true, subtree: true });
+    // Also remove every 50ms for the first 3 seconds (bulletproof against late creation)
+    var _removeCount = 0;
+    var _quickTimer = setInterval(function() {
+        _removeCount++;
+        var el = document.getElementById('studentName');
+        if (el && el.parentNode) { el.parentNode.removeChild(el); }
+        // Re-apply style just in case
+        var style = document.getElementById('__platform_name_hide');
+        if (!style) {
+            style = document.createElement('style');
+            style.id = '__platform_name_hide';
+            style.textContent = '#studentName, .name-input { display: none !important; visibility: hidden !important; }';
+            (document.head || document.documentElement).appendChild(style);
+        }
+        if (_removeCount > 60) { clearInterval(_quickTimer); }
+    }, 50);
     // Show name in display span if exists
     window.addEventListener('load', function() {
         var nameDisplay = document.getElementById('studentNameDisplay');
@@ -3494,9 +3498,10 @@ function generateHTMLFromTest(testDoc, options = {}) {
 (function() {
     Object.defineProperty(window, 'saveName', { value: function(){}, writable: true, configurable: true });
     Object.defineProperty(window, 'triggerNameWarning', { value: function(){}, writable: true, configurable: true });
+    // Observe documentElement immediately — catches #studentName the instant parser creates it
     var _observer = new MutationObserver(function() {
         var el = document.getElementById('studentName');
-        if (el) el.parentNode && el.parentNode.removeChild(el);
+        if (el && el.parentNode) { el.parentNode.removeChild(el); }
         var style = document.getElementById('__platform_name_hide');
         if (!style) {
             style = document.createElement('style');
@@ -3505,17 +3510,22 @@ function generateHTMLFromTest(testDoc, options = {}) {
             (document.head || document.documentElement).appendChild(style);
         }
     });
-    if (document.body) {
-        _observer.observe(document.body, { childList: true, subtree: true });
-        var existing = document.getElementById('studentName');
-        if (existing) existing.parentNode && existing.parentNode.removeChild(existing);
-    } else {
-        document.addEventListener('DOMContentLoaded', function() {
-            _observer.observe(document.body, { childList: true, subtree: true });
-            var exist = document.getElementById('studentName');
-            if (exist) exist.parentNode && exist.parentNode.removeChild(exist);
-        });
-    }
+    _observer.observe(document.documentElement, { childList: true, subtree: true });
+    // Rapid-fire purge for first 3 seconds (bulletproof against late creation)
+    var _removeCount = 0;
+    var _quickTimer = setInterval(function() {
+        _removeCount++;
+        var el = document.getElementById('studentName');
+        if (el && el.parentNode) { el.parentNode.removeChild(el); }
+        var style = document.getElementById('__platform_name_hide');
+        if (!style) {
+            style = document.createElement('style');
+            style.id = '__platform_name_hide';
+            style.textContent = '#studentName, .name-input { display: none !important; visibility: hidden !important; }';
+            (document.head || document.documentElement).appendChild(style);
+        }
+        if (_removeCount > 60) { clearInterval(_quickTimer); }
+    }, 50);
     window.addEventListener('load', function() {
         var nameDisplay = document.getElementById('studentNameDisplay');
         if (nameDisplay) nameDisplay.textContent = '\\u{1F464} ' + (window.__platformStudentName || 'Student');

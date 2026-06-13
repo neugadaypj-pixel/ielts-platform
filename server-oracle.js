@@ -1361,6 +1361,22 @@ app.post('/edit-test/:id', isTeacher, doubleCsrfProtection, async (req, res) => 
         const canEdit = await canEditTest(req, req.params.id);
         if (!canEdit) return res.status(403).json({ success: false, message: 'Not authorized' });
 
+        // DIAGNOSTIC: log everything the builder sends
+        logger.info('[DIAG edit-test] req.body keys', {
+            testId: req.params.id,
+            keys: Object.keys(req.body || {}),
+            hasContent: !!req.body.content,
+            contentType: typeof req.body.content,
+            contentKeys: req.body.content && typeof req.body.content === 'object' && !Array.isArray(req.body.content)
+                ? Object.keys(req.body.content) : null,
+            hasBuilderJson: !!req.body.builderJson,
+            hasTitle: !!req.body.title,
+            hasType: !!req.body.type,
+            readingPassagePreview: req.body.content
+                ? JSON.stringify(req.body.content).substring(0, 200)
+                : '(no content)'
+        });
+
         const update = {};
         if (req.body.title) update.title = req.body.title;
         if (req.body.type) update.type = req.body.type;
@@ -1372,12 +1388,38 @@ app.post('/edit-test/:id', isTeacher, doubleCsrfProtection, async (req, res) => 
             update.readingPassage = typeof req.body.content === 'string'
                 ? req.body.content
                 : JSON.stringify(req.body.content);
+            logger.info('[DIAG edit-test] stored readingPassage length', {
+                testId: req.params.id,
+                length: update.readingPassage.length
+            });
+        } else {
+            logger.warn('[DIAG edit-test] NO content in req.body!', {
+                testId: req.params.id,
+                bodyKeys: Object.keys(req.body || {}),
+                builderJsonLength: (req.body.builderJson || '').length,
+                isMultipart: req.is && req.is('multipart/form-data'),
+                contentType: req.get('Content-Type')
+            });
         }
         if (req.body.builderJson) update.builderJson = req.body.builderJson;
         if (req.body.customTitle !== undefined) update.customTitle = req.body.customTitle;
         if (req.body.folder !== undefined) update.folder = req.body.folder;
 
+        logger.info('[DIAG edit-test] update object keys', {
+            testId: req.params.id,
+            updateKeys: Object.keys(update),
+            readingPassageSet: !!update.readingPassage
+        });
+
         await Test.findByIdAndUpdate(req.params.id, update);
+
+        // Verify the update was stored
+        const verify = await Test.findById(req.params.id);
+        logger.info('[DIAG edit-test] post-update verify', {
+            testId: req.params.id,
+            readingPassageLength: (verify.readingPassage || '').length,
+            readingPassagePreview: (verify.readingPassage || '').substring(0, 100)
+        });
 
         logger.info('Test updated', { userId: req.session.userId, testId: req.params.id });
         res.json({ success: true, redirect: '/teacher-dashboard' });
@@ -1395,23 +1437,86 @@ app.post('/update-test/:id', isTeacher, doubleCsrfProtection, async (req, res) =
         const canEdit = await canEditTest(req, req.params.id);
         if (!canEdit) return res.status(403).json({ success: false, message: 'Not authorized' });
 
+        // DIAGNOSTIC: log everything the builder sends
+        logger.info('[DIAG update-test] req.body keys', {
+            testId: req.params.id,
+            keys: Object.keys(req.body || {}),
+            hasContent: !!req.body.content,
+            contentType: typeof req.body.content,
+            contentKeys: req.body.content && typeof req.body.content === 'object' && !Array.isArray(req.body.content)
+                ? Object.keys(req.body.content) : null,
+            hasBuilderJson: !!req.body.builderJson,
+            hasTitle: !!req.body.title,
+            hasType: !!req.body.type,
+            hasParts: !!req.body.parts,
+            hasAnswerKey: !!req.body.answerKey,
+            isMultipart: req.is && req.is('multipart/form-data'),
+            ct: req.get('Content-Type'),
+            readingPassagePreview: req.body.content
+                ? JSON.stringify(req.body.content).substring(0, 200)
+                : '(no content)'
+        });
+
         const update = {};
         if (req.body.title) update.title = req.body.title;
         if (req.body.type) update.type = req.body.type;
-        if (req.body.content) {
-            // Serialize the full content object as JSON into reading_passage
-            // (same convention as saveValidatedTest). The builder sends
-            // content as {p1,p2,p3,answerKey} for reading or
-            // {timeLimit,task1,task2} for writing — not {questions,readingPassage}.
+
+        // Handle listening tests: FormData sends parts/answerKey/usePause, not "content"
+        if (req.body.parts && req.body.answerKey) {
+            // Listening update via FormData
+            const parts = typeof req.body.parts === 'string' ? JSON.parse(req.body.parts) : req.body.parts;
+            const answerKey = typeof req.body.answerKey === 'string' ? JSON.parse(req.body.answerKey) : req.body.answerKey;
+            const usePause = req.body.usePause === 'true';
+
+            // Build content object matching what saveValidatedTest expects
+            const content = {
+                parts,
+                answerKey,
+                includePause: usePause
+            };
+
+            update.readingPassage = JSON.stringify(content);
+            logger.info('[DIAG update-test] listening content built', {
+                testId: req.params.id,
+                contentKeys: Object.keys(content),
+                length: update.readingPassage.length
+            });
+        } else if (req.body.content) {
+            // Reading/writing update via JSON
             update.readingPassage = typeof req.body.content === 'string'
                 ? req.body.content
                 : JSON.stringify(req.body.content);
+            logger.info('[DIAG update-test] content serialized', {
+                testId: req.params.id,
+                length: update.readingPassage.length
+            });
+        } else {
+            logger.warn('[DIAG update-test] NO content, NO parts — nothing to store!', {
+                testId: req.params.id,
+                bodyKeys: Object.keys(req.body || {}),
+                builderJsonLength: (req.body.builderJson || '').length
+            });
         }
+
         if (req.body.builderJson) update.builderJson = req.body.builderJson;
         if (req.body.customTitle !== undefined) update.customTitle = req.body.customTitle;
         if (req.body.folder !== undefined) update.folder = req.body.folder;
 
+        logger.info('[DIAG update-test] update object', {
+            testId: req.params.id,
+            updateKeys: Object.keys(update),
+            readingPassageSet: !!update.readingPassage
+        });
+
         await Test.findByIdAndUpdate(req.params.id, update);
+
+        // Verify the update was stored
+        const verify = await Test.findById(req.params.id);
+        logger.info('[DIAG update-test] post-update verify', {
+            testId: req.params.id,
+            readingPassageLength: (verify.readingPassage || '').length,
+            readingPassagePreview: (verify.readingPassage || '').substring(0, 100)
+        });
 
         logger.info('Test updated via builder', { userId: req.session.userId, testId: req.params.id });
         res.json({ success: true, redirect: '/teacher-dashboard' });

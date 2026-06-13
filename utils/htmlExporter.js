@@ -2729,31 +2729,50 @@ function injectStudentName(html, testDoc, studentName) {
     if (!studentName) return html;
     const safeName = String(studentName).replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '\\"');
     const snippet = `
+<style id="__platform_name_hide">
+#studentName, .name-input { display: none !important; visibility: hidden !important; }
+</style>
 <script>
 (function() {
     window.__platformStudentName = '${safeName}';
+    // Neutralize builder name functions
+    Object.defineProperty(window, 'saveName', { value: function(){}, writable: true, configurable: true });
+    Object.defineProperty(window, 'triggerNameWarning', { value: function(){}, writable: true, configurable: true });
+    // MutationObserver: detect and remove any #studentName element that builder scripts add
+    var _observer = new MutationObserver(function(mutations) {
+        var el = document.getElementById('studentName');
+        if (el) {
+            el.parentNode && el.parentNode.removeChild(el);
+        }
+        // Re-apply style if builder overrode it
+        var style = document.getElementById('__platform_name_hide');
+        if (!style) {
+            style = document.createElement('style');
+            style.id = '__platform_name_hide';
+            style.textContent = '#studentName, .name-input { display: none !important; visibility: hidden !important; }';
+            (document.head || document.documentElement).appendChild(style);
+        }
+    });
+    if (document.body) {
+        _observer.observe(document.body, { childList: true, subtree: true });
+        // Immediately remove if already present
+        var existing = document.getElementById('studentName');
+        if (existing) existing.parentNode && existing.parentNode.removeChild(existing);
+    } else {
+        document.addEventListener('DOMContentLoaded', function() {
+            _observer.observe(document.body, { childList: true, subtree: true });
+            var existing = document.getElementById('studentName');
+            if (existing) existing.parentNode && existing.parentNode.removeChild(existing);
+        });
+    }
+    // Show name in display span if exists
     window.addEventListener('load', function() {
-        // Hide any studentName input
-        const nameInput = document.getElementById('studentName');
-        if (nameInput) {
-            nameInput.value = window.__platformStudentName || '';
-            nameInput.readOnly = true;
-            nameInput.style.display = 'none';
-            // Also hide any label or parent wrapper
-            const parent = nameInput.parentElement;
-            if (parent && parent.querySelector('.name-input, #studentName')) {
-                // Keep the container but shrink the input
-            }
-        }
-        // Show name in display span if exists
-        const nameDisplay = document.getElementById('studentNameDisplay');
-        if (nameDisplay) {
-            nameDisplay.textContent = '\\u{1F464} ' + (window.__platformStudentName || 'Student');
-        }
+        var nameDisplay = document.getElementById('studentNameDisplay');
+        if (nameDisplay) nameDisplay.textContent = '\\u{1F464} ' + (window.__platformStudentName || 'Student');
     });
 })();
 </script>`;
-    return replaceLastLiteral(html, '</body>', `${snippet}\n</body>`);
+    return replaceLastLiteral(html, '</head>', `${snippet}\n</head>`);
 }
 
 function injectHeartbeat(html, testDoc) {
@@ -2886,6 +2905,165 @@ function injectHeartbeat(html, testDoc) {
     }
 
     setTimeout(sendHeartbeat, 2000);
+})();
+</script>`;
+    return replaceLastLiteral(html, '</body>', `${snippet}\n</body>`);
+}
+
+function injectServerStatePersistence(html, testDoc, testType) {
+    const safeTestId = escapeForBuilderValue(testDoc._id);
+    const safeType = escapeForBuilderValue(testType || testDoc.type || 'reading');
+    const snippet = `
+<script>
+(function() {
+    if (!/^https?:$/i.test(location.protocol || '')) return;
+    var TEST_ID = '${safeTestId}';
+    var TEST_TYPE = '${safeType}';
+    var STATE_URL = '/api/test-state/' + encodeURIComponent(TEST_ID);
+    var _saveTimer = null;
+    var _submitted = false;
+
+    function getKey(el, i) {
+        return el.id || el.name || el.getAttribute('data-qid') || ('el_' + i);
+    }
+
+    function parseTimerSeconds(text) {
+        if (!text || typeof text !== 'string') return null;
+        var m = text.trim().match(/^(\\d{1,3}):(\\d{2})$/);
+        if (!m) return null;
+        return parseInt(m[1], 10) * 60 + parseInt(m[2], 10);
+    }
+
+    function collectAnswers() {
+        var a = {};
+        var inputs = document.querySelectorAll('input[type="text"], input:not([type]), textarea, select');
+        inputs.forEach(function(el, i) {
+            var k = getKey(el, i);
+            if (k && k !== 'studentName') a[k] = el.value || '';
+        });
+        document.querySelectorAll('input[type="radio"]:checked').forEach(function(el) {
+            if (el.name) a[el.name] = el.value || 'on';
+        });
+        document.querySelectorAll('input[type="checkbox"]').forEach(function(el) {
+            var k = el.name || el.id;
+            if (k) a[k] = el.checked;
+        });
+        document.querySelectorAll('.map-drop-zone.filled').forEach(function(el) {
+            var qid = el.getAttribute('data-qid');
+            if (qid) a['map_' + qid] = (el.textContent || el.innerText || '').trim();
+        });
+        return a;
+    }
+
+    function collectTimer() {
+        var el = document.getElementById('timerDisplay');
+        if (el) {
+            var s = parseTimerSeconds(el.innerText || el.textContent || '');
+            if (s !== null) return s;
+        }
+        try { if (typeof time !== 'undefined' && typeof time === 'number' && isFinite(time)) return Math.max(0, Math.floor(time)); } catch(e) {}
+        return null;
+    }
+
+    function saveState() {
+        if (_submitted) return;
+        var payload = { answers: collectAnswers(), timer: collectTimer(), submitted: false, type: TEST_TYPE };
+        try {
+            if (navigator.sendBeacon && document.visibilityState === 'hidden') {
+                navigator.sendBeacon(STATE_URL, JSON.stringify(payload));
+            } else {
+                fetch(STATE_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }).catch(function(){});
+            }
+        } catch(e) {}
+    }
+
+    function debouncedSave() {
+        if (_saveTimer) clearTimeout(_saveTimer);
+        _saveTimer = setTimeout(saveState, 300);
+    }
+
+    function restoreState() {
+        fetch(STATE_URL, { credentials: 'same-origin' })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (!data || !data.savedState) return;
+                var state = data.savedState;
+                if (state.submitted) { _submitted = true; return; }
+                var answers = state.answers || {};
+                Object.keys(answers).forEach(function(key) {
+                    if (key === 'studentName') return;
+                    var el = document.getElementById(key);
+                    if (!el) el = document.querySelector('input[name="' + key.replace(/"/g, '\\\\"') + '"]');
+                    if (!el) el = document.querySelector('textarea[name="' + key.replace(/"/g, '\\\\"') + '"]');
+                    if (!el && key.indexOf('map_') === 0) {
+                        el = document.querySelector('.map-drop-zone[data-qid="' + key.slice(4).replace(/"/g, '\\\\"') + '"]');
+                    }
+                    if (!el) return;
+                    try {
+                        if (el.type === 'radio') { if (answers[key]) el.checked = true; }
+                        else if (el.type === 'checkbox') { el.checked = !!answers[key]; }
+                        else if (el.classList && el.classList.contains('map-drop-zone')) {
+                            if (answers[key]) { el.textContent = answers[key]; el.classList.add('filled'); }
+                        } else { el.value = answers[key] || ''; }
+                        el.dispatchEvent(new Event('input', { bubbles: true }));
+                        el.dispatchEvent(new Event('change', { bubbles: true }));
+                    } catch(e) {}
+                });
+                if (typeof state.timer === 'number' && state.timer > 0 && state.savedAt) {
+                    var elapsed = Math.floor((Date.now() - new Date(state.savedAt).getTime()) / 1000);
+                    var remaining = Math.max(0, state.timer - elapsed);
+                    if (remaining > 0) {
+                        try { time = remaining; } catch(e) {}
+                        try { window.time = remaining; } catch(e) {}
+                        window.__platformRestoredTimer = remaining;
+                        var mins = Math.floor(remaining / 60);
+                        var secs = remaining % 60;
+                        var txt = (mins < 10 ? '0' : '') + mins + ':' + (secs < 10 ? '0' : '') + secs;
+                        var tEl = document.getElementById('timerDisplay');
+                        if (tEl) { tEl.innerText = txt; tEl.textContent = txt; }
+                    }
+                }
+            })
+            .catch(function(){});
+    }
+
+    var _origFetch = window.fetch;
+    window.fetch = function(url, options) {
+        var urlStr = typeof url === 'string' ? url : (url && url.url ? url.url : '');
+        if (urlStr && (urlStr.indexOf('/api/test-submissions') !== -1 || urlStr.indexOf('/submit-test') !== -1 || urlStr.indexOf('/submit-writing') !== -1)) {
+            _submitted = true;
+            try {
+                var payload = { answers: collectAnswers(), timer: collectTimer(), submitted: true, type: TEST_TYPE };
+                if (navigator.sendBeacon) navigator.sendBeacon(STATE_URL, JSON.stringify(payload));
+            } catch(e) {}
+        }
+        return _origFetch.apply(this, arguments);
+    };
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', restoreState);
+    } else {
+        restoreState();
+    }
+
+    window.addEventListener('load', function() {
+        setTimeout(function() {
+            if (window.__platformRestoredTimer && window.__platformRestoredTimer > 0) {
+                try { time = window.__platformRestoredTimer; } catch(e) {}
+                try { window.time = window.__platformRestoredTimer; } catch(e) {}
+                var m = Math.floor(window.__platformRestoredTimer / 60);
+                var s = window.__platformRestoredTimer % 60;
+                var txt = (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s;
+                var tEl = document.getElementById('timerDisplay');
+                if (tEl) { tEl.innerText = txt; tEl.textContent = txt; }
+            }
+        }, 500);
+    });
+
+    document.addEventListener('input', debouncedSave, true);
+    document.addEventListener('change', debouncedSave, true);
+    window.addEventListener('beforeunload', saveState);
+    setInterval(function() { if (!_submitted) saveState(); }, 5000);
 })();
 </script>`;
     return replaceLastLiteral(html, '</body>', `${snippet}\n</body>`);
@@ -3301,14 +3479,53 @@ function generateHTMLFromTest(testDoc, options = {}) {
     const plainTest = toPlainObject(testDoc);
     const studentName = escapeForBuilderValue(options.studentName || '');
     const previewMode = Boolean(options.previewMode);
+    const isOnline = Boolean(studentName) && !previewMode;
+    const normalizedType = String(plainTest.type || 'reading').toLowerCase();
+    let finalHtml = '';
 
     function injectNameVar(html) {
         if (!studentName) return html;
-        return html.replace('<head>', `<head>\n<script>window.__platformStudentName = "${studentName}";</script>`);
+        return html.replace('<head>', `<head>
+<script>window.__platformStudentName = "${studentName}";</script>
+<style id="__platform_name_hide">
+#studentName, .name-input { display: none !important; visibility: hidden !important; }
+</style>
+<script>
+(function() {
+    Object.defineProperty(window, 'saveName', { value: function(){}, writable: true, configurable: true });
+    Object.defineProperty(window, 'triggerNameWarning', { value: function(){}, writable: true, configurable: true });
+    var _observer = new MutationObserver(function() {
+        var el = document.getElementById('studentName');
+        if (el) el.parentNode && el.parentNode.removeChild(el);
+        var style = document.getElementById('__platform_name_hide');
+        if (!style) {
+            style = document.createElement('style');
+            style.id = '__platform_name_hide';
+            style.textContent = '#studentName, .name-input { display: none !important; visibility: hidden !important; }';
+            (document.head || document.documentElement).appendChild(style);
+        }
+    });
+    if (document.body) {
+        _observer.observe(document.body, { childList: true, subtree: true });
+        var existing = document.getElementById('studentName');
+        if (existing) existing.parentNode && existing.parentNode.removeChild(existing);
+    } else {
+        document.addEventListener('DOMContentLoaded', function() {
+            _observer.observe(document.body, { childList: true, subtree: true });
+            var exist = document.getElementById('studentName');
+            if (exist) exist.parentNode && exist.parentNode.removeChild(exist);
+        });
+    }
+    window.addEventListener('load', function() {
+        var nameDisplay = document.getElementById('studentNameDisplay');
+        if (nameDisplay) nameDisplay.textContent = '\\u{1F464} ' + (window.__platformStudentName || 'Student');
+    });
+})();
+</script>`);
     }
 
+    // === PATH 1: Pre-rendered HTML stored in renderedHtml field ===
     if (plainTest.renderedHtml && typeof plainTest.renderedHtml === 'string' && plainTest.renderedHtml.trim()) {
-        const normalizedType = String(plainTest.type || 'reading').toLowerCase();
         let html = previewMode ? stripPreviewRuntimeRestrictions(plainTest.renderedHtml.trim()) : plainTest.renderedHtml.trim();
 
         // Ensure platform theme toggle exists for all types.
@@ -3360,99 +3577,105 @@ function generateHTMLFromTest(testDoc, options = {}) {
             html = injectPlatformScripts(html);
         }
 
-        // Inject platform scripts for reading and writing stored HTML too
+        // Inject name identity + platform scripts for reading and writing stored HTML too
         if (normalizedType === 'reading') {
+            html = injectStudentName(html, plainTest, studentName);
             html = injectPlatformScripts(html);
         }
         if (normalizedType === 'writing') {
             html = injectPlatformScripts(html);
         }
 
-        return html;
+        finalHtml = html;
+
+    // === PATH 2: Raw builder HTML stored in __rawHtml field ===
+    } else {
+        const rawContent = plainTest.readingPassage || plainTest.content || '{}';
+        const parsedContent = parseStoredContent(rawContent, 'readingPassage');
+
+        if (parsedContent.__rawHtml) {
+            let rawHtml = previewMode ? stripPreviewRuntimeRestrictions(parsedContent.__rawHtml.trim()) : parsedContent.__rawHtml.trim();
+
+            // Backward-compat: some older saved tests may contain already-rendered HTML.
+            // Still inject the Platform Theme CSS/JS/button so the toggle works.
+            if (!rawHtml.includes('platform-theme-overrides')) {
+                rawHtml = injectThemeStyles(rawHtml);
+            }
+            if (!rawHtml.includes('toggleSiteTheme') && !rawHtml.includes('Platform Theme')) {
+                rawHtml = injectWebsiteThemeButton(rawHtml, normalizedType);
+                rawHtml = injectThemeController(rawHtml, normalizedType);
+            } else {
+                // Ensure controller exists even if the button markup is already present.
+                if (!rawHtml.includes('toggleSiteTheme')) {
+                    rawHtml = injectThemeController(rawHtml, normalizedType);
+                }
+                if (!rawHtml.includes('Platform Theme')) {
+                    rawHtml = injectWebsiteThemeButton(rawHtml, normalizedType);
+                }
+            }
+
+            // Listening tests: ensure audio lockdown, flagging, and heartbeat exist even for raw HTML.
+            if (normalizedType === 'listening') {
+                if (!previewMode && !rawHtml.includes('injectListeningAudioLockdown')) {
+                    rawHtml = injectListeningAudioLockdown(rawHtml);
+                }
+                if (!rawHtml.includes('__platformListeningStorageQuotaFix')) {
+                    rawHtml = injectListeningStorageQuotaFix(rawHtml);
+                }
+                if (!previewMode && !rawHtml.includes('platform_exam_guard_')) {
+                    rawHtml = injectExamGuardWarnOnly(rawHtml, plainTest);
+                }
+                rawHtml = injectQuitButton(rawHtml);
+                rawHtml = injectStudentName(rawHtml, plainTest, studentName);
+                rawHtml = injectHeartbeat(rawHtml, plainTest);
+                rawHtml = injectListeningDropdownZIndexFix(rawHtml);
+                rawHtml = injectListeningDropdownDirectionFix(rawHtml);
+                rawHtml = injectPlatformScripts(rawHtml);
+            }
+
+            // Reading tests: add name identity + platform scripts for raw HTML.
+            if (normalizedType === 'reading') {
+                rawHtml = injectStudentName(rawHtml, plainTest, studentName);
+                rawHtml = injectPlatformScripts(rawHtml);
+            }
+
+            // Writing tests: ensure submission hook + heartbeat exist even for raw HTML.
+            if (normalizedType === 'writing') {
+                if (!rawHtml.includes('platform_submission_sync_')) {
+                    rawHtml = injectWritingSubmissionHook(rawHtml, plainTest);
+                }
+                if (!previewMode && !rawHtml.includes('platform_exam_guard_')) {
+                    rawHtml = injectExamGuardWarnOnly(rawHtml, plainTest);
+                }
+                rawHtml = injectQuitButton(rawHtml);
+                rawHtml = injectStudentName(rawHtml, plainTest, studentName);
+                rawHtml = injectHeartbeat(rawHtml, plainTest);
+                rawHtml = sanitizeWritingRuntimeHtml(rawHtml);
+                rawHtml = injectPlatformScripts(rawHtml);
+            }
+
+            finalHtml = rawHtml;
+
+        // === PATH 3: Fresh generation from builder sources ===
+        } else {
+            if (normalizedType === 'reading') {
+                finalHtml = injectPlatformScripts(injectNameVar(generateReadingHtml(plainTest, parsedContent, studentName, options)));
+            } else if (normalizedType === 'listening') {
+                finalHtml = injectPlatformScripts(injectNameVar(generateListeningHtml(plainTest, parsedContent, studentName, options)));
+            } else if (normalizedType === 'writing') {
+                finalHtml = injectPlatformScripts(injectNameVar(generateWritingHtml(plainTest, parsedContent, options)));
+            } else {
+                throw new Error(`Unsupported test type: ${plainTest.type}`);
+            }
+        }
     }
 
-const rawContent = plainTest.readingPassage || plainTest.content || '{}';
-const parsedContent = parseStoredContent(rawContent, 'readingPassage');
-
-if (parsedContent.__rawHtml) {
-const normalizedType = String(plainTest.type || 'reading').toLowerCase();
-let rawHtml = previewMode ? stripPreviewRuntimeRestrictions(parsedContent.__rawHtml.trim()) : parsedContent.__rawHtml.trim();
-
-// Backward-compat: some older saved tests may contain already-rendered HTML.
-// Still inject the Platform Theme CSS/JS/button so the toggle works.
-if (!rawHtml.includes('platform-theme-overrides')) {
-rawHtml = injectThemeStyles(rawHtml);
-}
-if (!rawHtml.includes('toggleSiteTheme') && !rawHtml.includes('Platform Theme')) {
-rawHtml = injectWebsiteThemeButton(rawHtml, normalizedType);
-rawHtml = injectThemeController(rawHtml, normalizedType);
-} else {
-// Ensure controller exists even if the button markup is already present.
-if (!rawHtml.includes('toggleSiteTheme')) {
-rawHtml = injectThemeController(rawHtml, normalizedType);
-}
-if (!rawHtml.includes('Platform Theme')) {
-rawHtml = injectWebsiteThemeButton(rawHtml, normalizedType);
-}
-}
-
-// Listening tests: ensure audio lockdown, flagging, and heartbeat exist even for raw HTML.
-if (normalizedType === 'listening') {
-    if (!previewMode && !rawHtml.includes('injectListeningAudioLockdown')) {
-        rawHtml = injectListeningAudioLockdown(rawHtml);
-    }
-    if (!rawHtml.includes('__platformListeningStorageQuotaFix')) {
-        rawHtml = injectListeningStorageQuotaFix(rawHtml);
-    }
-    if (!previewMode && !rawHtml.includes('platform_exam_guard_')) {
-        rawHtml = injectExamGuardWarnOnly(rawHtml, plainTest);
-    }
-    rawHtml = injectQuitButton(rawHtml);
-    rawHtml = injectStudentName(rawHtml, plainTest, studentName);
-    rawHtml = injectHeartbeat(rawHtml, plainTest);
-        rawHtml = injectListeningDropdownZIndexFix(rawHtml);
-        rawHtml = injectListeningDropdownDirectionFix(rawHtml);
-        rawHtml = injectPlatformScripts(rawHtml);
+    // Inject server-side state persistence for online tests (all 3 paths converge here)
+    if (isOnline) {
+        finalHtml = injectServerStatePersistence(finalHtml, plainTest, normalizedType);
     }
 
-    // Reading tests: add platform scripts for raw HTML.
-    if (normalizedType === 'reading') {
-        rawHtml = injectPlatformScripts(rawHtml);
-    }
-
-    // Writing tests: ensure submission hook + heartbeat exist even for raw HTML.
-if (normalizedType === 'writing') {
-    if (!rawHtml.includes('platform_submission_sync_')) {
-        rawHtml = injectWritingSubmissionHook(rawHtml, plainTest);
-    }
-    if (!previewMode && !rawHtml.includes('platform_exam_guard_')) {
-        rawHtml = injectExamGuardWarnOnly(rawHtml, plainTest);
-    }
-    rawHtml = injectQuitButton(rawHtml);
-    rawHtml = injectStudentName(rawHtml, plainTest, studentName);
-    rawHtml = injectHeartbeat(rawHtml, plainTest);
-    rawHtml = sanitizeWritingRuntimeHtml(rawHtml);
-    rawHtml = injectPlatformScripts(rawHtml);
-}
-
-return rawHtml;
-}
-
-const normalizedType = String(plainTest.type || 'reading').toLowerCase();
-
-    if (normalizedType === 'reading') {
-        return injectPlatformScripts(injectNameVar(generateReadingHtml(plainTest, parsedContent, studentName, options)));
-    }
-
-    if (normalizedType === 'listening') {
-        return injectPlatformScripts(injectNameVar(generateListeningHtml(plainTest, parsedContent, studentName, options)));
-    }
-
-    if (normalizedType === 'writing') {
-        return injectPlatformScripts(injectNameVar(generateWritingHtml(plainTest, parsedContent, options)));
-    }
-
-    throw new Error(`Unsupported test type: ${plainTest.type}`);
+    return finalHtml;
 }
 
 function getHTMLTemplate(testType = 'reading') {
@@ -3465,5 +3688,6 @@ module.exports = {
     parseStoredContent,
     stringifyContent,
     injectPersistentStateForDownload,
+    injectServerStatePersistence,
     injectPlatformScripts
 };

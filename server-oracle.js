@@ -2528,6 +2528,64 @@ app.post('/api/heartbeat', apiLimiter, async (req, res) => {
     res.json({ ok: true, activeCount });
 });
 
+// === SERVER-SIDE TEST STATE PERSISTENCE (save/restore answers, timer per account) ===
+app.post('/api/test-state/:testId', apiLimiter, async (req, res) => {
+    if (!req.session.userId) return res.status(401).json({ success: false });
+    try {
+        if (!isDatabaseReady()) return sendDatabaseUnavailable(res);
+        const { testId } = req.params;
+        const { answers, timer, submitted } = req.body;
+        const savedAt = new Date().toISOString();
+        const savedState = {
+            answers: answers || {},
+            timer: Number.isFinite(Number(timer)) ? Number(timer) : null,
+            submitted: Boolean(submitted),
+            savedAt
+        };
+
+        const existing = await Submission.findOne({ testId, studentId: req.session.userId });
+        if (existing) {
+            const mergedDetails = { ...(existing.details || {}), savedState };
+            await Submission.findOneAndUpdate(
+                { testId: String(testId), studentId: req.session.userId },
+                { $set: { details: mergedDetails } }
+            );
+        } else {
+            await Submission.create({
+                testId: String(testId),
+                studentId: req.session.userId,
+                type: req.body.type || 'reading',
+                studentName: req.session.username || 'Student',
+                status: 'in_progress',
+                attemptCount: 0,
+                score: 0,
+                totalQuestions: 0,
+                percentage: 0,
+                details: { savedState }
+            });
+        }
+        res.json({ success: true });
+    } catch (err) {
+        logger.error('Test state save error', { error: err.message });
+        res.status(500).json({ success: false });
+    }
+});
+
+app.get('/api/test-state/:testId', async (req, res) => {
+    if (!req.session.userId) return res.status(401).json({ success: false });
+    try {
+        if (!isDatabaseReady()) return sendDatabaseUnavailable(res);
+        const existing = await Submission.findOne({ testId: req.params.testId, studentId: req.session.userId });
+        const savedState = (existing && existing.details && existing.details.savedState)
+            ? existing.details.savedState
+            : null;
+        res.json({ success: true, savedState });
+    } catch (err) {
+        logger.error('Test state load error', { error: err.message });
+        res.json({ success: true, savedState: null });
+    }
+});
+
 app.get('/api/live-stream/:testId', isTeacher, async (req, res) => {
     const access = await getAccessibleTest(req, req.params.testId);
     if (!access.test) return res.status(404).end();

@@ -1365,17 +1365,13 @@ app.post('/edit-test/:id', isTeacher, doubleCsrfProtection, async (req, res) => 
         if (req.body.title) update.title = req.body.title;
         if (req.body.type) update.type = req.body.type;
         if (req.body.content) {
-            if (typeof req.body.content === 'string') {
-                try {
-                    update.questions = JSON.parse(req.body.content).questions || [];
-                    update.readingPassage = JSON.parse(req.body.content).readingPassage || '';
-                } catch {
-                    update.builderJson = req.body.content;
-                }
-            } else {
-                update.questions = req.body.content.questions || [];
-                update.readingPassage = req.body.content.readingPassage || '';
-            }
+            // Serialize the full content object as JSON into reading_passage
+            // (same convention as saveValidatedTest). The builder sends
+            // content as {p1,p2,p3,answerKey} for reading or FormData
+            // for listening — not {questions,readingPassage}.
+            update.readingPassage = typeof req.body.content === 'string'
+                ? req.body.content
+                : JSON.stringify(req.body.content);
         }
         if (req.body.builderJson) update.builderJson = req.body.builderJson;
         if (req.body.customTitle !== undefined) update.customTitle = req.body.customTitle;
@@ -1403,17 +1399,13 @@ app.post('/update-test/:id', isTeacher, doubleCsrfProtection, async (req, res) =
         if (req.body.title) update.title = req.body.title;
         if (req.body.type) update.type = req.body.type;
         if (req.body.content) {
-            if (typeof req.body.content === 'string') {
-                try {
-                    update.questions = JSON.parse(req.body.content).questions || [];
-                    update.readingPassage = JSON.parse(req.body.content).readingPassage || '';
-                } catch {
-                    update.builderJson = req.body.content;
-                }
-            } else {
-                update.questions = req.body.content.questions || [];
-                update.readingPassage = req.body.content.readingPassage || '';
-            }
+            // Serialize the full content object as JSON into reading_passage
+            // (same convention as saveValidatedTest). The builder sends
+            // content as {p1,p2,p3,answerKey} for reading or
+            // {timeLimit,task1,task2} for writing — not {questions,readingPassage}.
+            update.readingPassage = typeof req.body.content === 'string'
+                ? req.body.content
+                : JSON.stringify(req.body.content);
         }
         if (req.body.builderJson) update.builderJson = req.body.builderJson;
         if (req.body.customTitle !== undefined) update.customTitle = req.body.customTitle;
@@ -2489,7 +2481,7 @@ function pushToTeachers(testId) {
 
 app.post('/api/heartbeat', apiLimiter, async (req, res) => {
     if (!req.session.userId) return res.status(401).json({ ok: false });
-    const { testId, studentName, answeredCount, totalCount, currentPart, timeRemaining, type, task1Preview, task2Preview, wordCount1, wordCount2, examGuardViolations, examGuardLastReason } = req.body;
+    const { testId, studentName, answeredCount, totalCount, currentPart, timeRemaining, type, task1Preview, task2Preview, wordCount1, wordCount2, examGuardViolations, examGuardLastReason } = req.body || {};
     if (!testId || !studentName) return res.json({ ok: false });
 
     const sid = String(testId);

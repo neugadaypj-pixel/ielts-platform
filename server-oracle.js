@@ -331,8 +331,19 @@ const { generateCsrfToken, doubleCsrfProtection } = doubleCsrf({
 //  2. res.locals.csrfToken is set so EJS views can use <%= csrfToken %>
 app.use((req, res, next) => {
     try {
-        const token = generateCsrfToken(req, res);
-        res.locals.csrfToken = token;
+        // Only generate a fresh CSRF token on safe (read-only) methods.
+        // On POST/PUT/DELETE, doubleCsrfProtection on the route handles
+        // its own token validation and rotation. Calling generateCsrfToken
+        // here on mutating requests dirties the internal CSRF state and
+        // causes the subsequent doubleCsrfProtection to reject the real
+        // token sent by the browser.
+        if (req.method === 'GET' || req.method === 'HEAD') {
+            const token = generateCsrfToken(req, res);
+            res.locals.csrfToken = token;
+        }
+        // On non-safe methods, leave csrfToken empty — routes that
+        // re-render pages (e.g., login failure) use req.csrfToken()
+        // explicitly via doubleCsrfProtection.
     } catch (err) {
         // If session isn't ready (e.g., health check), skip cleanly
         res.locals.csrfToken = '';

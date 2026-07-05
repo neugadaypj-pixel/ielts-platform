@@ -11,7 +11,7 @@ name: Deploy to Fly.io
 
 on:
   push:
-    branches: [fastapi]
+    branches: [main, fastapi]
   workflow_dispatch:
 
 jobs:

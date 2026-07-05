@@ -1,0 +1,70 @@
+# ============================================================
+# Docker Compose — IELTS Platform Development Environment
+# ============================================================
+# Start:   docker compose up -d
+# Stop:    docker compose down
+# Rebuild: docker compose up -d --build
+# ============================================================
+# MongoDB is on an internal network only — port 27017 is NOT
+# exposed to the host. All DB access goes through the app.
+# ============================================================
+
+services:
+  # ---- MongoDB (Internal only) ----
+  mongodb:
+    image: mongo:7.0
+    container_name: ielts-mongodb
+    restart: unless-stopped
+    # NOTE: No ports mapping — internal network only
+    networks:
+      - ielts-internal
+    volumes:
+      - mongo-data:/data/db
+    environment:
+      MONGO_INITDB_DATABASE: ielts_platform
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ---- FastAPI Backend ----
+  app:
+    build: .
+    container_name: ielts-app
+    restart: unless-stopped
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    networks:
+      - ielts-internal
+    environment:
+      MONGO_URI: mongodb://mongodb:27017
+      MONGO_DB_NAME: ielts_platform
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-dev-secret-change-in-production}
+      JWT_EXPIRATION_MINUTES: "30"
+      SUPERADMIN_USERNAME: ${SUPERADMIN_USERNAME:-Jamal}
+      SUPERADMIN_PASSWORD: ${SUPERADMIN_PASSWORD:-Sbros0803}
+      DEBUG: "true"
+      CORS_ORIGINS: '["http://localhost:8000","http://localhost:3000"]'
+
+  # ---- Nginx Reverse Proxy ----
+  nginx:
+    image: nginx:1.25-alpine
+    container_name: ielts-nginx
+    restart: unless-stopped
+    depends_on:
+      - app
+    ports:
+      - "8000:80"
+    networks:
+      - ielts-internal
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+
+networks:
+  ielts-internal:
+    driver: bridge
+
+volumes:
+  mongo-data:

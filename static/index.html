@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>IELTS Testing Platform</title>
+    <link rel="stylesheet" href="/css/style.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%231a56db'/><text x='50%25' y='55%25' dominant-baseline='middle' text-anchor='middle' fill='white' font-family='sans-serif' font-weight='bold' font-size='18'>IT</text></svg>" />
+</head>
+<body>
+
+    <!-- ===== Login View ===== -->
+    <div id="login-view">
+        <div class="login-card">
+            <div class="login-logo">IT</div>
+            <h1>IELTS Testing Platform</h1>
+            <p class="subtitle">Sign in to your account</p>
+            <form id="login-form">
+                <div class="form-group">
+                    <label for="login-username">Username</label>
+                    <input type="text" id="login-username" class="form-control" placeholder="Enter your username" required autocomplete="username" />
+                </div>
+                <div class="form-group">
+                    <label for="login-password">Password</label>
+                    <input type="password" id="login-password" class="form-control" placeholder="Enter your password" required autocomplete="current-password" />
+                </div>
+                <button type="submit" class="btn btn-primary btn-lg" style="width:100%;margin-top:0.5rem" id="login-btn">
+                    <span id="login-btn-text">Sign In</span>
+                    <span id="login-btn-spinner" class="spinner" style="display:none;width:18px;height:18px;margin:0;border-width:2px"></span>
+                </button>
+            </form>
+            <p id="login-error" style="color:var(--danger);text-align:center;margin-top:1rem;display:none;font-size:0.85rem"></p>
+        </div>
+    </div>
+
+    <!-- ===== App Shell ===== -->
+    <div id="app-shell">
+
+        <!-- Sidebar -->
+        <aside id="sidebar">
+            <div class="sidebar-brand">IELTS <span>Platform</span></div>
+            <nav class="sidebar-nav" id="sidebar-nav">
+                <!-- Populated by JS based on role -->
+            </nav>
+            <div class="sidebar-user">
+                <div class="name" id="sidebar-username"></div>
+                <div class="role" id="sidebar-role"></div>
+                <button class="btn btn-sm btn-secondary" id="logout-btn" style="margin-top:0.5rem;width:100%;font-size:0.75rem">Sign Out</button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <div id="main-content">
+            <div class="page-header">
+                <h2 id="page-title">Dashboard</h2>
+                <button class="mobile-menu-btn" id="mobile-menu-btn" title="Menu">☰</button>
+            </div>
+
+            <!-- SuperAdmin Dashboard -->
+            <div id="view-superadmin-dashboard" class="view-section"></div>
+
+            <!-- SuperAdmin: Centers List -->
+            <div id="view-superadmin-centers" class="view-section"></div>
+
+            <!-- Admin Dashboard -->
+            <div id="view-admin-dashboard" class="view-section"></div>
+
+            <!-- Admin: Teachers -->
+            <div id="view-admin-teachers" class="view-section"></div>
+
+            <!-- Admin: Groups -->
+            <div id="view-admin-groups" class="view-section"></div>
+
+            <!-- Teacher Dashboard -->
+            <div id="view-teacher-dashboard" class="view-section"></div>
+
+            <!-- Teacher: Students -->
+            <div id="view-teacher-students" class="view-section"></div>
+
+            <!-- Tests (Admin/Teacher) -->
+            <div id="view-tests" class="view-section"></div>
+
+            <!-- Analytics (Admin/Teacher) -->
+            <div id="view-analytics" class="view-section"></div>
+
+            <!-- Student Dashboard -->
+            <div id="view-student-dashboard" class="view-section"></div>
+
+            <!-- Student: Assigned Tests -->
+            <div id="view-student-tests" class="view-section"></div>
+
+            <!-- Student: Take Test -->
+            <div id="view-student-take-test" class="view-section"></div>
+
+            <!-- Student: Results -->
+            <div id="view-student-results" class="view-section"></div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toast-container"></div>
+
+    <!-- Modal Overlay -->
+    <div class="modal-overlay" id="modal-overlay">
+        <div class="modal" id="modal-content"></div>
+    </div>
+
+    <script src="/js/app.js"></script>
+</body>
+</html>

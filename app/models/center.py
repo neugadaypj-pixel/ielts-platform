@@ -26,10 +26,12 @@ class CenterCreate(BaseModel):
 class CenterResponse(BaseModel):
     """Public representation of a course center."""
 
-    _id: str
+    id: str = Field(alias="_id")
     name: str
     admin_id: str
     created_at: datetime
+
+    model_config = {"populate_by_name": True}
 
 
 # --------------------------------------------------------------------------- #
@@ -46,11 +48,13 @@ class GroupCreate(BaseModel):
 class GroupResponse(BaseModel):
     """Public representation of a group."""
 
-    _id: str
+    id: str = Field(alias="_id")
     name: str
     center_id: str
     teacher_id: Optional[str] = None
     created_at: datetime
+
+    model_config = {"populate_by_name": True}
 
 
 # --------------------------------------------------------------------------- #

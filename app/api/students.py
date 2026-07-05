@@ -59,9 +59,13 @@ async def get_assigned_tests(current_user: dict = Depends(require_student)):
     test_ids = [a["test_id"] for a in assignments]
     tests = []
     async for doc in db.tests.find({"_id": {"$in": test_ids}}):
+        # Find matching assignment to get assignment_id
+        matching_assignment = next((a for a in assignments if a["test_id"] == doc["_id"]), None)
+        assignment_id = str(matching_assignment["_id"]) if matching_assignment else ""
         tests.append(
             TestResponseStudent(
                 _id=str(doc["_id"]),
+                assignment_id=assignment_id,
                 center_id=str(doc["center_id"]),
                 author_id=str(doc["author_id"]),
                 title=doc["title"],

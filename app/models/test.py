@@ -56,6 +56,7 @@ class TestResponseStudent(BaseModel):
     """Test representation for students — correct answers are stripped."""
 
     id: str = Field(..., alias="_id")
+    assignment_id: str = Field(default="", description="The assignment document _id for submission")
     center_id: str
     author_id: str
     title: str

@@ -110,7 +110,7 @@ async def create_group(
     logger.info("Group '%s' created by Admin '%s'.", data.name, current_user.get("username"))
 
     return GroupResponse(
-        _id=str(result.inserted_id),
+        id=str(result.inserted_id),
         name=data.name,
         center_id=data.center_id,
         teacher_id=None,

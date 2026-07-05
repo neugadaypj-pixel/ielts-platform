@@ -9,6 +9,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from app.core.config import settings
 from app.core.database import connect_to_database, close_database_connection
@@ -82,3 +83,6 @@ app.include_router(students_router, prefix="/student", tags=["Student"])
 from app.api.analytics import router as analytics_router
 
 app.include_router(analytics_router, prefix="/analytics", tags=["Analytics"])
+
+# ---- Serve static frontend (must be last) ----
+app.mount("/", StaticFiles(directory="static", html=True), name="static")

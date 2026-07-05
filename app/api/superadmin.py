@@ -76,7 +76,7 @@ async def create_center(
     logger.info("Center '%s' created (_id=%s) with Admin '%s'.", data.name, center_id, data.admin_username)
 
     return CenterResponse(
-        _id=str(center_id),
+        id=str(center_id),
         name=data.name,
         admin_id=str(admin_id),
         created_at=center_doc["created_at"],

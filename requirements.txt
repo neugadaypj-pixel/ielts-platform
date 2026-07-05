@@ -18,8 +18,5 @@ pydantic-settings==2.7.0
 # HTTP Client
 httpx==0.28.1
 
-# S3 / Cloudflare R2
-boto3==1.35.81
-
-# Logging
-structlog==24.4.0
+# MongoDB Atlas / SRV support
+dnspython==2.7.0

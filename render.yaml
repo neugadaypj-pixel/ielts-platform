@@ -1,0 +1,23 @@
+# ============================================================
+# Render Blueprint — IELTS Testing Platform
+# ============================================================
+# Free backup option if Fly.io is unavailable.
+# Deploy: connect this repo in Render dashboard.
+# Cold start: 30-60s after 15 min idle.
+# ============================================================
+
+services:
+  - type: web
+    name: ielts-platform
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: MONGO_URI
+        sync: false
+      - key: JWT_SECRET_KEY
+        sync: false
+      - key: SUPERADMIN_PASSWORD
+        sync: false
+      - key: DEBUG
+        value: "false"

@@ -1,0 +1,91 @@
+# ---- GitHub Actions CI/CD Pipeline ----
+# On push to main: builds Docker image, pushes to GitHub Container Registry,
+# then SSHes into the VPS and deploys the updated stack.
+#
+# Required GitHub Secrets:
+#   VPS_HOST       - Your VPS IP or domain
+#   VPS_USER       - SSH username (e.g., root)
+#   VPS_SSH_KEY    - Private SSH key for VPS access
+#   VPS_PORT       - SSH port (default: 22)
+#   JWT_SECRET_KEY - JWT signing secret
+#   SUPERADMIN_PASSWORD - Initial SuperAdmin password
+
+name: Build, Push & Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:  # Allow manual trigger
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      # ---- Checkout ----
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # ---- Login to GitHub Container Registry ----
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # ---- Build & Push Docker Image ----
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # ---- Deploy to VPS ----
+      - name: Deploy to VPS via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT || 22 }}
+          script: |
+            cd /opt/ielts-platform
+
+            # Pull latest compose files
+            git pull origin main
+
+            # Write .env with secrets from GitHub
+            cat > .env << 'ENVEOF'
+            MONGO_URI=mongodb://mongodb:27017
+            MONGO_DB_NAME=ielts_platform
+            JWT_SECRET_KEY=${{ secrets.JWT_SECRET_KEY }}
+            JWT_ALGORITHM=HS256
+            JWT_EXPIRATION_MINUTES=30
+            SUPERADMIN_USERNAME=Jamal
+            SUPERADMIN_PASSWORD=${{ secrets.SUPERADMIN_PASSWORD }}
+            DEBUG=false
+            CORS_ORIGINS=["https://${{ secrets.VPS_HOST }}"]
+            ENVEOF
+
+            # Log in to GHCR and pull the latest image
+            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+            docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+
+            # Restart the app container only (keep mongodb running)
+            docker compose -f docker-compose.prod.yml up -d --no-deps app nginx
+
+            # Clean up old images
+            docker image prune -f
+
+            echo "Deployment completed successfully!"

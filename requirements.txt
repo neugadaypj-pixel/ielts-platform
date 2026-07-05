@@ -1,0 +1,25 @@
+# FastAPI & Server
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+
+# Database (Async MongoDB)
+motor==3.7.0
+
+# Authentication
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+bcrypt==4.2.1
+python-multipart==0.0.18
+
+# Validation & Settings
+pydantic==2.10.3
+pydantic-settings==2.7.0
+
+# HTTP Client
+httpx==0.28.1
+
+# S3 / Cloudflare R2
+boto3==1.35.81
+
+# Logging
+structlog==24.4.0

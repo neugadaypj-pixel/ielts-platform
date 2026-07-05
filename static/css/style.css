@@ -41,10 +41,10 @@
     --shadow-md: 0 4px 12px rgba(0,0,0,0.06);
     --shadow-lg: 0 12px 40px rgba(0,0,0,0.08);
 
-    --radius-sm: 6px;
-    --radius: 10px;
-    --radius-lg: 14px;
-    --radius-xl: 20px;
+    --radius-sm: 9px;
+    --radius: 13px;
+    --radius-lg: 18px;
+    --radius-xl: 24px;
 
     --sidebar-width: 248px;
     --transition: 180ms cubic-bezier(0.4, 0, 0.2, 1);
@@ -179,6 +179,7 @@ a:hover { color: var(--accent-hover); }
 .sidebar-nav a.active {
     background: var(--sidebar-active);
     color: #c7d2fe;
+    border-radius: var(--radius);
 }
 .sidebar-user {
     padding: 1rem 1.1rem;
@@ -307,7 +308,7 @@ tbody tr:hover { background: var(--surface-hover); }
     width: 100%;
     padding: 0.55rem 0.8rem;
     border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
+    border-radius: var(--radius);
     font-size: 0.875rem;
     font-family: inherit;
     transition: all var(--transition);
@@ -331,7 +332,7 @@ select.form-control { cursor: pointer; }
     gap: 0.45rem;
     padding: 0.5rem 1.15rem;
     border: 1px solid transparent;
-    border-radius: var(--radius-sm);
+    border-radius: var(--radius);
     font-size: 0.85rem;
     font-weight: 600;
     cursor: pointer;
@@ -350,8 +351,8 @@ select.form-control { cursor: pointer; }
 .btn-danger:hover:not(:disabled) { background: #b91c1c; border-color: #b91c1c; }
 .btn-success { background: var(--success); color: white; border-color: var(--success); }
 .btn-success:hover:not(:disabled) { background: #047857; border-color: #047857; }
-.btn-sm { padding: 0.32rem 0.7rem; font-size: 0.78rem; border-radius: 5px; }
-.btn-lg { padding: 0.7rem 1.6rem; font-size: 0.95rem; border-radius: var(--radius-sm); }
+.btn-sm { padding: 0.32rem 0.7rem; font-size: 0.78rem; border-radius: var(--radius-sm); }
+.btn-lg { padding: 0.7rem 1.6rem; font-size: 0.95rem; border-radius: var(--radius); }
 
 /* Badges */
 .badge {
@@ -379,7 +380,7 @@ select.form-control { cursor: pointer; }
 }
 .toast {
     padding: 0.7rem 1.15rem;
-    border-radius: var(--radius);
+    border-radius: var(--radius-lg);
     color: white;
     font-size: 0.85rem;
     font-weight: 500;

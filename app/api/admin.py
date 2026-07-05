@@ -91,18 +91,29 @@ async def list_teachers(current_user: dict = Depends(require_admin)):
 @router.post("/groups", response_model=GroupResponse, status_code=status.HTTP_201_CREATED)
 async def create_group(
     data: GroupCreate,
-    current_user: dict = Depends(require_admin),
+    current_user: dict = Depends(require_admin_or_superadmin),
 ):
-    """Admin creates a new group within their center."""
+    """Admin (or SuperAdmin) creates a new group within a center."""
     db = get_database()
-    admin_center_id = current_user.get("center_id")
+    role = current_user.get("role")
 
-    if data.center_id != admin_center_id:
-        raise HTTPException(status.HTTP_403_FORBIDDEN, "You can only create groups within your own center.")
+    if role == "superadmin":
+        if not data.center_id:
+            raise HTTPException(status.HTTP_400_BAD_REQUEST, "SuperAdmin must provide a center_id.")
+        group_center_id = data.center_id
+    else:
+        # Admin/Tech: auto-populate from JWT if not provided
+        group_center_id = data.center_id or current_user.get("center_id")
+        if not group_center_id:
+            raise HTTPException(status.HTTP_400_BAD_REQUEST, "Could not determine center_id.")
+
+        admin_center_id = current_user.get("center_id")
+        if group_center_id != admin_center_id:
+            raise HTTPException(status.HTTP_403_FORBIDDEN, "You can only create groups within your own center.")
 
     group_doc = {
         "name": data.name,
-        "center_id": ObjectId(data.center_id),
+        "center_id": ObjectId(group_center_id),
         "teacher_id": None,
         "created_at": datetime.now(timezone.utc),
     }
@@ -113,7 +124,7 @@ async def create_group(
     return GroupResponse(
         id=str(result.inserted_id),
         name=data.name,
-        center_id=data.center_id,
+        center_id=group_center_id,
         teacher_id=None,
         created_at=group_doc["created_at"],
     )

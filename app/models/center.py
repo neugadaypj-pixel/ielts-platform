@@ -42,7 +42,7 @@ class GroupCreate(BaseModel):
     """Schema for Admin to create a new group within their center."""
 
     name: str = Field(..., min_length=1, max_length=100)
-    center_id: str
+    center_id: Optional[str] = None
 
 
 class GroupResponse(BaseModel):

@@ -128,8 +128,9 @@ async def get_test_results(
 async def get_center_statistics(current_user: dict = Depends(require_staff)):
     """
     Get aggregate statistics for the center:
-    - Total students
+    - Total students / teachers
     - Total tests created
+    - Total assignments (tests assigned to groups)
     - Total submissions
     - Average score
     """
@@ -145,6 +146,7 @@ async def get_center_statistics(current_user: dict = Depends(require_staff)):
     total_students = await db.users.count_documents({**center_filter, "role": "student"})
     total_teachers = await db.users.count_documents({**center_filter, "role": "teacher"})
     total_tests = await db.tests.count_documents(center_filter)
+    total_assignments = await db.assignments.count_documents(center_filter)
     total_submissions = await db.results.count_documents(center_filter)
 
     # Average score across all submissions
@@ -159,6 +161,7 @@ async def get_center_statistics(current_user: dict = Depends(require_staff)):
         "total_students": total_students,
         "total_teachers": total_teachers,
         "total_tests": total_tests,
+        "total_assignments": total_assignments,
         "total_submissions": total_submissions,
         "average_score": round(avg_data["avg_score"], 2),
         "average_percentage": round(avg_data["avg_pct"] * 100, 1) if avg_data["avg_pct"] else 0,

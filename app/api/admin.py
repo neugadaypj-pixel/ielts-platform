@@ -7,7 +7,7 @@ import logging
 from datetime import datetime, timezone
 
 from bson import ObjectId
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from app.core.auth import RoleChecker
 from app.core.database import get_database
@@ -20,6 +20,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 require_admin = RoleChecker(["admin"])
+require_admin_or_superadmin = RoleChecker(["superadmin", "admin"])
 
 
 @router.post("/teachers", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
@@ -119,13 +120,29 @@ async def create_group(
 
 
 @router.get("/groups", response_model=list[GroupResponse])
-async def list_groups(current_user: dict = Depends(require_admin)):
-    """List all groups in the Admin's center."""
+async def list_groups(
+    current_user: dict = Depends(require_admin_or_superadmin),
+    center_id: str = Query(None, description="Filter by center (used by SuperAdmin or cross-center queries)"),
+):
+    """
+    List groups. Admin sees their own center's groups.
+    SuperAdmin can list all groups or filter by center_id.
+    """
     db = get_database()
-    admin_center_id = current_user.get("center_id")
+    role = current_user.get("role")
+
+    if role == "superadmin":
+        query: dict = {}
+        if center_id:
+            query["center_id"] = ObjectId(center_id)
+    else:
+        admin_center_id = current_user.get("center_id")
+        if not admin_center_id:
+            raise HTTPException(status.HTTP_400_BAD_REQUEST, "Admin is not associated with any center.")
+        query = {"center_id": ObjectId(admin_center_id)}
 
     groups = []
-    async for doc in db.groups.find({"center_id": ObjectId(admin_center_id)}):
+    async for doc in db.groups.find(query):
         groups.append(
             GroupResponse(
                 _id=str(doc["_id"]),

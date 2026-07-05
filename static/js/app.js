@@ -304,7 +304,8 @@ const Views = {
                     ${statCard('🎓', stats.total_students, 'Total Students')}
                     ${statCard('👩‍🏫', stats.total_teachers, 'Total Teachers')}
                     ${statCard('📝', stats.total_tests, 'Tests Created')}
-                    ${statCard('📤', stats.total_submissions, 'Submissions')}
+                    ${statCard('📋', stats.total_assignments, 'Tests Assigned')}
+                    ${statCard('', stats.total_submissions, 'Submissions')}
                     ${statCard('📊', stats.average_percentage + '%', 'Avg Score')}
                 </div>
                 <div class="card">
@@ -414,6 +415,7 @@ const Views = {
                     ${statCard('🎓', stats.total_students, 'Students')}
                     ${statCard('👥', groups.length, 'Groups')}
                     ${statCard('📝', stats.total_tests, 'Tests')}
+                    ${statCard('📋', stats.total_assignments, 'Assigned')}
                     ${statCard('📤', stats.total_submissions, 'Submissions')}
                     ${statCard('📊', stats.average_percentage + '%', 'Avg Score')}
                 </div>
@@ -561,6 +563,7 @@ const Views = {
                 <div class="stats-grid">
                     ${statCard('🎓', students.length, 'My Students')}
                     ${statCard('📝', stats.total_tests, 'Tests')}
+                    ${statCard('📋', stats.total_assignments, 'Assigned')}
                     ${statCard('📤', stats.total_submissions, 'Submissions')}
                     ${statCard('📊', stats.average_percentage + '%', 'Avg Score')}
                 </div>
@@ -641,39 +644,92 @@ const Views = {
 
     /* ============ TESTS (Admin/Teacher) ============ */
 
-    async renderTests() {
+    async renderTests(centerFilterValue) {
         App.showView('tests');
         const el = $('#view-tests');
         showSpinner(el);
         try {
-            const tests = await API.get('/staff/tests');
+            const isSuperadmin = App.user.role === 'superadmin';
+
+            // Load centers for superadmin
+            let centers = [];
+            if (isSuperadmin) {
+                try { centers = await API.get('/superadmin/centers'); } catch (_) { centers = []; }
+                window._cachedCenters = centers;
+            }
+
+            // Determine center filter: explicit param > stored > null
+            if (centerFilterValue === undefined && isSuperadmin) {
+                centerFilterValue = window._testsCenterFilter || '';
+            }
+            if (isSuperadmin) {
+                window._testsCenterFilter = centerFilterValue || '';
+            }
+
+            // Load tests (all for superadmin, center-scoped for others)
+            let testsUrl = '/staff/tests';
+            if (isSuperadmin && centerFilterValue) {
+                testsUrl += '?center_id=' + encodeURIComponent(centerFilterValue);
+            }
+            const tests = await API.get(testsUrl);
+
+            // Load groups (for assignment modal)
             let groups = [];
-            try { groups = await API.get('/admin/groups'); } catch (_) { groups = []; }
+            try {
+                groups = await API.get('/admin/groups');
+            } catch (_) { groups = []; }
             window._cachedGroups = groups;
 
+            const hasTests = tests.length > 0;
+
+            let toolbarHtml = '';
+            if (isSuperadmin) {
+                toolbarHtml = `
+                    <div style="margin-bottom:1rem;display:flex;gap:0.75rem;flex-wrap:wrap;align-items:center">
+                        <button class="btn btn-primary" onclick="Views.showCreateTestModal()">+ Create Test</button>
+                        <button class="btn btn-secondary" onclick="Views.showAssignTestModal()">📋 Assign to Group</button>
+                        <select id="tests-center-filter" class="form-control" style="width:auto;min-width:200px;margin-left:auto" onchange="Views.renderTests(this.value)">
+                            <option value="">All Centers</option>
+                            ${centers.map(c => `<option value="${esc(c.id || c._id)}"${(centerFilterValue === (c.id || c._id)) ? ' selected' : ''}>${esc(c.name)}</option>`).join('')}
+                        </select>
+                    </div>`;
+            } else {
+                toolbarHtml = `
+                    <div style="margin-bottom:1rem;display:flex;gap:0.75rem;flex-wrap:wrap">
+                        <button class="btn btn-primary" onclick="Views.showCreateTestModal()">+ Create Test</button>
+                        ${groups.length > 0 ? `<button class="btn btn-secondary" onclick="Views.showAssignTestModal()">📋 Assign to Group</button>` : ''}
+                    </div>`;
+            }
+
+            const centerCol = isSuperadmin ? '<th>Center</th>' : '';
+            const colSpan = isSuperadmin ? 6 : 5;
+
             el.innerHTML = `
-                <div style="margin-bottom:1rem;display:flex;gap:0.75rem;flex-wrap:wrap">
-                    <button class="btn btn-primary" onclick="Views.showCreateTestModal()">+ Create Test</button>
-                    ${groups.length > 0 ? `<button class="btn btn-secondary" onclick="Views.showAssignTestModal()">📋 Assign to Group</button>` : ''}
-                </div>
+                ${toolbarHtml}
                 <div class="card">
                     <div class="table-wrap">
                         <table>
-                            <thead><tr><th>Title</th><th>Questions</th><th>Total Points</th><th>Time Limit</th><th>Created</th></tr></thead>
+                            <thead><tr><th>Title</th>${centerCol}<th>Questions</th><th>Total Points</th><th>Time Limit</th><th>Created</th></tr></thead>
                             <tbody id="tests-tbody">
                                 ${tests.map(t => {
                                     const q = t.content_json && t.content_json.questions ? t.content_json.questions.length : 0;
                                     const pts = t.content_json && t.content_json.total_points ? t.content_json.total_points : 0;
                                     const mins = t.content_json && t.content_json.time_limit_minutes ? t.content_json.time_limit_minutes : 60;
+                                    let centerCell = '';
+                                    if (isSuperadmin) {
+                                        const c = centers.find(x => (x.id || x._id) === t.center_id);
+                                        centerCell = `<td>${esc(c ? c.name : t.center_id)}</td>`;
+                                    }
                                     return `<tr>
                                         <td><strong>${esc(t.title)}</strong></td>
+                                        ${centerCell}
                                         <td>${q} questions</td>
                                         <td>${pts} pts</td>
                                         <td>${mins} min</td>
                                         <td>${formatDate(t.created_at)}</td>
                                     </tr>`;
                                 }).join('')}
-                                ${tests.length === 0 ? '<tr><td colspan="5" class="empty-state">No tests yet — create one!</td></tr>' : ''}
+                                ${tests.length === 0 ? `<tr><td colspan="${colSpan}" class="empty-state">No tests yet — create one!</td></tr>` : ''}
                             </tbody>
                         </table>
                     </div>
@@ -685,10 +741,25 @@ const Views = {
     },
 
     showCreateTestModal() {
+        const isSuperadmin = App.user.role === 'superadmin';
+        const centers = window._cachedCenters || [];
+
+        const centerPickerHtml = isSuperadmin ? `
+            <div class="form-group">
+                <label>Center *</label>
+                <select id="mct-center-id" class="form-control" required>
+                    <option value="">-- Select Center --</option>
+                    ${centers.map(c => `<option value="${esc(c.id || c._id)}">${esc(c.name)}</option>`).join('')}
+                </select>
+            </div>` : '';
+
+        const modalTitle = isSuperadmin ? 'Create New Test (SuperAdmin)' : 'Create New Test';
+
         openModal(
-            'Create New Test',
+            modalTitle,
             `
                 <div class="form-group"><label>Test Title</label><input id="mct-title" class="form-control" placeholder="e.g. IELTS Mock Test 1" required /></div>
+                ${centerPickerHtml}
                 <div class="form-group"><label>Time Limit (minutes)</label><input id="mct-time" type="number" class="form-control" value="60" min="1" /></div>
                 <div class="form-group"><label>Instructions (optional)</label><textarea id="mct-instructions" class="form-control" placeholder="General instructions for students..."></textarea></div>
                 <hr style="margin:1rem 0;border-color:var(--border)" />
@@ -764,6 +835,14 @@ const Views = {
 
         if (!title) return toast('Test title is required.', 'error');
 
+        // SuperAdmin must select a center
+        const isSuperadmin = App.user.role === 'superadmin';
+        let centerId = null;
+        if (isSuperadmin) {
+            centerId = $('#mct-center-id') ? $('#mct-center-id').value : '';
+            if (!centerId) return toast('Please select a center.', 'error');
+        }
+
         const questions = [];
         const builders = $$('.question-builder', $('#modal-content'));
         builders.forEach(b => {
@@ -807,6 +886,8 @@ const Views = {
             },
         };
 
+        if (centerId) body.center_id = centerId;
+
         try {
             await API.post('/staff/tests', body);
             closeModal();
@@ -818,23 +899,68 @@ const Views = {
     },
 
     showAssignTestModal() {
+        const isSuperadmin = App.user.role === 'superadmin';
         const groups = window._cachedGroups || [];
+        const centers = window._cachedCenters || [];
+
+        let centerFilterHtml = '';
+        let groupOptionsHtml = '';
+
+        if (isSuperadmin && centers.length > 0) {
+            centerFilterHtml = `
+                <div class="form-group">
+                    <label>Filter Groups by Center</label>
+                    <select id="mat-center-filter" class="form-control" onchange="Views._filterAssignGroups()">
+                        <option value="">All Centers</option>
+                        ${centers.map(c => `<option value="${esc(c.id || c._id)}">${esc(c.name)}</option>`).join('')}
+                    </select>
+                </div>`;
+        }
+
+        groupOptionsHtml = groups.map(g => {
+            let label = esc(g.name);
+            if (isSuperadmin) {
+                const c = centers.find(x => (x.id || x._id) === g.center_id);
+                if (c) label += ` (${esc(c.name)})`;
+            }
+            return `<option value="${esc(g.id || g._id)}" data-center="${esc(g.center_id || '')}">${label}</option>`;
+        }).join('');
 
         openModal(
             'Assign Test to Group',
             `
                 <div class="form-group"><label>Test ID</label><input id="mat-test-id" class="form-control" placeholder="Paste test ObjectId" required /></div>
+                ${centerFilterHtml}
                 <div class="form-group">
                     <label>Group</label>
                     <select id="mat-group-id" class="form-control" required>
                         <option value="">-- Select Group --</option>
-                        ${groups.map(g => `<option value="${esc(g.id || g._id)}">${esc(g.name)}</option>`).join('')}
+                        ${groupOptionsHtml}
                     </select>
                 </div>
             `,
             `<button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
              <button class="btn btn-primary" onclick="Views.assignTest()">Assign</button>`
         );
+    },
+
+    _filterAssignGroups() {
+        const filterVal = $('#mat-center-filter') ? $('#mat-center-filter').value : '';
+        const sel = $('#mat-group-id');
+        if (!sel) return;
+        const opts = sel.options;
+        for (let i = 1; i < opts.length; i++) {
+            const dc = opts[i].getAttribute('data-center') || '';
+            if (!filterVal || dc === filterVal) {
+                opts[i].style.display = '';
+            } else {
+                opts[i].style.display = 'none';
+            }
+        }
+        // Reset selection if hidden
+        if (sel.selectedIndex > 0 && opts[sel.selectedIndex].style.display === 'none') {
+            sel.selectedIndex = 0;
+        }
     },
 
     async assignTest() {
@@ -865,7 +991,8 @@ const Views = {
                 <div class="stats-grid">
                     ${statCard('🎓', stats.total_students, 'Students')}
                     ${statCard('📝', stats.total_tests, 'Tests')}
-                    ${statCard('📤', stats.total_submissions, 'Submissions')}
+                    ${statCard('📋', stats.total_assignments, 'Assigned')}
+                    ${statCard('', stats.total_submissions, 'Submissions')}
                     ${statCard('📊', stats.average_percentage + '%', 'Avg Score')}
                 </div>
                 <div class="card">
@@ -1011,7 +1138,7 @@ const Views = {
             </div>
             <div style="margin-top:1rem;display:flex;gap:0.75rem">
                 <button class="btn btn-secondary" onclick="window.location.hash='#tests'">← Back</button>
-                <button class="btn btn-success" onclick="Views.submitTest('${esc(testId)}')">Submit Test</button>
+                <button class="btn btn-success" onclick="Views.confirmSubmitTest('${esc(testId)}')">Submit Test</button>
             </div>
             <div id="submit-error" style="color:var(--danger);margin-top:0.75rem;display:none"></div>
         `;
@@ -1049,6 +1176,17 @@ const Views = {
         this._currentTestId = testId;
         this._currentTestData = testData;
         this._currentAssignmentId = assignmentId;
+    },
+
+    confirmSubmitTest(testId) {
+        const unanswered = $$('#view-student-take-test input[type="radio"]:checked, #view-student-take-test input[type="text"]').length;
+        const total = $$('#view-student-take-test .question-card').length;
+        if (unanswered < total) {
+            if (!confirm(`You have answered ${unanswered} of ${total} questions. Are you sure you want to submit?`)) return;
+        } else {
+            if (!confirm('Submit your test now? You cannot change answers after submission.')) return;
+        }
+        this.submitTest(testId);
     },
 
     async submitTest(testId) {
@@ -1090,11 +1228,18 @@ const Views = {
             toast(`Test submitted! Score: ${result.score}/${result.total_points}`, 'success');
             window.location.hash = '#results';
         } catch (e) {
+            const msg = e.message || 'Unknown error';
+            // Handle duplicate submission gracefully
+            if (msg.includes('already submitted')) {
+                toast('You have already submitted this test.', 'warning');
+                window.location.hash = '#results';
+                return;
+            }
             if (errEl) {
-                errEl.textContent = 'Submission failed: ' + e.message;
+                errEl.textContent = 'Submission failed: ' + msg;
                 errEl.style.display = 'block';
             }
-            toast('Submission failed: ' + e.message, 'error');
+            toast('Submission failed: ' + msg, 'error');
         }
     },
 

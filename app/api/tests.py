@@ -1,13 +1,13 @@
 """
 Test API — creation, assignment, and retrieval.
-Accessible by Admin, Teacher, and Student (with role-appropriate scoping).
+Accessible by SuperAdmin, Admin, Teacher, and Student (with role-appropriate scoping).
 """
 
 import logging
 from datetime import datetime, timezone
 
 from bson import ObjectId
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from app.core.auth import RoleChecker, get_current_user
 from app.core.database import get_database
@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
-require_admin_or_teacher = RoleChecker(["admin", "teacher"])
+require_admin_or_teacher = RoleChecker(["superadmin", "admin", "teacher"])
 
 
 @router.post("/tests", response_model=TestResponse, status_code=status.HTTP_201_CREATED)
@@ -32,14 +32,26 @@ async def create_test(
     current_user: dict = Depends(require_admin_or_teacher),
 ):
     """
-    Admin or Teacher creates a new test within their center.
+    Create a new test within a center.
+    SuperAdmin must provide center_id; Admin/Teacher use their JWT center.
     The test's content_json stores questions with correct answers.
     """
     db = get_database()
-    user_center_id = current_user.get("center_id")
+    role = current_user.get("role")
 
-    if not user_center_id:
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, "User is not associated with any center.")
+    # Determine center_id
+    if role == "superadmin":
+        if not data.center_id:
+            raise HTTPException(status.HTTP_400_BAD_REQUEST, "SuperAdmin must specify a center_id.")
+        user_center_id = data.center_id
+        # Verify center exists
+        center = await db.centers.find_one({"_id": ObjectId(user_center_id)})
+        if not center:
+            raise HTTPException(status.HTTP_404_NOT_FOUND, "Center not found.")
+    else:
+        user_center_id = current_user.get("center_id")
+        if not user_center_id:
+            raise HTTPException(status.HTTP_400_BAD_REQUEST, "User is not associated with any center.")
 
     # Validate total_points matches sum of question points
     computed_total = sum(q.points for q in data.content_json.questions)
@@ -60,9 +72,10 @@ async def create_test(
     result = await db.tests.insert_one(test_doc)
 
     logger.info(
-        "Test '%s' created by '%s' in center %s.",
+        "Test '%s' created by '%s' (role=%s) in center %s.",
         data.title,
         current_user.get("username"),
+        role,
         user_center_id,
     )
 
@@ -77,16 +90,30 @@ async def create_test(
 
 
 @router.get("/tests", response_model=list[TestResponse])
-async def list_tests_for_staff(current_user: dict = Depends(require_admin_or_teacher)):
+async def list_tests_for_staff(
+    current_user: dict = Depends(require_admin_or_teacher),
+    center_id: str = Query(None, description="Filter by center (SuperAdmin only)"),
+):
     """
-    List all tests in the user's center (Admin/Teacher).
+    List tests. SuperAdmin sees all tests or can filter by center_id.
+    Admin/Teacher see only their center's tests.
     Includes correct answers.
     """
     db = get_database()
-    user_center_id = current_user.get("center_id")
+    role = current_user.get("role")
+
+    query: dict = {}
+    if role == "superadmin":
+        if center_id:
+            query["center_id"] = ObjectId(center_id)
+    else:
+        user_center_id = current_user.get("center_id")
+        if not user_center_id:
+            raise HTTPException(status.HTTP_400_BAD_REQUEST, "User is not associated with any center.")
+        query["center_id"] = ObjectId(user_center_id)
 
     tests = []
-    async for doc in db.tests.find({"center_id": ObjectId(user_center_id)}):
+    async for doc in db.tests.find(query).sort("created_at", -1):
         tests.append(
             TestResponse(
                 _id=str(doc["_id"]),
@@ -106,27 +133,37 @@ async def assign_test_to_group(
     current_user: dict = Depends(require_admin_or_teacher),
 ):
     """
-    Teacher or Admin assigns a test to a group.
-    This creates an Assignment that students in that group can see.
+    Assign a test to a group.
+    SuperAdmin can assign across centers; Admin/Teacher scoped to their center.
     """
     db = get_database()
-    user_center_id = current_user.get("center_id")
+    role = current_user.get("role")
 
-    # Verify test belongs to the user's center
-    test = await db.tests.find_one({
-        "_id": ObjectId(data.test_id),
-        "center_id": ObjectId(user_center_id),
-    })
-    if not test:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Test not found in your center.")
+    # Resolve the test and its center
+    if role == "superadmin":
+        test = await db.tests.find_one({"_id": ObjectId(data.test_id)})
+        if not test:
+            raise HTTPException(status.HTTP_404_NOT_FOUND, "Test not found.")
+        test_center_id = str(test["center_id"])
+    else:
+        user_center_id = current_user.get("center_id")
+        if not user_center_id:
+            raise HTTPException(status.HTTP_400_BAD_REQUEST, "User is not associated with any center.")
+        test = await db.tests.find_one({
+            "_id": ObjectId(data.test_id),
+            "center_id": ObjectId(user_center_id),
+        })
+        if not test:
+            raise HTTPException(status.HTTP_404_NOT_FOUND, "Test not found in your center.")
+        test_center_id = user_center_id
 
-    # Verify group belongs to the user's center
+    # Verify group belongs to the test's center
     group = await db.groups.find_one({
         "_id": ObjectId(data.group_id),
-        "center_id": ObjectId(user_center_id),
+        "center_id": ObjectId(test_center_id),
     })
     if not group:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Group not found in your center.")
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Group not found in the test's center.")
 
     # Check for duplicate assignment
     existing = await db.assignments.find_one({
@@ -138,7 +175,7 @@ async def assign_test_to_group(
 
     assignment_doc = {
         "test_id": ObjectId(data.test_id),
-        "center_id": ObjectId(user_center_id),
+        "center_id": ObjectId(test_center_id),
         "group_id": ObjectId(data.group_id),
         "assigned_by": ObjectId(current_user.get("sub")),
         "created_at": datetime.now(timezone.utc),
@@ -147,16 +184,17 @@ async def assign_test_to_group(
     result = await db.assignments.insert_one(assignment_doc)
 
     logger.info(
-        "Test '%s' assigned to group '%s' by '%s'.",
+        "Test '%s' assigned to group '%s' by '%s' (role=%s).",
         data.test_id,
         data.group_id,
         current_user.get("username"),
+        role,
     )
 
     return AssignmentResponse(
         _id=str(result.inserted_id),
         test_id=data.test_id,
-        center_id=user_center_id,
+        center_id=test_center_id,
         group_id=data.group_id,
         created_at=assignment_doc["created_at"],
     )

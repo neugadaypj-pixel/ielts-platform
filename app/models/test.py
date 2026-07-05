@@ -33,10 +33,11 @@ class TestContent(BaseModel):
 
 
 class TestCreate(BaseModel):
-    """Schema for creating a new test."""
+    """Schema for creating a new test. center_id is optional (SuperAdmin must provide it)."""
 
     title: str = Field(..., min_length=1, max_length=200)
     content_json: TestContent
+    center_id: Optional[str] = Field(None, description="Required for SuperAdmin; ignored for Admin/Teacher")
 
 
 class TestResponse(BaseModel):

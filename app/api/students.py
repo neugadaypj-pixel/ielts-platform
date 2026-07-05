@@ -98,6 +98,13 @@ async def submit_test(
     if not assignment:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Assignment not found for your group.")
 
+    # Verify the assignment is for this specific test
+    if assignment["test_id"] != ObjectId(submission.test_id):
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            "Assignment does not match the submitted test.",
+        )
+
     # Fetch the test with correct answers
     test = await db.tests.find_one({"_id": ObjectId(submission.test_id)})
     if not test:

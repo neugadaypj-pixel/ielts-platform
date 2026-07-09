@@ -62,9 +62,27 @@ services:
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
 
+  # ---- Uptime Kuma Monitoring Dashboard ----
+  uptime-kuma:
+    image: louislam/uptime-kuma:1
+    container_name: ielts-uptime-kuma
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    networks:
+      - ielts-internal
+    volumes:
+      - uptime-kuma-data:/app/data
+    healthcheck:
+      test: ["CMD", "node", "-e", "const http=require('http');http.get('http://localhost:3001',r=>{process.exit(r.statusCode===200?0:1)})"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
 networks:
   ielts-internal:
     driver: bridge
 
 volumes:
   mongo-data:
+  uptime-kuma-data:

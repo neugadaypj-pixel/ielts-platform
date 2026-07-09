@@ -1,5 +1,5 @@
-# IELTS Platform - Full Black-Box API Audit v2
-# Corrected schemas based on actual API models
+# IELTS Platform - Full Black-Box API Audit v3
+# All schemas verified against actual Pydantic models
 $ErrorActionPreference = "Continue"
 $Base = "https://ielts-platform.fly.dev"
 $Pass = 0; $Fail = 0; $Warn = 0
@@ -15,7 +15,7 @@ function Report($num, $desc, $result, $details = "") {
 }
 
 Write-Host "`n========================================" -ForegroundColor Cyan
-Write-Host " IELTS PLATFORM - API AUDIT v2" -ForegroundColor Cyan  
+Write-Host " IELTS PLATFORM - API AUDIT v3" -ForegroundColor Cyan  
 Write-Host " Base: $Base  |  $(Get-Date -Format 'HH:mm:ss')" -ForegroundColor Cyan
 Write-Host "========================================`n" -ForegroundColor Cyan
 
@@ -26,7 +26,7 @@ Write-Host "--- 1. HEALTH ---" -ForegroundColor Magenta
 
 try {
     $r = Invoke-RestMethod -Uri "$Base/health" -Method Get -TimeoutSec 10
-    if ($r.status -eq "ok") { Report 1 "GET /health" "PASS" "status=ok, app=$($r.app)" }
+    if ($r.status -eq "ok") { Report 1 "GET /health" "PASS" ("status=ok, app=" + $r.app) }
     else { Report 1 "GET /health" "FAIL" ("Unexpected: " + ($r | ConvertTo-Json -Compress)) }
 } catch { Report 1 "GET /health" "FAIL" $_.Exception.Message }
 
@@ -163,7 +163,7 @@ try {
     $r = Invoke-RestMethod -Uri "$Base/admin/teachers" -Method Post -Body $body -ContentType "application/json" -Headers $AH -TimeoutSec 10
     $TEACHER_USERNAME = $tu
     $TEACHER_ID = $r._id
-    Report 14 "POST /admin/teachers" "PASS" ("Created '${tu}', id=" + $r._id)
+    Report 14 "POST /admin/teachers" "PASS" ("Created '" + $tu + "', id=" + $r._id)
 } catch { Report 14 "POST /admin/teachers" "FAIL" $_.Exception.Message }
 
 # List teachers
@@ -212,7 +212,7 @@ try {
     $r = Invoke-RestMethod -Uri "$Base/teacher/students" -Method Post -Body $body -ContentType "application/json" -Headers $TH -TimeoutSec 10
     $STUDENT_USERNAME = $su
     $STUDENT_ID = $r._id
-    Report 19 "POST /teacher/students" "PASS" ("Created '${su}', id=" + $STUDENT_ID)
+    Report 19 "POST /teacher/students" "PASS" ("Created '" + $su + "', id=" + $STUDENT_ID)
 } catch {
     $err = $_.Exception.Message
     try { $eb = $_.ErrorDetails.Message } catch { $eb = "" }
@@ -263,7 +263,7 @@ try {
 # ============================================================================
 Write-Host "`n--- 7. E2E FLOW ---" -ForegroundColor Magenta
 
-# 7.1 Create test
+# 7.1 Create test (using SuperAdmin with center_id)
 $E2E_TEST_ID = $null
 $randNum = Get-Random -Min 10 -Max 99
 try {
@@ -284,6 +284,7 @@ try {
     $body = @{
         title = "E2E Test $randNum"
         content_json = $contentJson
+        center_id = $NEW_CENTER_ID
     } | ConvertTo-Json -Depth 8
     $r = Invoke-RestMethod -Uri "$Base/staff/tests" -Method Post -Body $body -ContentType "application/json" -Headers $SA_HEADERS -TimeoutSec 10
     $E2E_TEST_ID = $r._id
@@ -321,17 +322,17 @@ if ($ASSIGNMENT_ID) {
     } catch { Report 27 "GET /student/tests/assigned" "FAIL" $_.Exception.Message }
 } else { Report 27 "GET /student/tests/assigned" "SKIP" "No assignment" }
 
-# 7.4 Submit test
-if ($E2E_TEST_ID) {
+# 7.4 Submit test (FIXED: uses question_id + assignment_id per TestSubmission model)
+if ($E2E_TEST_ID -and $ASSIGNMENT_ID) {
     try {
         $answers = @(
-            @{question_number=1;answer="Paris"},
-            @{question_number=2;answer="4"}
+            @{question_id="q1";answer="Paris"},
+            @{question_id="q2";answer="4"}
         )
-        $body = @{test_id=$E2E_TEST_ID;answers=$answers} | ConvertTo-Json -Depth 5
+        $body = @{test_id=$E2E_TEST_ID;assignment_id=$ASSIGNMENT_ID;answers=$answers} | ConvertTo-Json -Depth 5
         $r = Invoke-RestMethod -Uri "$Base/student/tests/submit" -Method Post -Body $body -ContentType "application/json" -Headers $SH -TimeoutSec 10
-        $sc = $r.percentage
-        Report 28 "POST /student/tests/submit" "PASS" ("score=" + $sc + "%, " + $r.correct_answers + "/" + $r.total_questions + " correct")
+        $sc = [math]::Round($r.score / $r.total_points * 100, 1)
+        Report 28 "POST /student/tests/submit" "PASS" ("score=" + $sc + "%, " + $r.score + "/" + $r.total_points + " pts")
         
         if ($sc -eq 100) { Report 29 "Scoring accuracy" "PASS" "100% as expected" }
         else { Report 29 "Scoring accuracy" "FAIL" ("Expected 100%, got " + $sc + "%") }
@@ -340,12 +341,12 @@ if ($E2E_TEST_ID) {
         try { $eb = $_.ErrorDetails.Message } catch { $eb = "" }
         Report 28 "POST /student/tests/submit" "FAIL" ("err=" + $err + " body=" + $eb)
     }
-} else { Report 28 "POST /student/tests/submit" "SKIP" "No test_id"; Report 29 "Scoring accuracy" "SKIP" "" }
+} else { Report 28 "POST /student/tests/submit" "SKIP" "No test_id/assignment_id"; Report 29 "Scoring accuracy" "SKIP" "" }
 
-# 7.5 Duplicate submission
-if ($E2E_TEST_ID) {
+# 7.5 Duplicate submission (FIXED: includes required assignment_id)
+if ($E2E_TEST_ID -and $ASSIGNMENT_ID) {
     try {
-        $body = "{""test_id"":""$E2E_TEST_ID"",""answers"":[{""question_number"":1,""answer"":""Paris""}]}"
+        $body = "{""test_id"":""$E2E_TEST_ID"",""assignment_id"":""$ASSIGNMENT_ID"",""answers"":[{""question_id"":""q1"",""answer"":""Paris""}]}"
         $r = Invoke-RestMethod -Uri "$Base/student/tests/submit" -Method Post -Body $body -ContentType "application/json" -Headers $SH -TimeoutSec 10
         Report 30 "Duplicate submit -> 409" "FAIL" "Should return 409"
     } catch {
@@ -359,7 +360,7 @@ if ($E2E_TEST_ID) {
 try {
     $r = Invoke-RestMethod -Uri "$Base/student/results" -Method Get -Headers $SH -TimeoutSec 10
     Report 31 "GET /student/results" "PASS" ("Found " + $r.Count + " result(s)")
-    if ($r.Count -gt 0) { Report 32 "Result integrity" "PASS" ("score=" + $r[0].percentage + "%") }
+    if ($r.Count -gt 0) { Report 32 "Result integrity" "PASS" ("score=" + $r[0].score + "/" + $r[0].total_points + " pts") }
 } catch { Report 31 "GET /student/results" "FAIL" $_.Exception.Message }
 
 # 7.7 Analytics results
@@ -389,7 +390,7 @@ try {
     Report 35 "Malformed JSON -> 4xx" "FAIL" "Should return 400/422"
 } catch {
     $c = $_.Exception.Response.StatusCode.value__
-    if ($c -eq 400 -or $c -eq 422) { Report 35 "Malformed JSON -> " + $c "PASS" }
+    if ($c -eq 400 -or $c -eq 422) { Report 35 "Malformed JSON -> $c" "PASS" }
     else { Report 35 "Malformed JSON" "FAIL" ("Got " + $c) }
 }
 

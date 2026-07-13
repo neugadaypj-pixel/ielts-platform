@@ -432,8 +432,8 @@ async function getAccessibleTest(req, testId) {
 
     if (!effectiveGroupId) {
         const gsResult = await execute(
-            `SELECT group_id AS "groupId" FROM group_students WHERE user_id = :uid AND ROWNUM = 1`,
-            { uid: userId }
+            `SELECT group_id AS "groupId" FROM group_students WHERE user_id = :p_uid AND ROWNUM = 1`,
+            { p_uid: userId }
         );
         if (gsResult.rows.length > 0) {
             effectiveGroupId = gsResult.rows[0].groupId;

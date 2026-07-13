@@ -1,5 +1,5 @@
 require('dotenv').config();
-
+// deploy trigger: pool tuning, FK cascade fix, test access fallback
 const express = require('express');
 const path = require('path');
 const fs = require('fs');
@@ -403,7 +403,10 @@ function roundPercentage(score, totalQuestions) {
 // Fetch test + check access
 async function getAccessibleTest(req, testId) {
     const test = await Test.findById(testId);
-    if (!test) return { test: null, isAllowed: false };
+    if (!test) {
+        logger.warn('getAccessibleTest: test not found', { testId });
+        return { test: null, isAllowed: false };
+    }
 
     const userId = req.session.userId;
     const userRole = req.session.userRole;
@@ -421,14 +424,40 @@ async function getAccessibleTest(req, testId) {
         if (hasIndividual) return { test, isAllowed: true };
     }
 
+    // Determine effective group ID: prefer users.group_id, but also
+    // fall back to group_students junction if the column is NULL
+    // (handles data inconsistency where a student is in a group
+    // via the junction table but users.group_id wasn't set)
+    let effectiveGroupId = user ? user.groupId : null;
+
+    if (!effectiveGroupId) {
+        const gsResult = await execute(
+            `SELECT group_id AS "groupId" FROM group_students WHERE user_id = :uid AND ROWNUM = 1`,
+            { uid: userId }
+        );
+        if (gsResult.rows.length > 0) {
+            effectiveGroupId = gsResult.rows[0].groupId;
+            logger.info('getAccessibleTest: fallback group lookup via group_students', {
+                userId, effectiveGroupId, testId
+            });
+        }
+    }
+
     // Check group assignment
-    if (user && user.groupId) {
+    if (effectiveGroupId) {
         const hasGroupAssignment = await Group.exists({
-            _id: user.groupId,
+            _id: effectiveGroupId,
             assignedTests: { $in: [testId] }
         });
         if (hasGroupAssignment) return { test, isAllowed: true };
     }
+
+    logger.warn('getAccessibleTest: access denied', {
+        userId, userRole, testId,
+        hasGroupId: !!effectiveGroupId,
+        effectiveGroupId: effectiveGroupId || null,
+        hasIndividual: user && user.assignedTests ? user.assignedTests.length : 0
+    });
 
     return { test, isAllowed: false };
 }
@@ -2760,12 +2789,11 @@ app.post('/teacher/delete-group/:id', isTeacher, doubleCsrfProtection, async (re
         },
         cascades: [
             async (doc) => {
-                // Unset groupId for all students in this group
-                if (doc.students) {
-                    for (const sid of doc.students) {
-                        await User.findByIdAndUpdate(sid, { $unset: { groupId: 1 } });
-                    }
-                }
+                // Bulk-unset groupId for ALL users referencing this group
+                // (handles data inconsistency where users have group_id
+                // but are not in group_students junction, which would
+                // trigger ORA-02292 FK_USER_GROUP violation on delete)
+                await execute(`UPDATE users SET group_id = NULL, updated_at = CURRENT_TIMESTAMP WHERE group_id = :gid`, { gid: doc._id });
             }
         ]
     });
@@ -2843,11 +2871,8 @@ app.post('/delete-group/:id', isTeacher, doubleCsrfProtection, async (req, res) 
         },
         cascades: [
             async (doc) => {
-                if (doc.students) {
-                    for (const sid of doc.students) {
-                        await User.findByIdAndUpdate(sid, { $unset: { groupId: 1 } });
-                    }
-                }
+                // Bulk-unset groupId for ALL users referencing this group
+                await execute(`UPDATE users SET group_id = NULL, updated_at = CURRENT_TIMESTAMP WHERE group_id = :gid`, { gid: doc._id });
             }
         ]
     });

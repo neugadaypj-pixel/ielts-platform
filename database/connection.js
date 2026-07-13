@@ -4,9 +4,9 @@ const path = require('path');
 const fs = require('fs');
 
 // Optimize for low-memory OCI free tier (1GB RAM)
-oracledb.poolMax = 10;
-oracledb.poolMin = 1;
-oracledb.poolIncrement = 1;
+oracledb.poolMax = 20;
+oracledb.poolMin = 2;
+oracledb.poolIncrement = 2;
 oracledb.poolTimeout = 60;
 oracledb.fetchAsString = [oracledb.CLOB];
 
@@ -86,11 +86,11 @@ async function getPool() {
         user: process.env.DB_USER || 'IELTS_APP',
         password: process.env.DB_PASSWORD || 'IeltsApp@2026#Secure',
         connectString: process.env.DB_CONNECT_STRING || 'testplatform_high',
-        poolMax: 10,         // Admin dashboard fires 7+ parallel queries
-        poolMin: 1,
-        poolIncrement: 1,
+        poolMax: 20,         // Admin dashboard fires 7+ parallel queries
+        poolMin: 2,
+        poolIncrement: 2,
         poolTimeout: 60,
-        queueTimeout: 30000  // 30s grace period before rejecting queued requests
+        queueTimeout: 60000  // 60s grace period before rejecting queued requests
     };
     
     // In Thin mode, pass configDir explicitly for wallet/mTLS
